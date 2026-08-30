@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VDP</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #F5F5F5;
+  }
+  .vdp-wrap {
+    position: relative;
+    width: 100%;
+  }
+  img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+  }
+  /* 只是截图上"返回"箭头位置的一个可点击区域,不是真的重新画一个按钮
+   ——按你的要求,只需要能点击返回,不用花时间还原这个箭头按钮本身的
+   视觉样式。位置按截图里箭头圆圈的比例估的(左上角约2.6%/9.3%处,直径
+   约2%宽度),不是像素级核实,只是让交互点大致对准箭头。 */
+  .vdp-back-hotspot {
+    position: absolute;
+    left: 1.7%;
+    top: 7.3%;
+    width: 1.7%;
+    height: 3.6%;
+    border-radius: 50%;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+</style>
+</head>
+<body>
+  <div class="vdp-wrap">
+    <img src="vdp-screenshot.webp" alt="VDP">
+    <button type="button" class="vdp-back-hotspot" title="Back to Dashboard" onclick="window.close()"></button>
+  </div>
+</body>
+</html>

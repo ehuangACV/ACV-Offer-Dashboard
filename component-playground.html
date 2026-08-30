@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>ACV Offer Dashboard — Component Playground</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: 'Roboto', -apple-system, sans-serif; color: #212121; background: #F5F5F5; }
+  #app { height: 100%; }
+
+  /* ===================== Playground chrome ===================== */
+  .pg-shell { display: flex; height: 100%; }
+  .pg-sidebar { width: 260px; flex-shrink: 0; background: #1C1D1F; color: #fff; overflow: hidden; padding: 16px 0; transition: width .22s ease, padding .22s ease; box-sizing: border-box; }
+  .pg-sidebar__inner { width: 260px; height: 100%; overflow-y: auto; }
+  .pg-sidebar--collapsed { width: 0; padding-top: 16px; padding-bottom: 16px; }
+  .pg-rail-toggle { flex-shrink: 0; width: 14px; align-self: stretch; border: none; background: #E8E9EB; color: #757575; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; line-height: 1; }
+  .pg-rail-toggle:hover { background: #F26522; color: #fff; }
+  .pg-sidebar__title { font-size: 14px; font-weight: 700; padding: 0 16px 16px; letter-spacing: .3px; border-bottom: 1px solid #333; margin-bottom: 8px; }
+  .pg-group { margin-bottom: 12px; }
+  .pg-group__title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #9A9CA2; padding: 8px 16px 4px; }
+  .pg-nav-item { display: block; width: 100%; text-align: left; padding: 8px 16px; border: none; background: none; color: #D1D3D6; font-size: 13px; cursor: pointer; }
+  .pg-nav-item:hover { background: #2A2B2D; color: #fff; }
+  .pg-nav-item--active { background: #F26522; color: #fff; font-weight: 500; }
+  .pg-nav-item__order { display: inline-block; width: 22px; color: #757575; font-size: 11px; }
+  .pg-nav-item--active .pg-nav-item__order { color: rgba(255,255,255,.7); }
+
+  .pg-main { flex: 1; min-width: 0; overflow-y: auto; padding: 24px 32px; }
+  .pg-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .pg-header h1 { font-size: 20px; margin: 0; }
+  .pg-header__meta { font-size: 12px; color: #757575; }
+
+  .pg-mocks { display: flex; align-items: center; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+  .pg-mocks__label { font-size: 12px; color: #757575; font-weight: 500; }
+  .pg-mock-btn { border: 1px solid #DCDFE8; background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: #004E7D; }
+  .pg-mock-btn:hover { background: #F0F8FF; }
+
+  .pg-workspace { display: flex; align-items: flex-start; }
+  .pg-stage { flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; }
+
+  /* 2026-08 按你的要求新增:整页组件(比如 Offer Dashboard)右上角
+     "Expand to full page" 按钮,方便你做 presentation 时全屏看效果。这
+     一整块都是 Playground 自己的外壳 UI,不属于任何 fragment 组件,不会
+     改到 OfferDashboard.vue 等真实组件文件。 */
+  .pg-main { position: relative; }
+  .pg-fullscreen-btn { position: absolute; top: 24px; right: 32px; z-index: 20; display: flex; align-items: center; gap: 6px; border: 1px solid #DCDFE8; background: #fff; border-radius: 6px; padding: 6px 14px; font-size: 13px; color: #004E7D; cursor: pointer; }
+  .pg-fullscreen-btn:hover { background: #F0F8FF; }
+
+  .pg-shell--fullscreen .pg-sidebar,
+  .pg-shell--fullscreen .pg-rail-toggle--sidebar,
+  .pg-shell--fullscreen .pg-header,
+  .pg-shell--fullscreen .pg-mocks,
+  .pg-shell--fullscreen .pg-notes { display: none; }
+  .pg-shell--fullscreen .pg-main { position: fixed; inset: 0; padding: 0; z-index: 1000; background: #fff; overflow: auto; }
+  .pg-shell--fullscreen .pg-workspace { height: 100%; align-items: stretch; }
+  .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; }
+  /* pg-stage 在全屏时 padding 已经清零(见上面 padding:0 那条),
+     Dashboard 自己的 AppHeader 现在会紧贴到真正的屏幕左上角——如果这个
+     按钮还留在 top:12/right:12,会正好盖住 AppHeader 右侧的铃铛/头像/
+     菜单图标。挪到 AppHeader(58px 高)下方、breadcrumb 那一行右侧的
+     空白区域,不会挡住任何真实内容 */
+  .pg-shell--fullscreen .pg-fullscreen-btn { top: 66px; right: 16px; }
+  /* 2026-08 新增 screenWidth 滑块控件(只在选中 Offer Dashboard 时出现)
+     之后,把"全屏时铺满可用宽度"和"用滑块模拟任意屏幕宽度"统一成同一套
+     机制,细节(container-type、cqw 换算公式)见下面 .offer-dashboard
+     相关规则旁边的注释,这里不重复。 */
+  .pg-stage__resize-frame { container-type: inline-size; }
+  /* 2026-08 按你的要求:全屏时右边不应该有空白,Buying/Selling下面那条
+     横线(以及搜索框/筛选chip行/表格,它们右边界都是同一个)之前都会在
+     content 右边固定留 24px 的padding,导致这些行的右边缘都停在比
+     AppHeader(已经是真全屏无边距)更靠左24px的地方,看起来像多出一块
+     没用到的空白。这里全屏时把这个固定的右padding去掉,让内容右边界
+     和AppHeader一样贴到真正的屏幕右边缘,不再单独处理"这条线"一个元素,
+     这样和它同一行/同一右边界的其它内容也会一起对齐,不会顾此失彼。 */
+  .pg-shell--fullscreen .offer-dashboard__content { padding-right: 0; }
+  .pg-rail-toggle--controls { margin: 0 8px; border-radius: 4px; height: 32px; align-self: center; }
+  .pg-controls { width: 300px; flex-shrink: 0; background: #fff; border: 1px solid #E8E9EB; border-radius: 8px; padding: 16px; overflow: hidden; box-sizing: border-box; transition: width .22s ease, padding .22s ease, border-color .22s ease; }
+  .pg-controls__inner { width: 268px; }
+  .pg-controls--collapsed { width: 0; padding-left: 0; padding-right: 0; border-color: transparent; }
+  .pg-controls__title { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #545454; text-transform: uppercase; letter-spacing: .3px; }
+  .pg-control-field { margin-bottom: 12px; }
+  .pg-control-field label { display: block; font-size: 12px; color: #545454; margin-bottom: 4px; }
+  .pg-control-field select, .pg-control-field input[type=text], .pg-control-field input[type=number] { width: 100%; padding: 6px 8px; border: 1px solid #DCDFE8; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+  /* 布尔控件画成 iOS 风格的开关,而不是普通 checkbox */
+  .pg-control-field input[type=checkbox] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: #DCDFE8;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    vertical-align: middle;
+    transition: background-color .15s ease;
+  }
+  .pg-control-field input[type=checkbox]::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+    transition: transform .15s ease;
+  }
+  .pg-control-field input[type=checkbox]:checked { background: #F26522; }
+  .pg-control-field input[type=checkbox]:checked::before { transform: translateX(16px); }
+  .pg-control-button { width: 100%; padding: 8px 12px; border: 1px solid #F26522; border-radius: 6px; background: #fff; color: #F26522; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .pg-control-button:hover { background: #FEF3EC; }
+  .pg-control-button:active { background: #FEE4D3; }
+  .pg-control-range { display: flex; align-items: center; gap: 8px; }
+  .pg-control-range input[type=range] { flex: 1; min-width: 0; }
+  .pg-control-range__value { font-size: 12px; color: #545454; white-space: nowrap; min-width: 44px; text-align: right; }
+  .pg-no-controls { color: #9A9CA2; font-size: 13px; width: 300px; flex-shrink: 0; margin-left: 24px; }
+
+  .pg-notes { margin-top: 20px; background: #fff; border: 1px solid #E8E9EB; border-radius: 8px; padding: 4px 16px; }
+  .pg-notes summary { cursor: pointer; padding: 10px 0; font-size: 13px; font-weight: 600; color: #545454; }
+  .pg-notes pre { white-space: pre-wrap; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; line-height: 1.6; color: #333; padding-bottom: 12px; }
+
+  /* ===================== Fragment component styles ===================== */
+  /* -- AppHeader -- */
+  .app-header { position: relative; height: 58px; background: #FFFFFF; border-bottom: 1px solid #D1D3D6; display: flex; align-items: stretch; overflow: visible; font-family: 'Roboto', sans-serif; box-sizing: border-box; resize: horizontal; min-width: 420px; max-width: 100%; }
+  .app-header__logo { display: flex; align-items: center; padding-left: 24px; flex-shrink: 0; }
+  .app-header--md .app-header__logo { padding-left: 16px; }
+  .app-header__logo svg { display: block; height: 41px; width: 82px; }
+  .app-header__tabs { display: flex; align-items: stretch; gap: 24px; margin-left: 24px; min-width: 0; }
+  .app-header--md .app-header__tabs { gap: 16px; margin-left: 16px; }
+  .app-header__tab { position: relative; display: flex; align-items: center; gap: 6px; padding: 0 4px; border: 0; background: transparent; font: 400 16px/24px 'Roboto', sans-serif; color: #55575C; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
+  .app-header__tab:hover { background: #FAFAFA; }
+  .app-header__tab:active { background: #F1F1F1; }
+  .app-header__tab--selected { color: #F26522; border-bottom-color: #F26522; }
+  .app-header__tab-badge { display: inline-grid; place-items: center; padding: 1px 5px; border-radius: 60px; background: #FF5449; color: #F7F7F8; font-size: 10px; line-height: 14px; }
+  .app-header__tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #FF5449; margin-left: 4px; vertical-align: top; position: relative; top: 2px; }
+  .app-header__chevron { width: 18px; height: 18px; }
+  .app-header__chevron svg { display: block; width: 100%; height: 100%; }
+  .app-header__more-wrap { position: relative; display: flex; align-items: stretch; }
+  .app-header__menu { position: absolute; top: 100%; left: 0; min-width: 244px; background: #FFFFFF; border-radius: 4px; box-shadow: 0 2px 4px rgba(132, 132, 132, .14), 0 4px 5px rgba(132, 132, 132, .11), 0 1px 10px rgba(132, 132, 132, .2); z-index: 20; padding: 4px 0; }
+  .app-header__menu button { display: flex; align-items: center; width: 100%; height: 48px; padding: 0 20px; border: 0; background: transparent; font: 400 16px/24px 'Roboto', sans-serif; color: #545454; cursor: pointer; text-align: left; }
+  .app-header__menu button:hover { background: #FAFAFA; }
+  .app-header__menu button:active { background: #F1F1F1; }
+  .app-header__right { display: flex; align-items: center; gap: 8px; margin-left: auto; padding-right: 16px; flex-shrink: 0; }
+  .app-header__rewards { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border: 1px solid #F26522; border-radius: 60px; background: transparent; color: #F26522; font: 500 14px/20px 'Roboto', sans-serif; cursor: pointer; white-space: nowrap; }
+  .app-header__rewards:hover { background: rgba(242, 101, 34, .06); }
+  .app-header__rewards:active { background: rgba(242, 101, 34, .14); }
+  .app-header__rewards-icon { width: 18px; height: 18px; }
+  .app-header__rewards-icon svg { display: block; width: 100%; height: 100%; }
+  .app-header__rewards-icon-btn { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #D44D0C; border-radius: 50%; background: transparent; color: #F26522; cursor: pointer; padding: 0; }
+  .app-header__rewards-icon-btn:hover { background: rgba(212, 77, 12, .06); }
+  .app-header__rewards-icon-btn svg { display: block; width: 20px; height: 20px; }
+  .app-header__tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/16px 'Roboto', sans-serif; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; }
+  .app-header__rewards-icon-btn:hover .app-header__tooltip, .app-header__rewards-icon-btn:focus-visible .app-header__tooltip { opacity: 1; }
+  .app-header__icon-btn { display: grid; place-items: center; width: 40px; height: 40px; border: 0; background: transparent; border-radius: 50%; color: #212121; cursor: pointer; padding: 0; }
+  .app-header__icon-btn:hover { background: #F5F5F5; }
+  .app-header__icon-btn:active { background: #E0E0E0; }
+  .app-header__icon-btn:focus-visible { outline: 2px solid #7B61FF; outline-offset: -2px; }
+  .app-header__icon-btn svg { display: block; width: 22px; height: 22px; }
+  .app-header__profile { display: flex; align-items: center; gap: 8px; }
+  .app-header__avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #F26522; color: #FFFFFF; font: 500 14px/20px 'Roboto', sans-serif; flex-shrink: 0; }
+  .app-header__profile-text { display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; }
+  .app-header__username { font-size: 14px; color: #55575C; }
+  .app-header__company { font-size: 12px; color: #55575C; }
+
+  /* -- Breadcrumb -- */
+  .breadcrumb { display: inline-flex; align-items: center; gap: 14px; font-family: 'Roboto', sans-serif; }
+  .breadcrumb__item { font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.15px; color: #545454; white-space: nowrap; }
+  .breadcrumb__separator { display: inline-flex; width: 11px; height: 11px; flex-shrink: 0; }
+
+  /* -- SidebarNav -- */
+  .sidebar-nav { display: flex; flex-direction: column; gap: 4px; width: 260px; background: #FFFFFF; font-family: 'Roboto', sans-serif; padding: 0; }
+  .sidebar-nav__item { position: relative; display: flex; align-items: center; justify-content: space-between; height: 56px; margin: 0 12px; padding: 0 12px 0 24px; border: none; border-radius: 59px; background: none; text-align: left; cursor: pointer; font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.15px; color: #545454; }
+  .sidebar-nav__item--active { background: #EBF6FF; color: #004E7D; font-weight: 500; }
+  .sidebar-nav__item--active-row { padding-right: 12px; }
+  .sidebar-nav__expand-icon { flex-shrink: 0; }
+  .sidebar-nav__badge { display: inline-flex; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 1000px; background: #FF5449; color: #F7F7F8; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0.1px; }
+  .sidebar-nav__divider { height: 39px; margin: 0 16px; position: relative; }
+  .sidebar-nav__divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #DCDFE8; }
+
+  /* -- OfferTabs -- */
+  /* 2026-08 修复:底部分割线用 position:absolute+z-index:-1+1px高度的
+     div 实际渲染基本看不见(抗锯齿掉了),改成 border-bottom(标准稳妥
+     做法)+ box-sizing:border-box(不多占1px,不影响已核实的间距) */
+  .offer-tabs { position: relative; display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; border-bottom: 1px solid #DCDFE8; box-sizing: border-box; }
+  .offer-tabs__tab { position: relative; display: flex; align-items: center; justify-content: center; gap: 12px; border: none; background: none; cursor: pointer; padding: 10px 16px 1px; font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.15px; color: #757575; }
+  .offer-tabs__tab--selected { background: #FEF9F6; border-radius: 8px; color: #F26522; font-weight: 500; }
+  .offer-tabs__count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: #D1D3D6; color: #55575C; font-family: 'Inter', 'Roboto', sans-serif; font-weight: 700; font-size: 12px; line-height: 18px; }
+  .offer-tabs__tab--selected .offer-tabs__count { background: #F26522; color: #FFFFFF; }
+  .offer-tabs__indicator { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 4px 4px 0 0; background: #F26522; }
+
+  /* -- SearchInput -- */
+  .search-input { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: #F7F7F8; border-radius: 4px 4px 0 0; box-sizing: border-box; }
+  .search-input__icon { display: inline-flex; width: 20px; height: 20px; flex-shrink: 0; }
+  .search-input__field { flex: 1; border: none; outline: none; background: none; font-family: 'Roboto', sans-serif; font-size: 16px; line-height: 24px; letter-spacing: 0.5px; color: rgba(0, 0, 0, 0.87); }
+  .search-input__field::placeholder { color: rgba(0, 0, 0, 0.67); }
+
+  /* -- FilterChipGroup -- */
+  .filter-chip-group { display: flex; align-items: center; gap: 8px; font-family: 'Roboto', sans-serif; flex-wrap: wrap; }
+  .filter-chip { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 6px 16px; border-radius: 8px; border: 1px solid #212121; background: #FFFFFF; color: #212121; font-size: 14px; font-weight: 400; line-height: 21px; letter-spacing: 0.25px; cursor: pointer; white-space: nowrap; }
+  .filter-chip--dealership { padding-left: 16px; padding-right: 8px; }
+  .filter-chip:disabled { border-color: #8D9199; color: #8D9199; cursor: not-allowed; }
+  .filter-chip--selected { background: #F0F8FF; border-color: #0061A5; color: #0061A5; }
+  /* 2026-08:应用了经销商筛选后,顶替按钮本来的位置(照抄之前独立chip的配色) */
+  .filter-chip--dealer-active { background: #E6F6FC; border-color: #00558C; color: #00558C; padding-left: 14px; padding-right: 8px; }
+  .filter-chip__dealer-label { white-space: nowrap; }
+  .filter-chip__dealer-close { display: inline-flex; align-items: center; justify-content: center; color: #00558C; padding: 2px; border-radius: 50%; opacity: 0.85; }
+  .filter-chip__dealer-close:hover { opacity: 1; background: rgba(0, 85, 140, 0.1); }
+  .filter-chip-group__divider { width: 1px; height: 28px; background: #0E0E0F; flex-shrink: 0; }
+  .filter-chip-group__clear { border: none; background: none; cursor: pointer; color: #004E7D; font-size: 14px; font-weight: 500; line-height: 14px; letter-spacing: 0.1px; margin-left: 4px; }
+
+  /* -- DealershipFilterDropdown -- */
+  /* 2026-08 重做:参照真实原型 My-ACV--Dealer-filter-main 的 V1 web
+     dealership filter(固定 374x510 尺寸、CSS 画的 checkbox、确切的
+     Apply Filter 渐变值),见 fragments/DealershipFilterDropdown/notes.md */
+  .dealer-dropdown { display: flex; flex-direction: column; width: 374px; height: 510px; max-height: calc(100vh - 120px); background: linear-gradient(to bottom, #FFFFFF, #FAFBFC); border: 1px solid #E8E9EB; border-radius: 12px; box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.2); font-family: 'Roboto', sans-serif; overflow: hidden; }
+  .dealer-dropdown__header { flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; padding: 20px; background: rgba(255, 255, 255, 0.95); border-bottom: 1px solid rgba(229, 231, 235, 0.6); position: sticky; top: 0; z-index: 1; }
+  .dealer-dropdown__title-row { display: flex; align-items: center; justify-content: space-between; }
+  .dealer-dropdown__title { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.15px; color: #0E0E0F; }
+  .dealer-dropdown__title-actions { display: flex; align-items: center; gap: 12px; }
+  .dealer-dropdown__selected-count { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #757575; }
+  .dealer-dropdown__link { border: none; background: none; cursor: pointer; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #004E7D; padding: 0; line-height: 21px; }
+  .dealer-dropdown__link:hover { opacity: 0.75; }
+  .dealer-dropdown__search { display: flex; align-items: center; gap: 4px; padding: 8px 12px; border: 1px solid #E8E9EB; border-radius: 8px; background: #FFFFFF; }
+  .dealer-dropdown__search-input { flex: 1; border: none; outline: none; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; background: transparent; }
+  .dealer-dropdown__search-input::placeholder { color: #8D9199; }
+  .dealer-dropdown__list { flex: 1; overflow-y: auto; min-height: 0; padding: 8px 20px 0; scrollbar-width: thin; scrollbar-color: #E8E9EB transparent; }
+  .dealer-dropdown__list::-webkit-scrollbar { width: 8px; }
+  .dealer-dropdown__list::-webkit-scrollbar-thumb { background: #E8E9EB; border-radius: 1000px; }
+  .dealer-dropdown__item { position: relative; display: flex; align-items: center; gap: 12px; height: 44px; font-size: 16px; line-height: 24px; letter-spacing: 0.15px; color: #212121; cursor: pointer; user-select: none; }
+  .dealer-dropdown__native-checkbox { display: none; }
+  .dealer-dropdown__checkbox { width: 18px; height: 18px; flex-shrink: 0; border: 1px solid #757575; border-radius: 3px; display: flex; align-items: center; justify-content: center; transition: background 0.15s, border-color 0.15s; }
+  .dealer-dropdown__native-checkbox:checked ~ .dealer-dropdown__checkbox { background: #004E7D; border-color: #004E7D; }
+  .dealer-dropdown__native-checkbox:checked ~ .dealer-dropdown__checkbox::after { content: ''; display: block; width: 10px; height: 6px; border-left: 2px solid #FFFFFF; border-bottom: 2px solid #FFFFFF; transform: rotate(-45deg) translateY(-1px); }
+  .dealer-dropdown__empty { padding: 12px 0; color: #757575; font-size: 14px; }
+  .dealer-dropdown__footer { flex-shrink: 0; margin-top: auto; display: flex; align-items: center; justify-content: space-between; height: 74px; padding: 17px 16px 16px; border-top: 1px solid #E8E9EB; background: #FFFFFF; }
+  .dealer-dropdown__reset { border: none; background: none; cursor: pointer; color: #004E7D; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; padding: 10px 16px; border-radius: 4px; }
+  .dealer-dropdown__reset:hover { background: rgba(0, 78, 125, 0.06); }
+  .dealer-dropdown__apply { border: none; border-radius: 100px; background: linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%); color: #FFFFFF; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; padding: 10px 24px; cursor: pointer; }
+  .dealer-dropdown__apply:hover { opacity: 0.9; }
+
+  /* 2026-08:经销商筛选摘要现在顶替 FilterChipGroup 里 Dealership 按钮
+     本来的位置(见 .filter-chip--dealer-active),不再是这里单独的 chip */
+
+  /* -- OfferTableHeader -- */
+  .offer-table-header { display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; }
+  /* 2026-08 按你的要求覆盖:表头上下padding改成12px,原来固定
+     height:50px(Figma核实值)去掉改成auto,靠内容+padding自己撑高度,
+     两行文字的列自然变高,单行列靠 .offer-table-header 的
+     align-items:stretch 一起拉伸、justify-content:center 居中 */
+  .offer-table-header__cell { position: relative; background: #FAFAFA; border-bottom: 1px solid #DCDFE8; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .offer-table-header__cell--photo { flex: 78 1 78px; padding: 0; }
+  .offer-table-header__cell--dealer { flex: 200 1 200px; }
+  .offer-table-header__cell--vehicle { flex: 197 1 197px; }
+  .offer-table-header__cell--time { flex: 124 1 124px; }
+  .offer-table-header__cell--estimate { flex: 123 1 123px; }
+  .offer-table-header__cell--sent { flex: 85 1 85px; }
+  .offer-table-header__cell--received { flex: 90 1 90px; }
+  .offer-table-header__cell--update { flex: 225 1 225px; min-width: 0; }
+  .offer-table-header__title-row { display: flex; align-items: center; gap: 4px; }
+  .offer-table-header__title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #212121; white-space: nowrap; }
+  .offer-table-header__title--two-line { line-height: 20px; }
+  .offer-table-header__subtitle-row { display: flex; align-items: center; gap: 4px; }
+  .offer-table-header__subtitle { font-size: 12px; font-weight: 400; line-height: 18px; letter-spacing: 0.4px; color: #757575; white-space: nowrap; }
+  .offer-table-header__info { position: relative; display: inline-flex; width: 20px; height: 20px; flex-shrink: 0; border: none; background: none; padding: 0; cursor: pointer; }
+  .offer-table-header__sort { display: inline-flex; width: 16px; height: 16px; border: none; background: none; padding: 0; cursor: pointer; flex-shrink: 0; }
+  .offer-table-header__guide { position: absolute; top: calc(100% + 14px); left: -12px; z-index: 20; width: 320px; display: flex; flex-direction: column; gap: 20px; padding: 20px; background: #F5FBFF; border-radius: 16px; box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14); font-family: 'Roboto', sans-serif; cursor: default; }
+  .offer-table-header__guide-arrow { position: absolute; top: -8px; left: 20px; width: 16px; height: 8px; background: #F5FBFF; clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+  .offer-table-header__guide-head { display: flex; align-items: center; justify-content: space-between; }
+  .offer-table-header__guide-title { font-size: 20px; font-weight: 500; line-height: 30px; letter-spacing: 0.15px; color: #0E0E0F; }
+  .offer-table-header__guide-close { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: none; background: none; padding: 0; cursor: pointer; flex-shrink: 0; }
+  .offer-table-header__guide-section { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .offer-table-header__guide-desc { margin: 0; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .offer-table-header__guide-desc strong { font-weight: 500; }
+  .offer-table-header__guide-footer { display: flex; align-items: center; justify-content: flex-end; }
+  .offer-table-header__guide-btn { border: none; background: none; padding: 8px 16px; border-radius: 100px; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; line-height: 14px; letter-spacing: 0.1px; white-space: nowrap; cursor: pointer; }
+  .offer-table-header__guide-btn--primary { background: #0077D8; color: #FFFFFF; }
+
+  /* -- OfferTableRow -- */
+  .offer-table-row { display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; background: #FFFFFF; }
+  .offer-table-row__cell { position: relative; height: 80px; box-sizing: border-box; padding: 21px 16px 0; border-bottom: 1px solid #DCDFE8; font-size: 14px; color: #212121; }
+  .offer-table-row__cell--photo { flex: 80 1 80px; padding: 8px; display: flex; }
+  .offer-table-row__photo { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
+  .offer-table-row__cell--dealer { flex: 200 1 200px; }
+  .offer-table-row__dealer-name { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #0E0E0F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .offer-table-row__dealer-sub { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .offer-table-row__dealer-id { font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #55575C; }
+  .offer-table-row__cell--vehicle { flex: 195 1 195px; padding: 21px 35px 0 14px; text-align: left; }
+  .offer-table-row__vehicle-title { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .offer-table-row__vehicle-sub { margin-top: 0; display: flex; align-items: center; justify-content: flex-start; gap: 2px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
+  .offer-table-row__vin { font-weight: 500; color: #00558C; }
+  .offer-table-row__cell--time { flex: 124 1 124px; padding-top: 30px; }
+  .offer-table-row__cell--estimate { flex: 123 1 123px; padding-top: 30px; font-weight: 400; }
+  .offer-table-row__cell--sent { flex: 85 1 85px; padding-top: 30px; }
+  .offer-table-row__cell--received { flex: 90 1 90px; padding-top: 30px; }
+  .offer-table-row__cell--strong { font-weight: 500; }
+  .offer-table-row__cell--update { flex: 225 1 225px; min-width: 0; padding: 21px 0 0 24px; }
+  .offer-table-row__status-pills { display: flex; align-items: center; gap: 4px; }
+  .offer-table-row__update-date { margin-top: 0; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
+
+  /* -- StatusChip -- */
+  .status-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; font-size: 12px; line-height: 12px; letter-spacing: 0.4px; white-space: nowrap; font-family: 'Roboto', sans-serif; }
+  .chip-icon { width: 12px; height: 12px; flex-shrink: 0; }
+  .status-chip--new { background: #F4FFF6; color: #006C4C; border-radius: 4px; }
+  .status-chip--received { background: #F0F8FF; color: #0061A5; border-radius: 4px; }
+  .status-chip--sent { background: #E0E0E0; color: #212121; border-radius: 3px; }
+  .status-chip--declined { background: #FFEFBF; color: #402D00; border-radius: 4px; }
+  .status-chip--overflow { background: #E0E0E0; color: #212121; border-radius: 3px; justify-content: center; }
+
+  /* -- OfferTypeBadge -- */
+  .offer-type-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 6px; border-radius: 4px; font-size: 12px; line-height: 12px; letter-spacing: 0.4px; white-space: nowrap; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  .offer-type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border: 1px solid #FFFFFF; }
+  .offer-type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; }
+
+  /* -- Pagination -- */
+  /* 2026-08 重做:ACV Pagination(Claude Design 项目 09c-pagination.card.html） */
+  .pagination { display: flex; align-items: center; gap: 16px; background: #FFFFFF; padding: 12px 16px; border-radius: 4px; font-family: 'Roboto', sans-serif; }
+  .pagination__label { font-size: 14px; line-height: 20px; color: #212121; white-space: nowrap; }
+  .pagination__viewing-text { flex: 1; min-width: 0; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
+  .pagination__dropdown-wrap { position: relative; }
+  .pagination__dropdown-btn { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 70px; height: 36px; padding: 0 8px; border: 1px solid #DCDFE8; border-radius: 4px; background: #FFFFFF; color: #212121; font-family: 'Roboto', sans-serif; font-size: 14px; line-height: 20px; cursor: pointer; box-sizing: border-box; }
+  .pagination__dropdown-btn:focus-visible, .pagination__dropdown-btn--open { outline: none; box-shadow: 0 0 0 3px #CFE3F5; }
+  .pagination__dropdown-btn svg { display: block; flex-shrink: 0; }
+  .pagination__dropdown-value { line-height: 20px; }
+  .pagination__menu { position: absolute; top: calc(100% + 1px); left: 0; min-width: 100%; background: #FFFFFF; border: 1px solid #DCDFE8; border-radius: 0 0 4px 4px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12); padding: 0; margin: 0; list-style: none; z-index: 5; }
+  .pagination__menu li { padding: 8px 12px; font-size: 14px; line-height: 20px; color: #55575C; cursor: pointer; white-space: nowrap; }
+  .pagination__menu li:hover { background: #F0F1F4; }
+  .pagination__menu li[aria-selected='true'] { background: #1A73E8; color: #FFFFFF; }
+  .pagination__nav { display: flex; align-items: center; gap: 33px; margin-left: 8px; }
+  .pagination__arrow { display: grid; place-items: center; width: 24px; height: 24px; border: none; background: transparent; padding: 0; color: #212121; cursor: pointer; }
+  .pagination__arrow svg { display: block; }
+  .pagination__arrow:disabled { color: #A1A1A1; cursor: default; }
+  .pagination__arrow:not(:disabled):hover { background: #F0F1F4; border-radius: 50%; }
+  .pagination__arrow:focus-visible { outline: 2px solid #0061A5; outline-offset: 1px; border-radius: 50%; }
+
+  /* -- OfferDashboard -- */
+  /* 2026-08 修正:width 原来是估的 1400px,和 sidebar(260)+content左右
+     padding(16+24)+真实核实过的表格内容宽度(1122,来自 Figma Frame
+     215286)加起来应该是 1422px 不完全对得上,差了 22px。之前因为
+     Update 列是裸 flex:1 吃掉容器剩余空间,这 22px 的误差被它悄悄吸收,
+     看不出来;现在其它列也改成比例伸缩后,这个误差会让所有列一起被
+     压窄几个百分点,所以顺手把这个数改成算出来的精确值 1422px */
+  /* 2026-08 改成 width:100%,始终填满外面新加的 .pg-stage__resize-frame
+     (默认 1422px 宽,和之前写死在这里的值一样,所以默认预览不受影响);
+     frame 宽度现在由 Controls 面板里的 screenWidth 滑块控制,细节见
+     Harness 的 setup() 里 screenWidth/stageFrameStyle 那部分 */
+  .offer-dashboard { display: flex; flex-direction: column; background: #FFFFFF; font-family: 'Roboto', sans-serif; width: 100%; }
+  /* 2026-08 核实自节点 7448:9826:App Bar→breadcrumb 原为24px(2026-08
+     按你的要求改成32px,截图上直接标出来的,不是重新核实的 Figma 数值),
+     breadcrumb→Tabs 14px。左边距(292px = sidebar宽260 + 新增左边距16
+     + 间距16)现在用 cqw 换算成响应式公式,frame 正好 1422px 宽时算出来
+     精确等于 292px;frame 变宽后间距最多长到 100px(2026-08 你说 110px
+     还是宽,改成 100px),不会无限变大——这样 breadcrumb 才能跟着
+     Buying/Selling/表格一起右移,不会自己停在原地不动。斜率是
+     (100-16)/(1900-1422)=84/478≈0.1757,让间距刚好在屏宽到 1900px 时
+     就长到 100px 封顶,不是要宽到很多才勉强摸到封顶值 */
+  /* 2026-08 按你的要求:breadcrumb 这一行和下面 .offer-dashboard__content
+     (Buying/Selling tab + 搜索/筛选 + 表格整块)右侧留 100px 空隙,视口
+     右边缘对齐——这两块是分开的 DOM sibling,分别加同一个
+     margin-right:100px,等同于套了共同外层容器,不改动各自内部已有的
+     padding/gap,也没动 SidebarNav */
+  /* 2026-08 按你的要求:sidebar↔主内容区最小间距从16px改成48px——最小值
+     (clamp下限)和公式里的基准常数一起从16改成48,屏宽1422px(默认)时
+     直接就是48px,不再是16;封顶值仍是100px,新斜率
+     (100-48)/(1900-1422)=52/478≈0.1088,保持"屏宽到1900px正好封顶"
+     这个规则不变 */
+  .offer-dashboard__breadcrumb-row { padding: 32px 0 14px 0; padding-left: calc(276px + clamp(48px, calc(48px + (100cqw - 1422px) * 0.1088), 100px)); margin-right: 100px; }
+  .offer-dashboard__body { display: flex; flex: 1; }
+  /* 2026-08 按你的要求新增 margin-left:16px,sidebar 不再贴着页面最左边
+     ——breadcrumb-row 的 padding-left 基准值(上面那条规则)也跟着从
+     276px(=sidebar宽260+间距16)改成 292px,保持对齐关系 */
+  .offer-dashboard__body .sidebar-nav { margin-top: -54px; margin-left: 16px; }
+  /* 左边距(原来写死16px)同样换算成 cqw 响应式公式,frame 正好1422px时
+     精确等于16px,和原来完全一样;变宽后最多长到100px,和 breadcrumb-row
+     用的是同一套公式,斜率同样是 0.1757,屏宽到 1900px 封顶 */
+  .offer-dashboard__content { flex: 1; min-width: 0; padding: 0 24px 24px 0; padding-left: clamp(48px, calc(48px + (100cqw - 1422px) * 0.1088), 100px); margin-right: 100px; display: flex; flex-direction: column; gap: 0; }
+  /* 2026-08 核实自节点 7448:9826:Tabs→搜索框24px,搜索框→筛选chip行16px */
+  .offer-dashboard__toolbar { display: flex; flex-direction: column; gap: 16px; padding: 24px 0 0; }
+  .offer-dashboard__filters { flex-wrap: wrap; }
+  /* 2026-08 按你的要求去掉横线:Figma里筛选chip行到Private Lane行之间
+     没有分割线,只有20px纯留白(节点7448:9899 gap-20),之前的border-top
+     没有Figma依据,已删掉改成margin-top */
+  .offer-dashboard__table-card { margin-top: 20px; }
+  /* Private Lane行→表头16px(节点7448:9916 "Table" gap-16) */
+  /* 2026-08 你指出 Private Lane/Pagination/切换按钮要一行横向居中对齐:
+     行高钉死 min-height:76px(这个文件全局 *{box-sizing:border-box},
+     min-height 算的是含 padding 的整个盒子——76px = Pagination 组件
+     实际高度60px + padding-bottom16px,不是内容区的60px),table/tile
+     两种模式行高一样,align-items:center 统一对所有子元素生效,三者
+     居中对齐,行高也不会随模式切换变化,按钮位置不会跳 */
+  .offer-dashboard__table-top { display: flex; align-items: center; justify-content: flex-end; min-height: 76px; padding: 0 0 16px; }
+  .offer-dashboard__table-top-spacer { flex: 1; display: flex; align-items: center; }
+  /* 2026-08 按你的要求新增,参照真实原型 My-ACV--Dealer-filter-main 的 .private-lane/.lane-icon */
+  .offer-dashboard__private-lane { display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #545454; }
+  .offer-dashboard__private-lane-icon { flex-shrink: 0; }
+  .offer-dashboard__viewing-text { flex: 1; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
+  /* 2026-08 修复切换 table/tile 时按钮位置跳动:table 视图这一行有
+     Pagination(比按钮高),tile 视图只有一行文字(比按钮矮),
+     align-items:center 会让按钮跟着行高变化上下跳。以 tile 视图(按钮
+     本来贴顶部)为基准,给按钮单独 align-self:flex-start,不再跟着行高
+     居中 */
+  .offer-dashboard__view-toggle { display: flex; align-items: center; }
+  .offer-dashboard__view-toggle-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #FFFFFF; border: 1px solid #D1D3D6; border-radius: 0; cursor: pointer; }
+  .offer-dashboard__view-toggle-btn:first-child { border-radius: 999px 0 0 999px; }
+  .offer-dashboard__view-toggle-btn:last-child { border-left: none; border-radius: 0 999px 999px 0; }
+  .offer-dashboard__view-toggle-btn--active { background: #F5F5F5; }
+  .offer-dashboard__card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding-bottom: 16px; }
+  .offer-dashboard__empty { padding: 40px 16px; text-align: center; color: #757575; font-size: 14px; }
+
+  /* -- OfferCard -- */
+  .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  /* 2026-08 按你的要求新增,对照节点 7498:68345 的 V1 hover 按钮。只在
+     V1 模式下 hover 才模糊——V2 的按钮也在 .offer-card__info 里面,如果
+     不限定 .offer-card--v1,V2 模式 hover 卡片会把它自己一直可见的按钮
+     也模糊掉,那是不对的,两个版本是完全独立的交互 */
+  /* 2026-08 对照节点 7501:69741 核实:模糊范围随 V1 按钮数量变化,不是
+     固定模糊整个 info——1个按钮只模糊车辆信息,2个按钮车辆信息+倒计时/
+     状态chip行都模糊,3个按钮(默认,7498:68345)连消息块也模糊 */
+  .offer-card--v1-btn-1:hover .offer-card__vehicle { filter: blur(2px); }
+  .offer-card--v1-btn-2:hover .offer-card__vehicle, .offer-card--v1-btn-2:hover .offer-card__flex-row { filter: blur(2px); }
+  .offer-card--v1-btn-3:hover .offer-card__info { filter: blur(2px); }
+  /* 2026-08 按截图调整位置:不再拉伸铺满+居中,按 Figma 三个按钮数量
+     各自核实到的数值定位(top~220px,水平边距~11px),高度由内容撑开 */
+  .offer-card__hover-buttons { position: absolute; left: 11px; right: 11px; top: 220px; display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 16px; box-sizing: border-box; opacity: 0; visibility: hidden; transition: opacity 0.15s ease; backdrop-filter: blur(2px); }
+  .offer-card:hover .offer-card__hover-buttons { opacity: 1; visibility: visible; }
+  /* V2(节点 7499:69479):按钮正常排在信息区最下面,一直可见,不需要
+     hover/blur 效果,和 V1 的 hover 浮层是两套完全不同的实现 */
+  .offer-card__v2-buttons { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .offer-card__hover-btn { width: 100%; padding: 10px 16px; border-radius: 100px; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; box-sizing: border-box; }
+  .offer-card__hover-btn--primary { border: none; background: linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%); color: #FFFFFF; }
+  .offer-card__hover-btn--secondary, .offer-card__hover-btn--tertiary { border: 1px solid #F26522; background: #FFFFFF; color: #F26522; }
+  .offer-card__image { display: block; position: relative; width: 100%; height: 210px; background: #DCDFE8; flex-shrink: 0; }
+  .offer-card__photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .offer-card__image-badges { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .offer-card__type-badge { display: inline-flex; align-items: center; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; }
+  .offer-card__type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border-radius: 8px; padding: 2px 6px; }
+  .offer-card__type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; border-radius: 3px; padding: 4px 6px; }
+  .offer-card__lane-badge { display: inline-flex; align-items: center; backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; text-align: right; white-space: nowrap; border-radius: 8px; padding: 2px 10px; }
+  .offer-card__info { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+  .offer-card__vehicle { display: flex; flex-direction: column; }
+  .offer-card__vehicle-title { font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.15px; color: #0E0E0F; }
+  .offer-card__vehicle-sub { display: flex; align-items: center; gap: 2px; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
+  .offer-card__vin { display: inline-flex; align-items: center; gap: 4px; }
+  .offer-card__copy-btn { display: inline-flex; align-items: center; border: none; background: none; padding: 0; cursor: pointer; }
+  .offer-card__auction-id { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
+  .offer-card__flex-section { display: flex; flex-direction: column; gap: 8px; }
+  .offer-card__flex-row { display: flex; align-items: center; justify-content: space-between; }
+  .offer-card__time-left { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #CC433A; }
+  .offer-card__status-pills { display: flex; align-items: center; gap: 6px; }
+  .offer-card__divider { height: 1px; background: #EBEBEB; }
+  .offer-card__message { display: flex; flex-direction: column; }
+  .offer-card__message-primary { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .offer-card__message-secondary { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+(function () {
+  var V = Vue;
+  var ref = V.ref, reactive = V.reactive, computed = V.computed, onMounted = V.onMounted,
+      onBeforeUnmount = V.onBeforeUnmount, nextTick = V.nextTick, watch = V.watch,
+      toRefs = V.toRefs, defineComponent = V.defineComponent, createApp = V.createApp;
+
+  // ============================================================
+  // 下面是把 fragments/*/*.vue 手工转写成"零构建"的 Vue defineComponent
+  // (用字符串 template + 全局 Vue 版本,不需要 Node/Vite)。
+  // 每个组件的 template / 颜色 / 逻辑都和对应 .vue 文件保持一致,
+  // 真正的源文件仍然是 fragments/ 下的 .vue,这里只是可以直接双击打开
+  // 就能跑的"运行时"版本。
+  // ============================================================
+
+  // ---------- StatusChip (order 32) ----------
+  var StatusChip = defineComponent({
+    name: 'StatusChip',
+    props: {
+      status: { type: String, default: 'new' },
+      label: { type: String, default: 'New' },
+      showIcon: { type: Boolean, default: true }
+    },
+    template:
+      '<span class="status-chip" :class="\'status-chip--\' + status">' +
+      '<component :is="iconComponent" v-if="iconComponent" class="chip-icon" />' +
+      '{{ label }}' +
+      '</span>',
+    setup: function (props) {
+      var icons = {
+        new: function () {
+          return V.h('svg', { viewBox: '0 0 12 12', fill: 'none' }, [
+            V.h('path', {
+              d: 'M6 1L7.24 4.15H10.5L7.88 6.11L8.93 9.25L6 7.42L3.07 9.25L4.12 6.11L1.5 4.15H4.76L6 1Z',
+              fill: '#006C4C'
+            })
+          ]);
+        }
+      };
+      var iconComponent = computed(function () {
+        if (!props.showIcon) return null;
+        return icons[props.status] || null;
+      });
+      var refs = toRefs(props);
+      return Object.assign({}, refs, { iconComponent: iconComponent });
+    }
+  });
+
+  // ---------- OfferTypeBadge (order 33) ----------
+  var OfferTypeBadge = defineComponent({
+    name: 'OfferTypeBadge',
+    props: {
+      type: { type: String, default: 'in-negotiation' },
+      label: { type: String, default: 'In Negotiation' }
+    },
+    template:
+      '<span class="offer-type-badge" :class="\'offer-type-badge--\' + type">{{ label }}</span>',
+    setup: function (props) {
+      return toRefs(props);
+    }
+  });
+
+  // ---------- AppHeader (order 10) ----------
+  var ACV_LOGO_SVG =
+    '<svg viewBox="0 0 100 50" width="82" height="41" role="img" aria-label="ACV Auctions">' +
+    '<defs><linearGradient id="ah_acvGrad" gradientUnits="userSpaceOnUse" x1="5" y1="44" x2="96" y2="3">' +
+    '<stop offset="0.0632" stop-color="#F06925"/><stop offset="0.3294" stop-color="#E55625"/>' +
+    '<stop offset="0.8619" stop-color="#C92626"/><stop offset="0.9220" stop-color="#C62127"/>' +
+    '</linearGradient></defs>' +
+    '<g fill="url(#ah_acvGrad)" fill-rule="nonzero">' +
+    '<path transform="translate(38.76 8.368)" d="M 13.884 21.141 C 10.471 21.141 8.051 18.319 8.478 14.838 C 8.906 11.357 12.02 8.535 15.433 8.535 C 17.398 8.535 19.033 9.472 19.986 10.93 L 26.222 4.521 C 23.937 1.735 20.457 0 16.367 0 C 8.391 0 1.115 6.595 0.115 14.73 C -0.885 22.865 4.77 29.46 12.746 29.46 C 16.853 29.46 20.773 27.709 23.747 24.902 L 18.221 19.515 C 17.001 20.525 15.476 21.142 13.882 21.142 L 13.884 21.141 Z"/>' +
+    '<path transform="translate(63.852 3)" d="M 20.849 0 L 32.057 0 L 11.208 33.535 L 0 33.535 L 20.849 0 Z"/>' +
+    '<path transform="translate(23.759 11.046)" d="M 14.055 14.018 C 14.051 13.336 14.091 12.645 14.176 11.945 C 14.287 11.041 14.473 10.147 14.728 9.275 L 13.478 0 L 6.342 11.482 L 6.916 15.722 L 3.691 15.722 L 0 21.674 L 7.717 21.674 L 8.23 25.49 L 16.915 25.49 L 16.453 22.069 C 14.865 19.755 14.04 16.984 14.056 14.019 L 14.055 14.018 Z"/>' +
+    '<path transform="translate(5 9.67)" d="M 20.849 0 L 32.057 0 L 11.208 33.535 L 0 33.535 L 20.849 0 Z"/>' +
+    '<path transform="translate(61.281 9.67)" d="M 7.578 0 L 1.204 0 C 2.576 0.799 3.811 1.902 4.955 3.217 L 0 8.299 L 2.336 25.623 L 9.472 14.147 L 7.577 0 L 7.578 0 Z"/>' +
+    '</g>' +
+    '<g fill="rgb(29,56,100)" fill-rule="nonzero">' +
+    '<path transform="translate(18.364 39.204)" d="M 6.715 8.28 L 6.555 7.026 L 3.128 7.026 L 2.421 8.28 L 0 8.28 L 4.941 0 L 7.622 0 L 8.925 8.28 L 6.715 8.28 Z M 5.983 1.801 L 4.084 5.227 L 6.393 5.227 L 5.984 1.801 L 5.983 1.801 Z"/>' +
+    '<path transform="translate(28.058 39.205)" d="M 0 5.475 C 0 5.338 0.037 4.928 0.124 4.556 L 1.129 0 L 3.301 0 L 2.271 4.643 C 2.222 4.866 2.196 5.077 2.196 5.238 C 2.209 5.958 2.681 6.566 3.711 6.566 C 4.804 6.566 5.349 5.846 5.561 4.878 L 6.641 0 L 8.814 0 L 7.721 4.915 C 7.286 6.926 6.219 8.428 3.575 8.428 C 1.205 8.428 0 7.212 0 5.474 L 0 5.475 Z"/>' +
+    '<path transform="translate(36.908 39.067)" d="M 4.892 0 C 7.126 0 8.293 1.254 8.727 2.545 L 6.666 3.215 C 6.431 2.383 5.711 1.886 4.792 1.886 C 3.352 1.886 2.222 3.14 2.222 4.667 C 2.222 5.785 3.029 6.678 4.32 6.678 C 4.99 6.678 5.747 6.281 6.12 5.722 L 7.783 6.815 C 6.79 8.167 5.3 8.565 4.195 8.565 C 1.862 8.565 0 7.112 0 4.804 C 0 1.912 2.235 0 4.891 0 L 4.892 0 Z"/>' +
+    '<path transform="translate(45.971 39.205)" d="M 0.918 8.279 L 2.321 1.862 L 0 1.862 L 0.422 0 L 7.187 0 L 6.777 1.862 L 4.456 1.862 L 3.054 8.279 L 0.919 8.279 L 0.918 8.279 Z"/>' +
+    '<path transform="translate(52.351 39.204)" d="M 0 8.28 L 1.825 0 L 3.959 0 L 2.135 8.28 L 0 8.28 Z"/>' +
+    '<path transform="translate(56.348 39.067)" d="M 4.891 0 C 7.262 0 9.086 1.49 9.086 3.736 C 9.086 6.417 7.001 8.565 4.195 8.565 C 1.825 8.565 0 7.076 0 4.805 C 0 2.135 2.085 0.001 4.891 0.001 L 4.891 0 Z M 4.766 1.887 C 3.314 1.887 2.221 3.141 2.221 4.668 C 2.221 5.873 3.09 6.679 4.319 6.679 C 5.772 6.679 6.864 5.425 6.864 3.898 C 6.864 2.694 5.995 1.887 4.766 1.887 Z"/>' +
+    '<path transform="translate(65.485 39.204)" d="M 5.635 8.28 L 3.289 3.016 L 2.135 8.28 L 0 8.28 L 1.825 0 L 4.022 0 L 6.268 5.027 L 7.373 0 L 9.52 0 L 7.695 8.28 L 5.635 8.28 Z"/>' +
+    '<path transform="translate(74.473 39.081)" d="M 1.277 5.474 C 1.873 6.231 2.99 6.727 4.095 6.727 C 4.803 6.727 5.076 6.367 5.076 6.045 C 5.076 5.647 4.555 5.424 3.835 5.175 C 2.681 4.778 1.117 4.22 1.117 2.606 C 1.117 1.427 2.272 0 4.469 0 C 5.81 0 7.101 0.484 7.933 1.365 L 6.655 2.83 C 6.046 2.135 5.004 1.8 4.221 1.8 C 3.65 1.8 3.327 2.098 3.327 2.433 C 3.327 2.793 3.861 3.016 4.556 3.265 C 5.735 3.65 7.312 4.257 7.312 5.76 C 7.312 7.263 6.045 8.553 3.947 8.553 C 2.259 8.553 0.769 7.92 0 6.976 L 1.278 5.475 L 1.277 5.474 Z"/>' +
+    '</g></svg>';
+
+  var AppHeader = defineComponent({
+    name: 'AppHeader',
+    props: {
+      companyName: { type: String, default: 'Magnacar Auto Corp' },
+      userName: { type: String, default: 'Emily Huang' },
+      avatarLetter: { type: String, default: 'A' },
+      rewardsLabel: { type: String, default: 'Dealer Rewards Program' },
+      initialSelectedIndex: { type: [Number, String], default: 0 },
+      hasNewOffers: { type: Boolean, default: false }
+    },
+    template:
+      '<header ref="barRef" class="app-header" :class="{ \'app-header--md\': isMd }">' +
+      '<div class="app-header__logo" v-html="LOGO"></div>' +
+      '<nav ref="ltRef" class="app-header__tabs">' +
+      '<button v-for="(item, i) in visibleItems" :key="i" type="button" class="app-header__tab" ' +
+      ':class="{ \'app-header__tab--selected\': i === selectedIndex }" @click="selectedIndex = i">' +
+      '{{ item.label }}' +
+      '<span v-if="item.badge" class="app-header__tab-badge">{{ item.badge }}</span>' +
+      '<span v-if="item.label === \'My ACV\' && hasNewOffers" class="app-header__tab-dot" aria-hidden="true"></span>' +
+      '</button>' +
+      '<div v-if="hiddenItems.length" class="app-header__more-wrap">' +
+      '<button type="button" class="app-header__tab" @click="menuOpen = !menuOpen">More' +
+      '<span class="app-header__chevron"><svg viewBox="0 0 24 24" fill="none"><path d="M6.5 9.5L12 15l5.5-5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+      '</button>' +
+      '<div v-if="menuOpen" class="app-header__menu">' +
+      '<button v-for="(item, j) in hiddenItems" :key="j" type="button" @click="selectItemFromMenu(item)">{{ item.label }}</button>' +
+      '</div></div>' +
+      '</nav>' +
+      '<div ref="rtRef" class="app-header__right">' +
+      '<button v-if="!rewardsCollapsed" type="button" class="app-header__rewards">' +
+      '<span class="app-header__rewards-icon" v-html="ICONS.trophy"></span>{{ rewardsLabel }}</button>' +
+      '<button v-else type="button" class="app-header__rewards-icon-btn" aria-label="Dealer Rewards Program">' +
+      '<span v-html="ICONS.trophy"></span><span class="app-header__tooltip">{{ rewardsLabel }}</span></button>' +
+      '<button type="button" class="app-header__icon-btn" aria-label="Notifications" v-html="ICONS.bell"></button>' +
+      '<div v-if="!nameCollapsed" class="app-header__profile">' +
+      '<div class="app-header__avatar">{{ avatarLetter }}</div>' +
+      '<div class="app-header__profile-text"><div class="app-header__username">{{ userName }}</div>' +
+      '<div class="app-header__company">{{ companyName }}</div></div></div>' +
+      '<div v-else class="app-header__avatar">{{ avatarLetter }}</div>' +
+      '<button type="button" class="app-header__icon-btn" aria-label="Menu" v-html="ICONS.burger"></button>' +
+      '</div></header>',
+    setup: function (props) {
+      var NAV = [
+        { label: 'Marketplace' },
+        { label: 'My ACV' },
+        { label: 'Market Report' },
+        { label: 'ACV Capital' },
+        { label: 'ACV Transport', badge: 'New' }
+      ];
+      var ICONS = {
+        trophy: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10v2h3v3a4 4 0 01-3.2 3.9A5 5 0 0113 16.9V19h3v2H8v-2h3v-2.1a5 5 0 01-3.8-4A4 4 0 014 9V6h3V4zm0 4H6v1a2 2 0 001 1.7V8zm10 0v2.7A2 2 0 0018 9V8h-1z"/></svg>',
+        bell: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 4a5 5 0 015 5v4l1.5 2.5H5.5L7 13V9a5 5 0 015-5zM10 19h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        burger: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+      };
+      var selectedIndex = ref(Number(props.initialSelectedIndex));
+      var menuOpen = ref(false);
+      var hiddenCount = ref(0);
+      var rewardsCollapsed = ref(false);
+      var nameCollapsed = ref(false);
+      var isMd = ref(false);
+      var visibleItems = computed(function () { return NAV.slice(0, NAV.length - hiddenCount.value); });
+      var hiddenItems = computed(function () { return NAV.slice(NAV.length - hiddenCount.value); });
+      function selectItemFromMenu(item) { selectedIndex.value = NAV.indexOf(item); menuOpen.value = false; }
+      var barRef = ref(null), ltRef = ref(null), rtRef = ref(null);
+      var resizeObserver = null;
+      function gap() {
+        if (!ltRef.value || !rtRef.value) return 999;
+        return rtRef.value.getBoundingClientRect().left - ltRef.value.getBoundingClientRect().right;
+      }
+      function layout() {
+        hiddenCount.value = 0; rewardsCollapsed.value = false; nameCollapsed.value = false;
+        nextTick(function () {
+          if (gap() <= 15) { rewardsCollapsed.value = true; }
+          nextTick(function () {
+            if (gap() <= 15) { nameCollapsed.value = true; }
+            nextTick(function () {
+              if (gap() <= 15) { hiddenCount.value = 2; }
+              function grow() {
+                nextTick(function () {
+                  if (gap() <= 15 && NAV.length - hiddenCount.value > 1) {
+                    hiddenCount.value++;
+                    grow();
+                  } else if (barRef.value) {
+                    isMd.value = barRef.value.clientWidth < 980;
+                  }
+                });
+              }
+              grow();
+            });
+          });
+        });
+      }
+      function onClickOutside(e) {
+        if (menuOpen.value && !e.target.closest('.app-header__more-wrap')) menuOpen.value = false;
+      }
+      onMounted(function () {
+        document.addEventListener('click', onClickOutside);
+        resizeObserver = new ResizeObserver(function () { layout(); });
+        if (barRef.value) resizeObserver.observe(barRef.value);
+        layout();
+      });
+      onBeforeUnmount(function () {
+        document.removeEventListener('click', onClickOutside);
+        if (resizeObserver) resizeObserver.disconnect();
+      });
+      var refs = toRefs(props);
+      return Object.assign({}, refs, {
+        LOGO: ACV_LOGO_SVG, ICONS: ICONS, selectedIndex: selectedIndex, menuOpen: menuOpen,
+        hiddenCount: hiddenCount, rewardsCollapsed: rewardsCollapsed, nameCollapsed: nameCollapsed,
+        isMd: isMd, visibleItems: visibleItems, hiddenItems: hiddenItems,
+        selectItemFromMenu: selectItemFromMenu, barRef: barRef, ltRef: ltRef, rtRef: rtRef
+      });
+    }
+  });
+
+  // ---------- Breadcrumb (order 11) ----------
+  var Breadcrumb = defineComponent({
+    name: 'Breadcrumb',
+    props: { crumbs: { type: String, default: 'My ACV,Offers' } },
+    template:
+      '<nav class="breadcrumb">' +
+      '<template v-for="(label, index) in items" :key="index">' +
+      '<span class="breadcrumb__item">{{ label }}</span>' +
+      '<span v-if="index < items.length - 1" class="breadcrumb__separator" aria-hidden="true">' +
+      '<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3.20591 1.17005L2.8189 1.5635C2.72703 1.65689 2.72703 1.80791 2.8189 1.90131L6.35084 5.5L2.8189 9.09869C2.72703 9.19208 2.72703 9.34311 2.8189 9.4365L3.20591 9.82995C3.29777 9.92335 3.44632 9.92335 3.53819 9.82995L7.6311 5.66891C7.72297 5.57551 7.72297 5.42449 7.6311 5.33109L3.53819 1.17005C3.44632 1.07665 3.29777 1.07665 3.20591 1.17005V1.17005Z" fill="#DCDFE8"/></svg>' +
+      '</span></template></nav>',
+    setup: function (props) {
+      var items = computed(function () {
+        return props.crumbs.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      });
+      return { items: items };
+    }
+  });
+
+  // ---------- SidebarNav (order 12) ----------
+  var EXPAND_ICON =
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="sidebar-nav__expand-icon">' +
+    '<path d="M15.8805 9.29006L12.0005 13.1701L8.12047 9.29006C7.73047 8.90006 7.10047 8.90006 6.71047 9.29006C6.32047 9.68006 6.32047 10.3101 6.71047 10.7001L11.3005 15.2901C11.6905 15.6801 12.3205 15.6801 12.7105 15.2901L17.3005 10.7001C17.6905 10.3101 17.6905 9.68006 17.3005 9.29006C16.9105 8.91006 16.2705 8.90006 15.8805 9.29006V9.29006Z" fill="#545454"/></svg>';
+  var SidebarNav = defineComponent({
+    name: 'SidebarNav',
+    props: {
+      activeItem: { type: String, default: 'offers' },
+      offersCount: { type: [String, Number], default: 5 }
+    },
+    template:
+      '<nav class="sidebar-nav">' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'my-inventory\')">My Inventory</button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'saved-auctions\')">Saved Auctions</button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'request-inspection\')">Request Inspection</button>' +
+      '<div class="sidebar-nav__divider"></div>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'active\')">Active <span v-html="EXPAND_ICON"></span></button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'pending-proxy\')">Pending Proxy</button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'negotiation\')">Negotiation <span v-html="EXPAND_ICON"></span></button>' +
+      '<button type="button" class="sidebar-nav__item sidebar-nav__item--active-row" :class="itemClass(\'offers\')">Offers <span class="sidebar-nav__badge">{{ offersCount }}</span></button>' +
+      '<div class="sidebar-nav__divider"></div>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'billing\')">Billing <span v-html="EXPAND_ICON"></span></button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'won\')">Won</button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'sold\')">Sold</button>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'titles-hub\')">Titles Hub</button>' +
+      '<div class="sidebar-nav__divider"></div>' +
+      '<button type="button" class="sidebar-nav__item" :class="itemClass(\'performance\')">Performance</button>' +
+      '</nav>',
+    setup: function (props) {
+      function itemClass(key) {
+        var o = {}; o['sidebar-nav__item--active'] = props.activeItem === key; return o;
+      }
+      var refs = toRefs(props);
+      return Object.assign({}, refs, { itemClass: itemClass, EXPAND_ICON: EXPAND_ICON });
+    }
+  });
+
+  // ---------- OfferTabs (order 20) ----------
+  var OfferTabs = defineComponent({
+    name: 'OfferTabs',
+    props: {
+      activeTab: { type: String, default: 'buying' },
+      buyingCount: { type: [String, Number], default: 3 },
+      sellingCount: { type: [String, Number], default: 2 }
+    },
+    emits: ['select'],
+    template:
+      '<div class="offer-tabs">' +
+      '<button type="button" class="offer-tabs__tab" :class="{ \'offer-tabs__tab--selected\': activeTab === \'buying\' }" @click="$emit(\'select\', \'buying\')">' +
+      '<span>Buying</span><span class="offer-tabs__count">{{ buyingCount }}</span>' +
+      '<span v-if="activeTab === \'buying\'" class="offer-tabs__indicator"></span></button>' +
+      '<button type="button" class="offer-tabs__tab" :class="{ \'offer-tabs__tab--selected\': activeTab === \'selling\' }" @click="$emit(\'select\', \'selling\')">' +
+      '<span>Selling</span><span class="offer-tabs__count">{{ sellingCount }}</span>' +
+      '<span v-if="activeTab === \'selling\'" class="offer-tabs__indicator"></span></button>' +
+      '</div>',
+    setup: function (props) { return toRefs(props); }
+  });
+
+  // ---------- SearchInput (order 21) ----------
+  var SearchInput = defineComponent({
+    name: 'SearchInput',
+    props: {
+      modelValue: { type: String, default: '' },
+      placeholder: { type: String, default: 'Search by year, make, model, VIN' }
+    },
+    emits: ['update:modelValue'],
+    template:
+      '<label class="search-input">' +
+      '<span class="search-input__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M13.4369 12.0629H12.7106L12.4581 11.8122C13.35 10.7721 13.8925 9.42367 13.8925 7.94625C13.8925 4.66209 11.2304 2 7.94625 2C4.66209 2 2 4.66209 2 7.94625C2 11.2304 4.66209 13.8925 7.94625 13.8925C9.42367 13.8925 10.7712 13.3509 11.8113 12.4599L12.0638 12.7106V13.4351L16.636 18.0009L18 16.6369L13.4369 12.0629V12.0629ZM7.94626 12.0629C5.67204 12.0629 3.82962 10.2205 3.82962 7.94625C3.82962 5.67295 5.67204 3.82961 7.94626 3.82961C10.2196 3.82961 12.0629 5.67295 12.0629 7.94625C12.0629 10.2205 10.2196 12.0629 7.94626 12.0629V12.0629Z" fill="black" fill-opacity="0.87"/></svg></span>' +
+      '<input class="search-input__field" type="text" :placeholder="placeholder" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">' +
+      '</label>',
+    setup: function (props) { return toRefs(props); }
+  });
+
+  // ---------- FilterChipGroup (order 22) ----------
+  var FilterChipGroup = defineComponent({
+    name: 'FilterChipGroup',
+    props: {
+      isMultiDealer: { type: Boolean, default: true },
+      dealershipOpen: { type: Boolean, default: false },
+      dealerChipLabel: { type: String, default: '' },
+      negotiationCount: { type: [String, Number], default: 2 },
+      negotiationSelected: { type: Boolean, default: false },
+      makeOfferCount: { type: [String, Number], default: 1 },
+      makeOfferSelected: { type: Boolean, default: false },
+      newCount: { type: [String, Number], default: 1 },
+      newSelected: { type: Boolean, default: false },
+      receivedCount: { type: [String, Number], default: 1 },
+      receivedSelected: { type: Boolean, default: false },
+      sentCount: { type: [String, Number], default: 0 },
+      sentSelected: { type: Boolean, default: false },
+      declinedCount: { type: [String, Number], default: 0 },
+      declinedSelected: { type: Boolean, default: false }
+    },
+    emits: ['toggle-dealership', 'clear', 'filter-change', 'clear-dealer'],
+    template:
+      '<div class="filter-chip-group">' +
+      '<button v-if="isMultiDealer" ref="dealershipBtnRef" type="button" class="filter-chip filter-chip--dealership" :class="{ \'filter-chip--selected\': dealershipOpen, \'filter-chip--dealer-active\': dealerChipLabel }" @click="$emit(\'toggle-dealership\')">' +
+      '<template v-if="dealerChipLabel"><span class="filter-chip__dealer-label">{{ dealerChipLabel }}</span>' +
+      '<span class="filter-chip__dealer-close" role="button" aria-label="Clear dealer filter" @click.stop="$emit(\'clear-dealer\')">' +
+      '<svg width="14" height="14" viewBox="0 0 18 18" fill="none"><path d="M4.5 4.5L13.5 13.5M13.5 4.5L4.5 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' +
+      '</span></template>' +
+      '<template v-else>Dealership ' +
+      '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.4425 6.22125L9 9.65625L5.5575 6.22125L4.5 7.27875L9 11.7787L13.5 7.27875L12.4425 6.22125Z" fill="#0E0E0F"/></svg></template>' +
+      '</button>' +
+      '<button type="button" class="filter-chip" :disabled="negotiationCount === 0 || negotiationCount === \'0\'" :class="{ \'filter-chip--selected\': negotiationSelectedLocal }" @click="negotiationSelectedLocal = !negotiationSelectedLocal">In negotiation{{ (negotiationCount && negotiationCount !== \'0\') ? \' (\' + negotiationCount + \')\' : \'\' }}</button>' +
+      '<button type="button" class="filter-chip" :disabled="makeOfferCount === 0 || makeOfferCount === \'0\'" :class="{ \'filter-chip--selected\': makeOfferSelectedLocal }" @click="makeOfferSelectedLocal = !makeOfferSelectedLocal">Make Offer{{ (makeOfferCount && makeOfferCount !== \'0\') ? \' (\' + makeOfferCount + \')\' : \'\' }}</button>' +
+      '<span class="filter-chip-group__divider" aria-hidden="true"></span>' +
+      '<button type="button" class="filter-chip" :disabled="newCount === 0 || newCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'new\' }" @click="toggleSingleSelect(\'new\')">New{{ (newCount && newCount !== \'0\') ? \' (\' + newCount + \')\' : \'\' }}</button>' +
+      '<button type="button" class="filter-chip" :disabled="receivedCount === 0 || receivedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'received\' }" @click="toggleSingleSelect(\'received\')">Received{{ (receivedCount && receivedCount !== \'0\') ? \' (\' + receivedCount + \')\' : \'\' }}</button>' +
+      '<button type="button" class="filter-chip" :disabled="sentCount === 0 || sentCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'sent\' }" @click="toggleSingleSelect(\'sent\')">Sent{{ (sentCount && sentCount !== \'0\') ? \' (\' + sentCount + \')\' : \'\' }}</button>' +
+      '<button type="button" class="filter-chip" :disabled="declinedCount === 0 || declinedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'declined\' }" @click="toggleSingleSelect(\'declined\')">Declined{{ (declinedCount && declinedCount !== \'0\') ? \' (\' + declinedCount + \')\' : \'\' }}</button>' +
+      '<button type="button" class="filter-chip-group__clear" @click="handleClear">Clear</button>' +
+      '</div>',
+    setup: function (props, { emit, expose }) {
+      // 暴露 Dealership 按钮的 DOM 节点,给 OfferDashboard 用来把浮层
+      // popover 定位在按钮下方(见 DealershipFilterDropdown 的改动)
+      var dealershipBtnRef = ref(null);
+      expose({ dealershipBtnRef: dealershipBtnRef });
+      var negotiationSelectedLocal = ref(props.negotiationSelected);
+      var makeOfferSelectedLocal = ref(props.makeOfferSelected);
+      var singleSelected = ref(
+        props.newSelected ? 'new' :
+        props.receivedSelected ? 'received' :
+        props.sentSelected ? 'sent' :
+        props.declinedSelected ? 'declined' : null
+      );
+      function toggleSingleSelect(key) {
+        singleSelected.value = singleSelected.value === key ? null : key;
+      }
+      function handleClear() {
+        negotiationSelectedLocal.value = false;
+        makeOfferSelectedLocal.value = false;
+        singleSelected.value = null;
+        emit('clear');
+      }
+      // 2026-08:点 chip 要真的过滤 table/tile,不只是自己变色——把当前
+      // 选中状态整个 emit 给父组件(OfferDashboard)决定怎么过滤 rows
+      watch([negotiationSelectedLocal, makeOfferSelectedLocal, singleSelected], function () {
+        emit('filter-change', {
+          negotiation: negotiationSelectedLocal.value,
+          makeOffer: makeOfferSelectedLocal.value,
+          single: singleSelected.value
+        });
+      });
+      // 2026-08 按你的要求:数量为0时自动清掉选中态,避免"灰色disabled
+      // 但其实还是选中"的矛盾状态
+      function isZero(v) { return Number(v) === 0; }
+      watch(function () { return props.negotiationCount; }, function (v) { if (isZero(v)) negotiationSelectedLocal.value = false; });
+      watch(function () { return props.makeOfferCount; }, function (v) { if (isZero(v)) makeOfferSelectedLocal.value = false; });
+      watch(function () { return props.newCount; }, function (v) { if (isZero(v) && singleSelected.value === 'new') singleSelected.value = null; });
+      watch(function () { return props.receivedCount; }, function (v) { if (isZero(v) && singleSelected.value === 'received') singleSelected.value = null; });
+      watch(function () { return props.sentCount; }, function (v) { if (isZero(v) && singleSelected.value === 'sent') singleSelected.value = null; });
+      watch(function () { return props.declinedCount; }, function (v) { if (isZero(v) && singleSelected.value === 'declined') singleSelected.value = null; });
+      var refs = toRefs(props);
+      return Object.assign({}, refs, {
+        dealershipBtnRef: dealershipBtnRef,
+        negotiationSelectedLocal: negotiationSelectedLocal,
+        makeOfferSelectedLocal: makeOfferSelectedLocal,
+        singleSelected: singleSelected,
+        toggleSingleSelect: toggleSingleSelect,
+        handleClear: handleClear
+      });
+    }
+  });
+
+  // ---------- DealershipFilterDropdown (order 23) ----------
+  // 2026-08 重做:参照真实原型 My-ACV--Dealer-filter-main 的 V1 web
+  // dealership filter(见 fragments/DealershipFilterDropdown/notes.md）
+  var DealershipFilterDropdown = defineComponent({
+    name: 'DealershipFilterDropdown',
+    props: {
+      isMultiDealer: { type: Boolean, default: true },
+      preSelected: { type: String, default: '' }
+    },
+    emits: ['apply'],
+    template:
+      '<div v-if="isMultiDealer" class="dealer-dropdown">' +
+      '<div class="dealer-dropdown__header">' +
+      '<div class="dealer-dropdown__title-row"><p class="dealer-dropdown__title">Select Dealerships</p>' +
+      '<div class="dealer-dropdown__title-actions"><span class="dealer-dropdown__selected-count">{{ selected.length }} selected</span>' +
+      '<button type="button" class="dealer-dropdown__link" @click="toggleSelectAll">{{ allVisibleSelected ? \'Deselect all\' : \'Select all\' }}</button></div></div>' +
+      '<label class="dealer-dropdown__search">' +
+      '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13.1292 11.8792H12.4708L12.2375 11.6542C13.0542 10.7042 13.5458 9.47083 13.5458 8.12917C13.5458 5.1375 11.1208 2.7125 8.12917 2.7125C5.1375 2.7125 2.7125 5.1375 2.7125 8.12917C2.7125 11.1208 5.1375 13.5458 8.12917 13.5458C9.47083 13.5458 10.7042 13.0542 11.6542 12.2375L11.8792 12.4708V13.1292L16.0458 17.2875L17.2875 16.0458L13.1292 11.8792ZM8.12917 11.8792C6.05417 11.8792 4.37917 10.2042 4.37917 8.12917C4.37917 6.05417 6.05417 4.37917 8.12917 4.37917C10.2042 4.37917 11.8792 6.05417 11.8792 8.12917C11.8792 10.2042 10.2042 11.8792 8.12917 11.8792Z" fill="#55575C"/></svg>' +
+      '<input ref="searchInputRef" class="dealer-dropdown__search-input" type="text" placeholder="Search by dealer name or ID..." :value="searchQuery" @input="searchQuery = $event.target.value">' +
+      '</label></div>' +
+      '<div class="dealer-dropdown__list">' +
+      '<label v-for="(dealer, index) in filteredDealers" :key="index" class="dealer-dropdown__item">' +
+      '<input type="checkbox" class="dealer-dropdown__native-checkbox" :checked="selected.includes(dealer)" @change="toggle(dealer)">' +
+      '<span class="dealer-dropdown__checkbox"></span>{{ dealer }}</label>' +
+      '<p v-if="filteredDealers.length === 0" class="dealer-dropdown__empty">未找到匹配的经销商</p>' +
+      '</div>' +
+      '<div class="dealer-dropdown__footer">' +
+      '<button type="button" class="dealer-dropdown__reset" @click="reset">Reset</button>' +
+      '<button type="button" class="dealer-dropdown__apply" @click="$emit(\'apply\', selected)">Apply Filter</button>' +
+      '</div></div>',
+    setup: function (props, { emit }) {
+      // 10 个真实名字,无重复(原型 My-ACV--Dealer-filter-main 的名单;
+      // 之前 Figma 稿"Apple Chevrolet"重复两次已确认是设计稿遗留错误)
+      var dealers = [
+        'Asbury Automotive Group', 'Apple Chevrolet', 'Baxter Auto Mall', 'CarMax Boston',
+        'Classic Honda', 'DriveTime A', 'DriveTime Mall', 'DriveTime Denver',
+        'Enterprise Car Sales', 'Hendrick Automotive'
+      ];
+      var searchQuery = ref('');
+      var searchInputRef = ref(null);
+      var selected = ref(props.preSelected ? props.preSelected.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : []);
+      watch(function () { return props.preSelected; }, function (v) {
+        selected.value = v ? v.split(',').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      });
+      onMounted(function () { if (searchInputRef.value) searchInputRef.value.focus(); });
+      var filteredDealers = computed(function () {
+        return dealers.filter(function (d) { return d.toLowerCase().indexOf(searchQuery.value.toLowerCase()) !== -1; });
+      });
+      // "Select all" 只针对当前搜索可见的经销商生效,全部选中后变成
+      // "Deselect all"(照抄原型 updateCount() 的逻辑)
+      var allVisibleSelected = computed(function () {
+        return filteredDealers.value.length > 0 && filteredDealers.value.every(function (d) { return selected.value.indexOf(d) !== -1; });
+      });
+      function toggleSelectAll() {
+        if (allVisibleSelected.value) {
+          selected.value = selected.value.filter(function (d) { return filteredDealers.value.indexOf(d) === -1; });
+        } else {
+          selected.value = Array.from(new Set(selected.value.concat(filteredDealers.value)));
+        }
+      }
+      function toggle(dealer) {
+        var i = selected.value.indexOf(dealer);
+        if (i === -1) selected.value.push(dealer); else selected.value.splice(i, 1);
+      }
+      // 2026-08:Reset 也要真的清空 table/tile 的经销商筛选,不只是清空
+      // 这个下拉自己内部的勾选状态
+      function reset() { selected.value = []; searchQuery.value = ''; emit('apply', []); }
+      return {
+        isMultiDealer: toRefs(props).isMultiDealer,
+        searchQuery: searchQuery, searchInputRef: searchInputRef, selected: selected,
+        filteredDealers: filteredDealers, allVisibleSelected: allVisibleSelected,
+        toggle: toggle, toggleSelectAll: toggleSelectAll, reset: reset
+      };
+    }
+  });
+
+  // ---------- OfferTableHeader (order 30) ----------
+  var SORT_ICON =
+    '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.3333 8L12.3933 7.06L8.66667 10.78V2.66667H7.33333V10.78L3.61333 7.05333L2.66667 8L8 13.3333L13.3333 8Z" fill="#757575"/></svg>';
+  var INFO_ICON =
+    '<svg width="20" height="20" viewBox="0 0 16.6667 16.6667" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M0 8.33333C0 12.9333 3.73333 16.6667 8.33333 16.6667C12.9333 16.6667 16.6667 12.9333 16.6667 8.33333C16.6667 3.73333 12.9333 0 8.33333 0C3.73333 0 0 3.73333 0 8.33333Z" fill="#2196F5"/><path fill-rule="evenodd" clip-rule="evenodd" d="M7.5 12.5H9.16667V7.5H7.5V12.5ZM7.5 5.83333H9.16667V4.16667H7.5V5.83333Z" fill="white"/></svg>';
+  var CLOSE_ICON =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#545454" stroke-width="1.7" stroke-linecap="round"/></svg>';
+  var OfferTableHeader = defineComponent({
+    name: 'OfferTableHeader',
+    components: { OfferTypeBadge: OfferTypeBadge },
+    props: { sortColumn: { type: String, default: null }, isMultiDealer: { type: Boolean, default: true } },
+    emits: ['sort'],
+    template:
+      '<div class="offer-table-header">' +
+      '<div class="offer-table-header__cell offer-table-header__cell--photo"></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--dealer">' +
+      '<div class="offer-table-header__title-row"><span class="offer-table-header__title">{{ isMultiDealer ? \'Dealer Name\' : \'Auction ID\' }}</span>' +
+      '<button v-if="isMultiDealer" type="button" class="offer-table-header__sort" @click="$emit(\'sort\', \'dealer-name\')" v-html="SORT_ICON"></button></div>' +
+      '<div class="offer-table-header__subtitle-row"><span class="offer-table-header__subtitle">{{ isMultiDealer ? \'Auction ID・Type\' : \'Type\' }}</span>' +
+      '<button ref="infoBtnRef" type="button" class="offer-table-header__info" @click.stop="showTypeGuide = !showTypeGuide" v-html="INFO_ICON"></button>' +
+      '<div v-if="showTypeGuide" ref="typeGuideRef" class="offer-table-header__guide">' +
+      '<div class="offer-table-header__guide-arrow"></div>' +
+      '<div class="offer-table-header__guide-head"><span class="offer-table-header__guide-title">Type</span>' +
+      '<button type="button" class="offer-table-header__guide-close" @click="showTypeGuide = false" v-html="CLOSE_ICON"></button></div>' +
+      '<div class="offer-table-header__guide-section"><OfferTypeBadge type="in-negotiation" label="In Negotiation" />' +
+      '<p class="offer-table-header__guide-desc">(6h limit) High bidder from the auction.</p>' +
+      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p></div>' +
+      '<div class="offer-table-header__guide-section"><OfferTypeBadge type="make-offer" label="Make Offer" />' +
+      '<p class="offer-table-header__guide-desc">(24h limit) Post-auction offer from any buyer.</p>' +
+      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or Decline only.</p></div>' +
+      '<div class="offer-table-header__guide-footer">' +
+      '<button type="button" class="offer-table-header__guide-btn offer-table-header__guide-btn--primary" @click="showTypeGuide = false">Got it</button></div>' +
+      '</div></div></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--vehicle">' +
+      '<span class="offer-table-header__title">Vehicle</span><span class="offer-table-header__subtitle">Mileage・VIN</span></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--time">' +
+      '<div class="offer-table-header__title-row"><span class="offer-table-header__title offer-table-header__title--two-line">Time<br>Remaining</span>' +
+      '<button type="button" class="offer-table-header__sort" @click="$emit(\'sort\', \'time-remaining\')" v-html="SORT_ICON"></button></div></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--estimate"><span class="offer-table-header__title">ACV Estimate</span></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--sent"><span class="offer-table-header__title">Sent</span></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--received"><span class="offer-table-header__title">Received</span></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--update"><span class="offer-table-header__title">Update</span></div>' +
+      '</div>',
+    setup: function (props) {
+      var refs = toRefs(props);
+      var showTypeGuide = ref(false);
+      var infoBtnRef = ref(null);
+      var typeGuideRef = ref(null);
+      function handleOutsideClick(event) {
+        if (!showTypeGuide.value) return;
+        if (infoBtnRef.value && infoBtnRef.value.contains(event.target)) return;
+        if (typeGuideRef.value && typeGuideRef.value.contains(event.target)) return;
+        showTypeGuide.value = false;
+      }
+      function handleEscapeKey(event) {
+        if (event.key === 'Escape') showTypeGuide.value = false;
+      }
+      onMounted(function () {
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscapeKey);
+      });
+      onBeforeUnmount(function () {
+        document.removeEventListener('mousedown', handleOutsideClick);
+        document.removeEventListener('keydown', handleEscapeKey);
+      });
+      return Object.assign({}, refs, {
+        SORT_ICON: SORT_ICON, INFO_ICON: INFO_ICON, CLOSE_ICON: CLOSE_ICON,
+        showTypeGuide: showTypeGuide, infoBtnRef: infoBtnRef, typeGuideRef: typeGuideRef
+      });
+    }
+  });
+
+  // ---------- OfferTableRow (order 31) ----------
+  var OfferTableRow = defineComponent({
+    name: 'OfferTableRow',
+    components: { StatusChip: StatusChip, OfferTypeBadge: OfferTypeBadge },
+    props: {
+      isMultiDealer: { type: Boolean, default: true },
+      photoUrl: { type: String, default: '' },
+      dealerName: { type: String, default: 'CarMax Boston' },
+      auctionId: { type: String, default: '264578' },
+      offerType: { type: String, default: 'in-negotiation' },
+      vehicleTitle: { type: String, default: '2018 Ford Somemodel' },
+      mileage: { type: String, default: '250,000 miles' },
+      vin: { type: String, default: '192211' },
+      timeRemaining: { type: String, default: '20h 45m' },
+      acvEstimate: { type: String, default: '$25,000' },
+      sentAmount: { type: String, default: '$26,000' },
+      receivedAmount: { type: String, default: '$7,000' },
+      statusNew: { type: Boolean, default: true },
+      statusReceived: { type: Boolean, default: true },
+      statusSent: { type: Boolean, default: false },
+      statusDeclined: { type: Boolean, default: false },
+      updateDate: { type: String, default: 'Today' }
+    },
+    template:
+      '<div class="offer-table-row">' +
+      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--dealer">' +
+      '<template v-if="isMultiDealer">' +
+      '<div class="offer-table-row__dealer-name">{{ dealerName }}</div>' +
+      '<div class="offer-table-row__dealer-sub">' +
+      '<span class="offer-table-row__dealer-id">{{ auctionId }}</span>' +
+      '<OfferTypeBadge v-if="offerType !== \'none\'" :type="offerType" :label="offerTypeLabel" />' +
+      '</div>' +
+      '</template>' +
+      '<template v-else>' +
+      '<div class="offer-table-row__dealer-name">{{ auctionId }}</div>' +
+      '<div v-if="offerType !== \'none\'" class="offer-table-row__dealer-sub">' +
+      '<OfferTypeBadge :type="offerType" :label="offerTypeLabel" />' +
+      '</div>' +
+      '</template>' +
+      '</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--vehicle">' +
+      '<div class="offer-table-row__vehicle-title">{{ vehicleTitle }}</div>' +
+      '<div class="offer-table-row__vehicle-sub"><span>{{ mileage }}</span><span>・</span><span class="offer-table-row__vin">{{ vin }}</span></div>' +
+      '</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--time">{{ timeRemaining }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--estimate">{{ acvEstimate }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--sent offer-table-row__cell--strong">{{ sentAmount }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--update">' +
+      '<div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">' +
+      '<StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />' +
+      '<StatusChip v-if="statusReceived" status="received" label="Received" />' +
+      '<StatusChip v-if="statusSent" status="sent" label="Sent" />' +
+      '<StatusChip v-if="statusDeclined" status="declined" label="Declined" />' +
+      '</div>' +
+      '<div class="offer-table-row__update-date">{{ updateDate }}</div>' +
+      '</div></div>',
+    setup: function (props) {
+      var offerTypeLabel = computed(function () {
+        return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
+      });
+      var refs = toRefs(props);
+      return Object.assign({}, refs, { offerTypeLabel: offerTypeLabel });
+    }
+  });
+
+  // ---------- Pagination (order 34) ----------
+  // 2026-08 重做:改用 Claude Design 项目里的 ACV Pagination 组件
+  // (components/09c-pagination.card.html),见 fragments/Pagination/notes.md
+  var PAGINATION_ROWS_OPTIONS = [10, 20, 50, 100];
+  var Pagination = defineComponent({
+    name: 'Pagination',
+    props: {
+      showViewingText: { type: Boolean, default: false },
+      viewingCount: { type: [String, Number], default: 6 },
+      totalCount: { type: [String, Number], default: 6 },
+      rowsPerPage: { type: [String, Number], default: 10 },
+      hasPrevPage: { type: Boolean, default: false },
+      hasNextPage: { type: Boolean, default: true }
+    },
+    emits: ['update:rowsPerPage', 'prev', 'next'],
+    template:
+      '<div ref="rootRef" class="pagination">' +
+      '<span v-if="showViewingText" class="pagination__viewing-text">Viewing {{ viewingCount }} out of {{ totalCount }} results</span>' +
+      '<span class="pagination__label">Rows per page</span>' +
+      '<div class="pagination__dropdown-wrap">' +
+      '<button type="button" class="pagination__dropdown-btn" :class="{ \'pagination__dropdown-btn--open\': dropdownOpen }" aria-haspopup="listbox" :aria-expanded="dropdownOpen ? \'true\' : \'false\'" @click="dropdownOpen = !dropdownOpen" @keydown.escape="dropdownOpen = false">' +
+      '<span class="pagination__dropdown-value">{{ rowsPerPage }}</span>' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '</button>' +
+      '<ul v-if="dropdownOpen" class="pagination__menu" role="listbox">' +
+      '<li v-for="option in rowsPerPageOptions" :key="option" role="option" :aria-selected="String(rowsPerPage) === String(option)" @click="selectRowsPerPage(option)">{{ option }}</li>' +
+      '</ul>' +
+      '</div>' +
+      '<span class="pagination__nav">' +
+      '<button type="button" class="pagination__arrow" :disabled="!hasPrevPage" aria-label="Previous page" @click="$emit(\'prev\')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14.5 5.5L8 12l6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '<button type="button" class="pagination__arrow" :disabled="!hasNextPage" aria-label="Next page" @click="$emit(\'next\')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9.5 5.5L16 12l-6.5 6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '</span>' +
+      '</div>',
+    setup: function (props, { emit }) {
+      var rootRef = ref(null);
+      var dropdownOpen = ref(false);
+      function selectRowsPerPage(option) { emit('update:rowsPerPage', option); dropdownOpen.value = false; }
+      function handleOutsideClick(event) {
+        if (dropdownOpen.value && rootRef.value && !rootRef.value.contains(event.target)) dropdownOpen.value = false;
+      }
+      function handleEscapeKey(event) { if (event.key === 'Escape') dropdownOpen.value = false; }
+      onMounted(function () {
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscapeKey);
+      });
+      onBeforeUnmount(function () {
+        document.removeEventListener('mousedown', handleOutsideClick);
+        document.removeEventListener('keydown', handleEscapeKey);
+      });
+      var refs = toRefs(props);
+      return Object.assign({}, refs, {
+        rootRef: rootRef, dropdownOpen: dropdownOpen,
+        rowsPerPageOptions: PAGINATION_ROWS_OPTIONS, selectRowsPerPage: selectRowsPerPage
+      });
+    }
+  });
+
+  // ---------- OfferCard (order 40, 卡片视图) ----------
+  var OfferCard = defineComponent({
+    name: 'OfferCard',
+    components: { StatusChip: StatusChip },
+    props: {
+      photoUrl: { type: String, default: '' },
+      offerType: { type: String, default: 'in-negotiation' },
+      dealerName: { type: String, default: 'CarMax Boston' },
+      vehicleTitle: { type: String, default: 'Year Make Model' },
+      mileage: { type: String, default: '250,000 miles' },
+      vin: { type: String, default: '192211' },
+      auctionId: { type: String, default: '452161' },
+      timeLeft: { type: String, default: '45m Left' },
+      statusNew: { type: Boolean, default: true },
+      statusReceived: { type: Boolean, default: true },
+      statusSent: { type: Boolean, default: false },
+      statusDeclined: { type: Boolean, default: false },
+      primaryMessage: { type: String, default: 'Seller countered $4,500' },
+      secondaryMessage: { type: String, default: 'You offered $3,800 · Today, 08:45 AM' },
+      buttonVersion: { type: String, default: 'v1' },
+      buttonCount: { type: [String, Number], default: 3 }
+    },
+    template:
+      '<div class="offer-card" :class="{ \'offer-card--v1\': buttonVersion === \'v1\', \'offer-card--v1-btn-1\': buttonVersion === \'v1\' && v1ButtonCount === 1, \'offer-card--v1-btn-2\': buttonVersion === \'v1\' && v1ButtonCount === 2, \'offer-card--v1-btn-3\': buttonVersion === \'v1\' && v1ButtonCount === 3 }">' +
+      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
+      '<div class="offer-card__image-badges">' +
+      '<span v-if="offerType !== \'none\'" class="offer-card__type-badge" :class="\'offer-card__type-badge--\' + offerType">{{ offerTypeLabel }}</span>' +
+      '<span v-if="dealerName" class="offer-card__lane-badge">{{ dealerName }}</span>' +
+      '</div></a>' +
+      '<div class="offer-card__info">' +
+      '<div class="offer-card__vehicle">' +
+      '<div class="offer-card__vehicle-title">{{ vehicleTitle }}</div>' +
+      '<div class="offer-card__vehicle-sub"><span>{{ mileage }}</span><span>・</span>' +
+      '<span class="offer-card__vin">VIN {{ vin }}' +
+      '<button type="button" class="offer-card__copy-btn" aria-label="Copy VIN" @click="copyVin">' +
+      '<svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M3.52941 9.6C3.20588 9.6 2.92902 9.4826 2.69882 9.2478C2.46824 9.0126 2.35294 8.73 2.35294 8.4V1.2C2.35294 0.87 2.46824 0.5874 2.69882 0.3522C2.92902 0.1174 3.20588 0 3.52941 0H8.82353C9.14706 0 9.42412 0.1174 9.65471 0.3522C9.8849 0.5874 10 0.87 10 1.2V8.4C10 8.73 9.8849 9.0126 9.65471 9.2478C9.42412 9.4826 9.14706 9.6 8.82353 9.6H3.52941ZM1.17647 12C0.852941 12 0.575882 11.8826 0.345294 11.6478C0.115098 11.4126 0 11.13 0 10.8V3C0 2.83 0.0564707 2.6874 0.169412 2.5722C0.281961 2.4574 0.421569 2.4 0.588235 2.4C0.754902 2.4 0.894706 2.4574 1.00765 2.5722C1.1202 2.6874 1.17647 2.83 1.17647 3V10.8H7.05882C7.22549 10.8 7.36529 10.8576 7.47824 10.9728C7.59078 11.0876 7.64706 11.23 7.64706 11.4C7.64706 11.57 7.59078 11.7124 7.47824 11.8272C7.36529 11.9424 7.22549 12 7.05882 12H1.17647Z" fill="#55575C"/></svg>' +
+      '</button></span></div>' +
+      '<div v-if="auctionId" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>' +
+      '</div>' +
+      '<div v-if="timeLeft || statusNew || statusReceived || statusSent || statusDeclined || primaryMessage" class="offer-card__flex-section">' +
+      '<div v-if="timeLeft || statusNew || statusReceived || statusSent || statusDeclined" class="offer-card__flex-row">' +
+      '<div v-if="timeLeft" class="offer-card__time-left">' +
+      '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 13.3333C9.41449 13.3333 10.771 12.7714 11.7712 11.7712C12.7714 10.771 13.3333 9.41449 13.3333 8C13.3333 6.58551 12.7714 5.22896 11.7712 4.22876C10.771 3.22857 9.41449 2.66667 8 2.66667C6.58551 2.66667 5.22896 3.22857 4.22876 4.22876C3.22857 5.22896 2.66667 6.58551 2.66667 8C2.66667 9.41449 3.22857 10.771 4.22876 11.7712C5.22896 12.7714 6.58551 13.3333 8 13.3333ZM8 1.33333C8.87548 1.33333 9.74239 1.50577 10.5512 1.8408C11.3601 2.17583 12.095 2.6669 12.714 3.28595C13.3331 3.90501 13.8242 4.63994 14.1592 5.44878C14.4942 6.25761 14.6667 7.12452 14.6667 8C14.6667 9.76811 13.9643 11.4638 12.714 12.714C11.4638 13.9643 9.76811 14.6667 8 14.6667C4.31333 14.6667 1.33333 11.6667 1.33333 8C1.33333 6.23189 2.03571 4.5362 3.28595 3.28595C4.5362 2.03571 6.23189 1.33333 8 1.33333ZM8.33333 4.66667V8.16667L11.3333 9.94667L10.8333 10.7667L7.33333 8.66667V4.66667H8.33333Z" fill="#CC433A"/></svg>' +
+      '{{ timeLeft }}</div>' +
+      '<div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-card__status-pills">' +
+      '<StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />' +
+      '<StatusChip v-if="statusReceived" status="received" label="Received" />' +
+      '<StatusChip v-if="statusSent" status="sent" label="Sent" />' +
+      '<StatusChip v-if="statusDeclined" status="declined" label="Declined" />' +
+      '</div></div>' +
+      '<template v-if="primaryMessage">' +
+      '<div class="offer-card__divider"></div>' +
+      '<div class="offer-card__message">' +
+      '<div class="offer-card__message-primary">{{ primaryMessage }}</div>' +
+      '<div v-if="secondaryMessage" class="offer-card__message-secondary">{{ secondaryMessage }}</div>' +
+      '</div></template>' +
+      '</div>' +
+      '<template v-if="buttonVersion === \'v2\'">' +
+      '<div class="offer-card__divider"></div>' +
+      '<div class="offer-card__v2-buttons">' +
+      '<button type="button" class="offer-card__hover-btn offer-card__hover-btn--primary">Primary Action</button>' +
+      '<button type="button" class="offer-card__hover-btn offer-card__hover-btn--secondary">Secondary</button>' +
+      '</div></template>' +
+      '</div>' +
+      '<div v-if="buttonVersion === \'v1\'" class="offer-card__hover-buttons">' +
+      '<button type="button" class="offer-card__hover-btn offer-card__hover-btn--primary">Manage Offer</button>' +
+      '<button v-if="v1ButtonCount === 3" type="button" class="offer-card__hover-btn offer-card__hover-btn--secondary">Secondary</button>' +
+      '<button v-if="v1ButtonCount >= 2" type="button" class="offer-card__hover-btn offer-card__hover-btn--tertiary">Tertiary</button>' +
+      '</div></div>',
+    setup: function (props) {
+      var offerTypeLabel = computed(function () {
+        return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
+      });
+      var v1ButtonCount = computed(function () {
+        return Number(props.buttonCount) || 3;
+      });
+      function copyVin() {
+        if (navigator.clipboard) { navigator.clipboard.writeText(props.vin).catch(function () {}); }
+      }
+      var refs = toRefs(props);
+      return Object.assign({}, refs, { offerTypeLabel: offerTypeLabel, v1ButtonCount: v1ButtonCount, copyVin: copyVin });
+    }
+  });
+
+  // ---------- OfferDashboard (order 90, 页面组装) ----------
+  var rowMocks = {
+    // 已核实的真实行数据(3 个)
+    rowWithNewAndReceived: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '264578', offerType: 'in-negotiation',
+      vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '20h 45m',
+      acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$7,000',
+      statusNew: true, statusReceived: true, updateDate: 'Today'
+    },
+    rowWithMakeOffer: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', auctionId: '876143', offerType: 'make-offer',
+      vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', timeRemaining: '20h 45m',
+      acvEstimate: '$5,000', sentAmount: '--', receivedAmount: '$4,000',
+      statusNew: false, statusReceived: true, updateDate: 'Today'
+    },
+    rowWithNoStatusChip: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/lexus-rx300.jpg', dealerName: 'Asbury Automotive Group', auctionId: '876413', offerType: 'in-negotiation',
+      vehicleTitle: '2001 Lexus RX300', mileage: '168,900 miles', vin: '552091', timeRemaining: '20h 45m',
+      acvEstimate: '$5,000', sentAmount: '--', receivedAmount: '$4,000',
+      statusNew: false, statusReceived: false, updateDate: 'Today'
+    },
+    // 下面 9 个是 2026-08 第二批照片新增的自编 mockup 演示数据,不是
+    // Figma 核实数据(细节见 fragments/OfferTableRow/notes.md)
+    rowLexusES: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/lexus-es350-fsport.jpg', dealerName: 'Apple Chevrolet', auctionId: '730214', offerType: 'make-offer',
+      vehicleTitle: '2022 Lexus ES 350 F Sport', mileage: '14,120 miles', vin: '730214', timeRemaining: '6h 10m',
+      acvEstimate: '$32,000', sentAmount: '$33,500', receivedAmount: '$9,500',
+      statusNew: true, statusReceived: false, updateDate: 'Today'
+    },
+    rowHyundaiKona: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/hyundai-kona.jpg', dealerName: 'Classic Honda', auctionId: '118845', offerType: 'in-negotiation',
+      vehicleTitle: '2022 Hyundai Kona', mileage: '9,870 miles', vin: '118845', timeRemaining: '3h 55m',
+      acvEstimate: '$19,500', sentAmount: '--', receivedAmount: '$2,000',
+      statusNew: true, statusReceived: true, updateDate: 'Today'
+    },
+    rowJeepWrangler: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/jeep-wrangler-unlimited.jpg', dealerName: 'DriveTime A', auctionId: '902377', offerType: 'make-offer',
+      vehicleTitle: '2021 Jeep Wrangler Unlimited', mileage: '41,300 miles', vin: '902377', timeRemaining: '1d 4h',
+      acvEstimate: '$28,000', sentAmount: '$29,000', receivedAmount: '--',
+      statusNew: false, statusReceived: true, updateDate: 'Today'
+    },
+    rowFiat500: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/fiat-500-sport.jpg', dealerName: 'DriveTime Mall', auctionId: '264190', offerType: 'none',
+      vehicleTitle: '2015 Fiat 500 Sport', mileage: '76,540 miles', vin: '264190', timeRemaining: '12h 30m',
+      acvEstimate: '$6,200', sentAmount: '--', receivedAmount: '--',
+      // 2026-08 按你的要求:单独演示 Declined 状态,不对应真实业务记录
+      statusNew: false, statusReceived: false, statusSent: false, statusDeclined: true, updateDate: 'Today'
+    },
+    rowToyotaMatrix: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/toyota-matrix.jpg', dealerName: 'DriveTime Denver', auctionId: '348852', offerType: 'in-negotiation',
+      vehicleTitle: '2010 Toyota Matrix', mileage: '121,760 miles', vin: '348852', timeRemaining: '2d 2h',
+      acvEstimate: '$4,800', sentAmount: '$5,100', receivedAmount: '$1,200',
+      statusNew: true, statusReceived: false, updateDate: 'Today'
+    },
+    rowFordEscapeTitanium: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/ford-escape-titanium-red.jpg', dealerName: 'Baxter Auto Mall', auctionId: '615729', offerType: 'make-offer',
+      vehicleTitle: '2014 Ford Escape Titanium', mileage: '88,410 miles', vin: '615729', timeRemaining: '9h 15m',
+      acvEstimate: '$11,000', sentAmount: '--', receivedAmount: '$3,400',
+      statusNew: false, statusReceived: true, updateDate: 'Today'
+    },
+    rowChevyMalibu: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/chevrolet-malibu-rs.jpg', dealerName: 'CarMax Boston', auctionId: '471306', offerType: 'in-negotiation',
+      vehicleTitle: '2020 Chevrolet Malibu RS', mileage: '45,980 miles', vin: '471306', timeRemaining: '5h 40m',
+      acvEstimate: '$16,300', sentAmount: '$17,000', receivedAmount: '$5,000',
+      // 2026-08 按你的要求:单独演示 New/Received/Sent 三个状态同时出现
+      statusNew: true, statusReceived: true, statusSent: true, statusDeclined: false, updateDate: 'Today'
+    },
+    rowDodgeCharger: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/dodge-charger-sxt.jpg', dealerName: 'Asbury Automotive Group', auctionId: '837465', offerType: 'make-offer',
+      vehicleTitle: '2016 Dodge Charger SXT', mileage: '96,200 miles', vin: '837465', timeRemaining: '18h 5m',
+      acvEstimate: '$12,500', sentAmount: '--', receivedAmount: '$2,900',
+      statusNew: false, statusReceived: false, updateDate: 'Today'
+    },
+    rowFordEscapeSE: {
+      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/ford-escape-se-blue.jpg', dealerName: 'Classic Honda', auctionId: '259017', offerType: 'in-negotiation',
+      vehicleTitle: '2014 Ford Escape SE', mileage: '103,650 miles', vin: '259017', timeRemaining: '14h 20m',
+      acvEstimate: '$8,700', sentAmount: '$9,000', receivedAmount: '--',
+      statusNew: true, statusReceived: false, updateDate: 'Today'
+    },
+    // 单经销商演示专用,不算在 12 行 mockup 列表里
+    rowSingleDealer: {
+      isMultiDealer: false, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '264578', offerType: 'in-negotiation',
+      vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '20h 45m',
+      acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$7,000',
+      statusNew: true, statusReceived: true, updateDate: 'Today'
+    }
+  };
+  var VIEW_TOGGLE_LIST_ICON =
+    '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M15.7105 9.75H2.28947C1.85526 9.75 1.5 10.0875 1.5 10.5V15C1.5 15.4125 1.85526 15.75 2.28947 15.75H15.7105C16.1447 15.75 16.5 15.4125 16.5 15V10.5C16.5 10.0875 16.1447 9.75 15.7105 9.75ZM15.7105 2.25H2.28947C1.85526 2.25 1.5 2.5875 1.5 3V7.5C1.5 7.9125 1.85526 8.25 2.28947 8.25H15.7105C16.1447 8.25 16.5 7.9125 16.5 7.5V3C16.5 2.5875 16.1447 2.25 15.7105 2.25Z" fill="#1C1D1F"/></svg>';
+  var VIEW_TOGGLE_GRID_ICON =
+    '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M6.5 9.83301C7.41667 9.83301 8.16699 10.5833 8.16699 11.5V14.833C8.16699 15.7497 7.41667 16.5 6.5 16.5H3.16699C2.25033 16.5 1.5 15.7497 1.5 14.833V11.5C1.5 10.5833 2.25033 9.83301 3.16699 9.83301H6.5ZM14.834 9.83301C15.7504 9.83327 16.5 10.5835 16.5 11.5V14.833C16.5 15.7495 15.7504 16.4997 14.834 16.5H11.5C10.5834 16.4999 9.83398 15.7496 9.83398 14.833V11.5C9.83398 10.5834 10.5834 9.8331 11.5 9.83301H14.834ZM6.5 1.5C7.41667 1.5 8.16699 2.25033 8.16699 3.16699V6.5C8.16699 7.41667 7.41667 8.16699 6.5 8.16699H3.16699C2.25033 8.16699 1.5 7.41667 1.5 6.5V3.16699C1.5 2.25033 2.25033 1.5 3.16699 1.5H6.5ZM14.834 1.5C15.7504 1.50027 16.5 2.25049 16.5 3.16699V6.5C16.5 7.4165 15.7504 8.16673 14.834 8.16699H11.5C10.5834 8.1669 9.83398 7.41661 9.83398 6.5V3.16699C9.83398 2.25038 10.5834 1.50009 11.5 1.5H14.834Z" fill="#1C1D1F"/></svg>';
+
+  var OfferDashboard = defineComponent({
+    name: 'OfferDashboard',
+    components: {
+      AppHeader: AppHeader, Breadcrumb: Breadcrumb, SidebarNav: SidebarNav, OfferTabs: OfferTabs,
+      SearchInput: SearchInput, FilterChipGroup: FilterChipGroup, OfferTableHeader: OfferTableHeader,
+      OfferTableRow: OfferTableRow, Pagination: Pagination, DealershipFilterDropdown: DealershipFilterDropdown,
+      OfferCard: OfferCard
+    },
+    props: {
+      isMultiDealer: { type: Boolean, default: true },
+      buyingVehicleCount: { type: Number, default: 6 },
+      sellingVehicleCount: { type: Number, default: 6 }
+    },
+    template:
+      '<div class="offer-dashboard">' +
+      '<AppHeader v-bind="header" :has-new-offers="hasAnyNewDeal" />' +
+      '<div class="offer-dashboard__breadcrumb-row"><Breadcrumb crumbs="My ACV,Offers" /></div>' +
+      '<div class="offer-dashboard__body">' +
+      '<SidebarNav v-bind="sidebar" />' +
+      '<main class="offer-dashboard__content">' +
+      '<OfferTabs v-bind="tabs" @select="handleTabSelect" />' +
+      '<div class="offer-dashboard__toolbar">' +
+      '<SearchInput v-model="searchValue" />' +
+      '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" class="offer-dashboard__filters" :is-multi-dealer="isMultiDealer" ' +
+      ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" ' +
+      '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event" @clear-dealer="dealerFilter = []" />' +
+      '</div>' +
+      '<div v-if="dealershipDropdownOpen" ref="dealerPopoverWrapRef" class="offer-dashboard__dealer-popover-anchor" :style="dealerPopoverStyle">' +
+      '<DealershipFilterDropdown :is-multi-dealer="isMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
+      '</div>' +
+      '<div class="offer-dashboard__table-card">' +
+      '<div class="offer-dashboard__table-top">' +
+      '<div v-if="viewMode === \'tile\'" class="offer-dashboard__viewing-text">Viewing {{ visibleRows.length }} results</div>' +
+      '<template v-else><div class="offer-dashboard__table-top-spacer"><span class="offer-dashboard__private-lane"><svg class="offer-dashboard__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div><Pagination v-bind="topPagination" /></template>' +
+      '<div class="offer-dashboard__view-toggle">' +
+      '<button type="button" class="offer-dashboard__view-toggle-btn" :class="{ \'offer-dashboard__view-toggle-btn--active\': viewMode === \'tile\' }" aria-label="Grid view" @click="viewMode = \'tile\'" v-html="gridIcon"></button>' +
+      '<button type="button" class="offer-dashboard__view-toggle-btn" :class="{ \'offer-dashboard__view-toggle-btn--active\': viewMode === \'table\' }" aria-label="List view" @click="viewMode = \'table\'" v-html="listIcon"></button>' +
+      '</div></div>' +
+      '<template v-if="viewMode === \'table\'">' +
+      '<OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
+      '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" />' +
+      '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
+      '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="visibleRows.length" :total-count="visibleRows.length" /></div>' +
+      '</template>' +
+      '<template v-else>' +
+      '<div class="offer-dashboard__card-grid" :style="cardGridStyle">' +
+      '<OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" button-version="v1" :button-count="1" />' +
+      '</div>' +
+      '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
+      '</template>' +
+      '</div></main></div></div>',
+    setup: function (props) {
+      var header = { initialSelectedIndex: 1, companyName: 'Magnacar Auto Corp', userName: 'Emily Huang', avatarLetter: 'A' };
+      var searchValue = ref('');
+      var sortColumn = ref(null);
+      var dealershipDropdownOpen = ref(false);
+      var viewMode = ref('table');
+      var topPagination = { showViewingText: false, hasPrevPage: false, hasNextPage: true };
+
+      // 2026-08 按你的要求,参照真实原型(My-ACV--Dealer-filter-main)
+      // 把 DealershipFilterDropdown 改成真正悬浮在 "Dealership" 按钮
+      // 下方的 position:fixed 浮层
+      var filterChipGroupRef = ref(null);
+      var dealerPopoverWrapRef = ref(null);
+      var dealerPopoverStyle = ref({});
+
+      function updateDealerPopoverPosition() {
+        var inst = filterChipGroupRef.value;
+        var btn = inst && inst.dealershipBtnRef;
+        if (!btn) return;
+        var rect = btn.getBoundingClientRect();
+        // 原型是右对齐展开,但我们的按钮在筛选行最左边,右对齐会超出
+        // 视口左边界,改成左对齐展开
+        dealerPopoverStyle.value = {
+          position: 'fixed',
+          top: (rect.bottom + 6) + 'px',
+          left: rect.left + 'px',
+          zIndex: 10000
+        };
+      }
+
+      function toggleDealershipDropdown() {
+        dealershipDropdownOpen.value = !dealershipDropdownOpen.value;
+        if (dealershipDropdownOpen.value) nextTick(updateDealerPopoverPosition);
+      }
+
+      function handleOutsideClick(event) {
+        if (!dealershipDropdownOpen.value) return;
+        var inst = filterChipGroupRef.value;
+        var btn = inst && inst.dealershipBtnRef;
+        var insidePopover = dealerPopoverWrapRef.value && dealerPopoverWrapRef.value.contains(event.target);
+        var insideBtn = btn && btn.contains(event.target);
+        if (!insidePopover && !insideBtn) dealershipDropdownOpen.value = false;
+      }
+      function handleEscapeKey(event) {
+        if (event.key === 'Escape') dealershipDropdownOpen.value = false;
+      }
+      function handleRepositionOnScroll() {
+        if (dealershipDropdownOpen.value) updateDealerPopoverPosition();
+      }
+      onMounted(function () {
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscapeKey);
+        window.addEventListener('scroll', handleRepositionOnScroll, { passive: true, capture: true });
+        window.addEventListener('resize', handleRepositionOnScroll);
+      });
+      onBeforeUnmount(function () {
+        document.removeEventListener('mousedown', handleOutsideClick);
+        document.removeEventListener('keydown', handleEscapeKey);
+        window.removeEventListener('scroll', handleRepositionOnScroll, { capture: true });
+        window.removeEventListener('resize', handleRepositionOnScroll);
+      });
+      // 2026-08:扩充成 12 行 —— 前 3 个是已核实的真实行数据,后 9 个是
+      // 你给了 10 张新真实照片后新增的自编 mockup 演示数据,细节见
+      // fragments/OfferTableRow/notes.md 的"2026-08 第二批照片"章节
+      var rows = [
+        rowMocks.rowWithNewAndReceived, rowMocks.rowWithMakeOffer, rowMocks.rowWithNoStatusChip,
+        rowMocks.rowLexusES, rowMocks.rowHyundaiKona, rowMocks.rowJeepWrangler, rowMocks.rowFiat500,
+        rowMocks.rowToyotaMatrix, rowMocks.rowFordEscapeTitanium, rowMocks.rowChevyMalibu,
+        rowMocks.rowDodgeCharger, rowMocks.rowFordEscapeSE
+      ];
+      // 2026-08 按你的要求"总共12个vehicle,buying默认显示6个selling6个":
+      // 前6条归Buying/后6条归Selling,纯粹是数量对半切分,不对应任何
+      // Figma数据或真实业务规则
+      var buyingRows = rows.slice(0, 6);
+      var sellingRows = rows.slice(6, 12);
+      var activeMainTab = ref('buying');
+      function handleTabSelect(tab) { activeMainTab.value = tab; }
+      var activeTabRows = computed(function () {
+        return activeMainTab.value === 'selling' ? sellingRows : buyingRows;
+      });
+      // 2026-08 按你的要求:Buying/Selling 各自用自己的数量,不再共用一个
+      // vehicleCount。按当前 tab 挑对应那一个,夹在[1,activeTabRows.length]
+      // 之间(现在每个tab最多6条)。filter chip 的数量(见下面 filters)
+      // 也是照着这份数据算的,不受 chipFilter/dealerFilter 影响。
+      var activeVehicleCount = computed(function () {
+        return activeMainTab.value === 'selling' ? props.sellingVehicleCount : props.buyingVehicleCount;
+      });
+      var rowsLimited = computed(function () {
+        return activeTabRows.value.slice(0, Math.max(1, Math.min(activeTabRows.value.length, activeVehicleCount.value)));
+      });
+      // 2026-08 按你的要求更正:tab红点数字/sidebar Offers badge 不是
+      // "总共几条",是"还有几个New(未处理)的",统计全部6条不受
+      // buyingVehicleCount/sellingVehicleCount 演示用截取数量影响
+      var buyingNewCount = computed(function () { return buyingRows.filter(function (r) { return r.statusNew; }).length; });
+      var sellingNewCount = computed(function () { return sellingRows.filter(function (r) { return r.statusNew; }).length; });
+      var hasAnyNewDeal = computed(function () { return buyingNewCount.value + sellingNewCount.value > 0; });
+      var sidebar = computed(function () { return { activeItem: 'offers', offersCount: buyingNewCount.value + sellingNewCount.value }; });
+      var tabs = computed(function () { return { activeTab: activeMainTab.value, buyingCount: buyingNewCount.value, sellingCount: sellingNewCount.value }; });
+      // [2026-08 按你的要求更正] 之前故意不跟着 dealerFilter/chipFilter
+      // 联动,一直显示 rowsLimited 全量算出来的数字。你指出选了dealership
+      // 后数量应该跟着筛选结果变——改成基于 dealerFilteredRows(只按
+      // dealerFilter narrow,不按 chipFilter 自己 narrow,避免"选中某个
+      // chip后其它chip数字全变0"的死循环)重新算数量。
+      var dealerFilteredRows = computed(function () {
+        return rowsLimited.value.filter(function (r) {
+          return !dealerFilter.value.length || dealerFilter.value.indexOf(r.dealerName) !== -1;
+        });
+      });
+      var filters = computed(function () {
+        return {
+          negotiationCount: dealerFilteredRows.value.filter(function (r) { return r.offerType === 'in-negotiation'; }).length,
+          makeOfferCount: dealerFilteredRows.value.filter(function (r) { return r.offerType === 'make-offer'; }).length,
+          newCount: dealerFilteredRows.value.filter(function (r) { return r.statusNew; }).length,
+          receivedCount: dealerFilteredRows.value.filter(function (r) { return r.statusReceived; }).length,
+          sentCount: dealerFilteredRows.value.filter(function (r) { return r.sentAmount && r.sentAmount !== '--'; }).length,
+          declinedCount: 0
+        };
+      });
+      // 2026-08 按你的要求:点 filter chip / 应用 Dealership 下拉之后,
+      // table/tile 要真的只显示匹配的行
+      var dealerFilter = ref([]);
+      var chipFilter = ref({ negotiation: false, makeOffer: false, single: null });
+      // 已应用的经销商筛选摘要文字,照抄原型 dealerChipText() 的规则
+      var dealerChipText = computed(function () {
+        var sorted = dealerFilter.value.slice().sort(function (a, b) { return a.localeCompare(b); });
+        return sorted.length > 1 ? (sorted[0] + ', +' + (sorted.length - 1)) : sorted[0];
+      });
+      function handleApplyDealerFilter(selectedDealers) {
+        dealerFilter.value = selectedDealers;
+        dealershipDropdownOpen.value = false;
+      }
+      function handleClearFilters() {
+        dealershipDropdownOpen.value = false;
+        dealerFilter.value = [];
+        chipFilter.value = { negotiation: false, makeOffer: false, single: null };
+      }
+      function matchesFilters(row) {
+        if (dealerFilter.value.length && dealerFilter.value.indexOf(row.dealerName) === -1) return false;
+        var negotiation = chipFilter.value.negotiation, makeOffer = chipFilter.value.makeOffer, single = chipFilter.value.single;
+        if (negotiation || makeOffer) {
+          var matchesOfferType = (negotiation && row.offerType === 'in-negotiation') || (makeOffer && row.offerType === 'make-offer');
+          if (!matchesOfferType) return false;
+        }
+        if (single === 'new' && !row.statusNew) return false;
+        if (single === 'received' && !row.statusReceived) return false;
+        if (single === 'sent' && !(row.sentAmount && row.sentAmount !== '--')) return false;
+        if (single === 'declined') return false;
+        return true;
+      }
+      // 真正渲染到 table/tile 的行:在 rowsLimited 基础上再按当前选中的
+      // filter chip / dealership 筛一遍
+      var visibleRows = computed(function () { return rowsLimited.value.filter(matchesFilters); });
+      // 每一行的 isMultiDealer 都跟着 dashboard 这个开关走,而不是各自
+      // mock 里写死的值,这样切换 control 才能真的看到表格跟着变
+      var rowsWithDealerMode = computed(function () {
+        return visibleRows.value.map(function (row) {
+          return Object.assign({}, row, { isMultiDealer: props.isMultiDealer });
+        });
+      });
+      // tile 视图卡片:直接复用已核实的表格行数据,字段名对得上的原样映射。
+      // [2026-08 按你的要求(对照节点7485:41392核实每张卡片都有message)
+      // 恢复] 不再显式传空字符串覆盖 primaryMessage/secondaryMessage,让
+      // 每张卡片都走 OfferCard 自己的默认文案(同一个节点核实过的真实
+      // 文案),不然全部卡片一条 message 都不显示,和 Figma 不一致
+      var rowsAsCards = computed(function () {
+        return visibleRows.value.map(function (row) {
+          return {
+            photoUrl: row.photoUrl, dealerName: row.dealerName, offerType: row.offerType,
+            vehicleTitle: row.vehicleTitle, mileage: row.mileage, vin: row.vin, auctionId: row.auctionId,
+            timeLeft: row.timeRemaining ? row.timeRemaining + ' Left' : '',
+            statusNew: row.statusNew, statusReceived: row.statusReceived,
+            statusSent: row.statusSent, statusDeclined: row.statusDeclined
+          };
+        });
+      });
+      // 2026-08 按你的要求:卡片数量不多(≤2张)时不撑满整行,固定最多
+      // 370px,右边留白是刻意的。数量足够多时还是走原来的1fr不设上限。
+      var cardGridStyle = computed(function () {
+        return rowsAsCards.value.length <= 2
+          ? { gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 370px))' }
+          : null;
+      });
+      return {
+        isMultiDealer: toRefs(props).isMultiDealer,
+        header: header, sidebar: sidebar, tabs: tabs, filters: filters, searchValue: searchValue,
+        sortColumn: sortColumn, dealershipDropdownOpen: dealershipDropdownOpen, viewMode: viewMode,
+        topPagination: topPagination, rows: rows, visibleRows: visibleRows, rowsWithDealerMode: rowsWithDealerMode,
+        rowsAsCards: rowsAsCards, cardGridStyle: cardGridStyle, listIcon: VIEW_TOGGLE_LIST_ICON, gridIcon: VIEW_TOGGLE_GRID_ICON,
+        activeMainTab: activeMainTab, handleTabSelect: handleTabSelect,
+        dealerFilter: dealerFilter, chipFilter: chipFilter, dealerChipText: dealerChipText,
+        handleApplyDealerFilter: handleApplyDealerFilter, handleClearFilters: handleClearFilters,
+        filterChipGroupRef: filterChipGroupRef, dealerPopoverWrapRef: dealerPopoverWrapRef,
+        dealerPopoverStyle: dealerPopoverStyle, toggleDealershipDropdown: toggleDealershipDropdown,
+        hasAnyNewDeal: hasAnyNewDeal
+      };
+    }
+  });
+
+  // ============================================================
+  // Registry: 分组 / 顺序 / controls / mock 示例 / notes.md 原文
+  // ============================================================
+  var GROUPS = [
+    { title: '页面外壳 (Page Shell)', items: [
+      { key: 'AppHeader', order: 10, name: 'App Header' },
+      { key: 'Breadcrumb', order: 11, name: 'Breadcrumb' },
+      { key: 'SidebarNav', order: 12, name: 'Sidebar Nav' }
+    ]},
+    { title: '导航与筛选 (Nav & Filters)', items: [
+      { key: 'OfferTabs', order: 20, name: 'Offer Tabs' },
+      { key: 'SearchInput', order: 21, name: 'Search Input' },
+      { key: 'FilterChipGroup', order: 22, name: 'Filter Chip Group' },
+      { key: 'DealershipFilterDropdown', order: 23, name: 'Dealership Filter Dropdown' }
+    ]},
+    { title: '数据表格 (Offers Table)', items: [
+      { key: 'OfferTableHeader', order: 30, name: 'Offer Table Header' },
+      { key: 'OfferTableRow', order: 31, name: 'Offer Table Row' },
+      { key: 'StatusChip', order: 32, name: 'Status Chip' },
+      { key: 'OfferTypeBadge', order: 33, name: 'Offer Type Badge' },
+      { key: 'Pagination', order: 34, name: 'Pagination' }
+    ]},
+    { title: '卡片视图 (Card View)', items: [
+      { key: 'OfferCard', order: 40, name: 'Offer Card' }
+    ]},
+    { title: '页面组装 (Page Assembly)', items: [
+      { key: 'OfferDashboard', order: 90, name: 'Offer Dashboard（整页组装）' }
+    ]}
+  ];
+
+  var REGISTRY = {
+    AppHeader: {
+      name: 'App Header', group: '页面外壳 (Page Shell)', order: 10, def: AppHeader,
+      controls: {
+        initialSelectedIndex: { type: 'select', label: 'Initial selected nav item', options: [
+          { value: '0', label: 'Marketplace' }, { value: '1', label: 'My ACV' }, { value: '2', label: 'Market Report' },
+          { value: '3', label: 'ACV Capital' }, { value: '4', label: 'ACV Transport' }
+        ], default: '0' },
+        companyName: { type: 'text', label: 'Company name', default: 'Magnacar Auto Corp' },
+        userName: { type: 'text', label: 'User name', default: 'Emily Huang' },
+        avatarLetter: { type: 'text', label: 'Avatar letter', default: 'A' },
+        rewardsLabel: { type: 'text', label: 'Rewards badge text', default: 'Dealer Rewards Program' },
+        hasNewOffers: { type: 'boolean', label: '"My ACV" 旁边显示 New 红点', default: false }
+      },
+      mocks: {
+        defaultExample: { initialSelectedIndex: 0, companyName: 'Magnacar Auto Corp', userName: 'Emily Huang', avatarLetter: 'A', rewardsLabel: 'Dealer Rewards Program' },
+        longCompanyExample: { initialSelectedIndex: 4, companyName: 'Sunset Motors LLC', userName: 'Jamie Rivera', avatarLetter: 'J', rewardsLabel: 'Dealer Rewards Program' }
+      },
+      notes: '这个组件已经从 Figma 版本整体替换成 Claude Design 项目 "ACV Auctions Design System"（projectId 1294432b-f5f9-488f-9691-d01499283248）里的 components/08-app-bar-navigation-web.card.html，通过 DesignSync 工具的 get_file 直接读取真实源码（不是 Figma get_design_context），logo 也换成了该项目 assets/logo.svg 的原始内容。这是用户直接指定的替换，不是我自己选的数据源。\n\n替换前的旧版本（Figma 节点 6837:16087）用的是"浅橙背景 pill + 圆点"表示选中态，这个新版本用的是"文字变橙 + 底部 2px 实色下划线"，两者是不同设计，不是同一版本的两次核实结果。\n\n已核实（直接来自源文件的 CSS/HTML/JS）：容器高 58px 白底描边 #D1D3D6；nav tab 默认色 #55575C / hover #FAFAFA / 按下 #F1F1F1；选中态色 #F26522 + 底部 2px 下划线；"New" 徽标背景 #FF5449 文字 #F7F7F8；More 菜单白底圆角4px三层阴影；Rewards 展开态描边/文字 #F26522，收缩态 36x36 圆形描边 #D44D0C 带 tooltip；通知/汉堡 40x40 圆形 hover #F5F5F5 按下 #E0E0E0 focus 描边 #7B61FF；头像 32x32 圆形背景 #F26522。\n\n响应式收缩逻辑（照搬源文件 layout() 算法）：量导航区和右侧区的间距，≤15px 时依次：1. Rewards pill 收缩成图标 2. 用户姓名+公司收起只剩头像 3. 至少 2 个 nav 项挪进 More 4. 继续逐个挪，直到间距 >15px 或只剩 1 项。容器宽度 <980px 时额外应用 md 断点。组件本身用 resize:horizontal，可以直接拖右下角测试。\n\n按你的要求做的改动：删除了源文件原本的 "Nav 6" / "Nav 7" 占位项，只保留前 5 个真实命名的项。源文件明确写了 "no focus treatment is defined" 给 nav item，所以没有为 tab 加 focus-visible 样式，这是源文件本来的设计缺口。\n\n待你确认：1. Rewards 图标颜色继承 currentColor 为 #F26522，没有额外专属色号。2. "More" 菜单只有容器足够窄（比如拖到 500px 左右）才会出现，默认宽度下 5 个 nav 项通常都能显示。'
+    },
+    Breadcrumb: {
+      name: 'Breadcrumb', group: '页面外壳 (Page Shell)', order: 11, def: Breadcrumb,
+      controls: { crumbs: { type: 'text', label: 'Breadcrumb labels, comma-separated', default: 'My ACV,Offers' } },
+      mocks: { defaultExample: { crumbs: 'My ACV,Offers' }, threeLevelExample: { crumbs: 'My ACV,Offers,Negotiation' } },
+      notes: '已核实（hidden=false，节点 6837:16095/16096）：文案 "My ACV"/"Offers" 均为 Roboto Regular 16px/24 letter-spacing 0.15px 色 #545454；文案间距 14px；分隔符图标 11x11 填色 #DCDFE8，已下载真实 SVG。两级文案样式完全一致，没有发现"当前页"高亮之类的差异化处理。\n\n待你确认：1. Figma 里只找到两级面包屑的实例，组件按通用"任意长度列表"实现，但三级及以上时样式是否仍然一致没有对应实例可以核实。2. 没有找到移动端（375宽）下的对应实例，响应式行为待确认。'
+    },
+    SidebarNav: {
+      name: 'Sidebar Nav', group: '页面外壳 (Page Shell)', order: 12, def: SidebarNav,
+      controls: {
+        activeItem: { type: 'select', label: 'Active item', options: [
+          { value: 'my-inventory', label: 'My Inventory' }, { value: 'saved-auctions', label: 'Saved Auctions' },
+          { value: 'request-inspection', label: 'Request Inspection' }, { value: 'active', label: 'Active' },
+          { value: 'pending-proxy', label: 'Pending Proxy' }, { value: 'negotiation', label: 'Negotiation' },
+          { value: 'offers', label: 'Offers' }, { value: 'billing', label: 'Billing' }, { value: 'won', label: 'Won' },
+          { value: 'sold', label: 'Sold' }, { value: 'titles-hub', label: 'Titles Hub' }, { value: 'performance', label: 'Performance' }
+        ], default: 'offers' },
+        offersCount: { type: 'text', label: 'Offers count badge', default: '5' }
+      },
+      mocks: { defaultExample: { activeItem: 'offers', offersCount: 5 } },
+      notes: '2026-08 更新：去掉了展开/收起交互。之前版本给 Active / Negotiation / Billing 做了点击展开/收起，展开内容来自 4 个 hidden=true 的 Figma "Sub menu" 节点，内容互相对不上、归属不明确。你已经明确说"这个不用管，sidebar nav 不需要 interaction"，所以现在直接去掉了这个功能——箭头图标本身（已核实、hidden=false）还保留展示，只是纯装饰，不响应点击，组件也不再暴露任何展开态的 props/controls。\n\n已核实（hidden=false）：容器背景 #FFFFFF flex-col gap 4px 宽 260px；普通项文字 Roboto Regular 16px/24 letter-spacing 0.15px 色 #545454；选中项(Offers)背景 #EBF6FF 文字 Roboto Medium 色 #004E7D；数量徽标背景 #FF5449 文字 #F7F7F8；展开箭头图标本身（纯展示）24x24 填色 #545454；分隔线高 39px 内部线色 #DCDFE8。\n\n之前查到的 4 个 hidden 节点内容对应关系已经不再相关，不需要确认。'
+    },
+    OfferTabs: {
+      name: 'Offer Tabs', group: '导航与筛选 (Nav & Filters)', order: 20, def: OfferTabs,
+      controls: {
+        activeTab: { type: 'select', label: 'Selected tab', options: [{ value: 'buying', label: 'Buying' }, { value: 'selling', label: 'Selling' }], default: 'buying' },
+        buyingCount: { type: 'text', label: 'Buying count', default: '3' },
+        sellingCount: { type: 'text', label: 'Selling count', default: '2' }
+      },
+      mocks: { defaultExample: { activeTab: 'buying', buyingCount: 3, sellingCount: 2 }, sellingSelectedExample: { activeTab: 'selling', buyingCount: 3, sellingCount: 2 } },
+      notes: '已核实（hidden=false，来自节点 6903:23020）：Buying(选中) 背景 #FEF9F6 文字 #F26522 Medium；Buying 数量徽标背景 #F26522 文字白；Buying 指示条高2px色#F26522；Selling(未选中) 无背景文字#757575；Selling 数量徽标背景#D1D3D6 文字#55575C；底部通用分隔线#DCDFE8。\n\n待你确认：1. "Selling 选中态" —— Figma 里没有找到"Selling 选中"的可见实例，组件目前直接照搬 Buying 选中态的数值（背景/文字/指示条颜色对调），没有独立核实过。2. 发现两个 hidden=true 的备用 tab 变体（带图标的旧设计），当前组件没有采用。'
+    },
+    SearchInput: {
+      name: 'Search Input', group: '导航与筛选 (Nav & Filters)', order: 21, def: SearchInput,
+      controls: {
+        modelValue: { type: 'text', label: 'Input value', default: '' },
+        placeholder: { type: 'text', label: 'Placeholder text', default: 'Search by year, make, model, VIN' }
+      },
+      mocks: { emptyExample: { modelValue: '', placeholder: 'Search by year, make, model, VIN' }, filledExample: { modelValue: '2018 Ford', placeholder: 'Search by year, make, model, VIN' } },
+      notes: '已核实（hidden=false，节点 6837:16150）：背景 #F7F7F8 顶部圆角4px；占位文案 Roboto Regular 16px/24 letter-spacing 0.5px 色 rgba(0,0,0,0.67)；搜索图标20x20已下载真实SVG填色黑色。\n\n待你确认：1. 只找到空态的实例，聚焦态/已输入文字态/清除按钮等交互状态没有找到对应实例。2. 输入框高度56px是根据 Figma 节点72px高减去16px底部空白得出的，这16px空白具体留给什么没有查到对应内容。'
+    },
+    FilterChipGroup: {
+      name: 'Filter Chip Group', group: '导航与筛选 (Nav & Filters)', order: 22, def: FilterChipGroup,
+      controls: {
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
+        dealershipOpen: { type: 'boolean', label: 'Dealership dropdown expanded', default: false },
+        negotiationCount: { type: 'text', label: 'In negotiation count', default: '2' },
+        makeOfferCount: { type: 'text', label: 'Make Offer count', default: '1' },
+        newCount: { type: 'text', label: 'New count, 0 = disabled gray state', default: '1' },
+        receivedCount: { type: 'text', label: 'Received count, 0 = disabled gray state', default: '1' },
+        sentCount: { type: 'text', label: 'Sent count, 0 = disabled gray state', default: '0' },
+        declinedCount: { type: 'text', label: 'Declined count, 0 = disabled gray state', default: '0' }
+      },
+      mocks: {
+        defaultExample: { isMultiDealer: true, dealershipOpen: false, negotiationCount: 2, makeOfferCount: 1, newCount: 1, receivedCount: 1, sentCount: 0, declinedCount: 0 },
+        allActiveExample: { isMultiDealer: true, dealershipOpen: false, negotiationCount: 4, makeOfferCount: 2, newCount: 3, receivedCount: 5, sentCount: 2, declinedCount: 1 },
+        singleDealerExample: { isMultiDealer: false, dealershipOpen: false, negotiationCount: 2, makeOfferCount: 1, newCount: 1, receivedCount: 1, sentCount: 0, declinedCount: 0 }
+      },
+      notes: '已核实（hidden=false，节点 6847:49392）：启用态 chip 白底边框/文字#212121 14px/21 letter-spacing .25px 圆角8 高32；disabled(数量0)态边框/文字#8D9199 背景仍白色；Dealership下拉箭头18x18；chip间竖分隔线高28色#0E0E0F；"Clear"按钮色#004E7D（节点唯一返回的链接色token）。\n\nFigma 原生设计标注（data-interaction-annotations，不是编的）：多选 Dealership/In Negotiation/Make Offer；单选(互斥) New/Received/Sent/Declined；默认态都不选时显示ALL。\n\n2026-08补充确认（选中态）：用户给了新参照节点6847:49600（hidden=false，"In negotiation"选中态实例）：背景#F0F8FF、边框1px#0061A5、文字#0061A5，圆角仍8px不变。这个实例只核实了In negotiation这一个chip，其余chip的选中态是按"同一组件家族应该同色"统一套用的推断，不是逐个核实过。之前"加粗边框"占位已替换。chip现在可以直接点击切换选中态（In negotiation/Make Offer独立多选，New/Received/Sent/Declined互斥单选，来自Figma标注）。\n\n2026-08新增isMultiDealer：对照单经销商参照帧6837:16538核实，单经销商账号下筛选行里根本没有Dealership chip（不是隐藏，节点树里就没有），已加isMultiDealer prop控制。\n\n待你确认：1. "Clear"按钮颜色是推断的，不是直接标注的hex。2. 之前误把hidden=true的旧版本chip当成候选数据，已排除。'
+    },
+    DealershipFilterDropdown: {
+      name: 'Dealership Filter Dropdown', group: '导航与筛选 (Nav & Filters)', order: 23, def: DealershipFilterDropdown,
+      controls: {
+        isMultiDealer: { type: 'boolean', label: 'Only shown when account has multiple dealerships', default: true },
+        preSelected: { type: 'text', label: 'Pre-selected dealerships, comma-separated', default: '' }
+      },
+      mocks: {
+        defaultExample: { isMultiDealer: true, preSelected: '' },
+        preSelectedExample: { isMultiDealer: true, preSelected: 'Apple Chevrolet,CarMax Boston' },
+        singleDealerExample: { isMultiDealer: false, preSelected: '' }
+      },
+      notes: '2026-08 重大更新：改参照真实原型重做（不再以Figma静态稿为准）。你提供了本地文件 My-ACV--Dealer-filter-main/index.html + style.css，明确说只参照它的V1 web版本dealership filter部分，其他大部分是老旧的错误内容。这是一个真实可运行的原型（#dealer-popover + 配套JS交互逻辑），比之前只能从Figma静态稿推断的内容更权威，整个组件对照这份原型重做了一遍。\n\n数值更正：1. "{n} selected"文字色改成#757575（之前Figma推断是#0E0E0F）。2. 搜索框占位文案改成"Search by dealer name or ID..."（之前是"Search dealer name"）。3. checkbox改成18x18 CSS方框圆角3+::after画勾（选中态背景/边框#004E7D，和Figma核实的颜色一致，只是画法从SVG资源变成纯CSS）。4. 经销商名单改成原型的10个真实名字，无重复：Asbury Automotive Group / Apple Chevrolet / Baxter Auto Mall / CarMax Boston / Classic Honda / DriveTime A / DriveTime Mall / DriveTime Denver / Enterprise Car Sales / Hendrick Automotive——之前"Apple Chevrolet"重复两次一直标着"疑似设计稿错误待确认"，这次由原型证实确实是Figma稿遗留错误，这条待确认已关闭。5. Apply Filter渐变改成原型CSS里的确切值linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%)，不再是自己拼的近似值。6. "Select all"现在会在"Select all"⇄"Deselect all"之间切换，只针对当前搜索可见的经销商生效（照抄原型updateCount()逻辑）。7. 弹出方式从"紧贴筛选行往下顶开布局"改成参照原型做的真正position:fixed悬浮浮层，定位/开合/点击外部关闭/Escape关闭/滚动跟随的逻辑在OfferDashboard里实现（因为需要拿到触发按钮的DOM节点），细节见该组件notes.md。\n\n待你确认：1. 弹出对齐方向从原型的"右对齐"改成了"左对齐"（我们的按钮在筛选行最左边，右对齐会超出视口），这个调整是否符合预期。2. 摘要小chip的关闭按钮范围收窄成"只清经销商筛选"，原型自己的clearFilter()是全部清空的合并逻辑，这个收窄是否符合预期。3. 原型的其余部分（V2/V3/mobile等）按你的要求完全没有参照，之后需要用到要再单独说。'
+    },
+    OfferTableHeader: {
+      name: 'Offer Table Header', group: '数据表格 (Offers Table)', order: 30, def: OfferTableHeader,
+      controls: {
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
+        sortColumn: { type: 'select', label: 'Column being sorted', options: [{ value: '', label: '(none)' }, { value: 'dealer-name', label: 'Dealer Name' }, { value: 'time-remaining', label: 'Time Remaining' }], default: '' }
+      },
+      mocks: {
+        defaultExample: { isMultiDealer: true, sortColumn: null },
+        sortedByDealerExample: { isMultiDealer: true, sortColumn: 'dealer-name' },
+        singleDealerExample: { isMultiDealer: false, sortColumn: null }
+      },
+      notes: '已核实（hidden=false，节点 6837:16185）：图片占位78px无文字；Dealer Name(200px) 标题Roboto Medium 14px/20 letter-spacing .1px 色#212121，副标题"Auction ID・Type" 12px/18 letter-spacing .4px 色#757575，信息图标20x20蓝底#2196F5，排序图标16x16色#757575；Vehicle(197px)标题+"Mileage・VIN"副标题；Time Remaining(124px)两行标题带排序图标；ACV Estimate/Sent/Received/Update均单行标题无排序图标。统一：高50px背景#FAFAFA底部描边#DCDFE8。\n\n2026-08新增isMultiDealer：对照单经销商参照帧6837:16538核实，单经销商账号下第二列标题变成"Auction ID"、副标题变成"Type"，且没有排序图标（节点树里根本没有这个子节点，不是隐藏），已加isMultiDealer prop控制。\n\n待你确认：1. 只有Dealer Name和Time Remaining两列有排序图标实例，其余列没有对应实例所以没加。2. 表头左侧发现两个hidden=true的备用列（旧版本），没有采用。'
+    },
+    OfferTableRow: {
+      name: 'Offer Table Row', group: '数据表格 (Offers Table)', order: 31, def: OfferTableRow,
+      controls: {
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
+        photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl, empty = no photo)', default: '' },
+        dealerName: { type: 'text', label: 'Dealer name', default: 'CarMax Boston' },
+        auctionId: { type: 'text', label: 'Auction ID', default: '264578' },
+        offerType: { type: 'select', label: 'Badge below Dealer column', options: [{ value: 'none', label: '(hidden)' }, { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }], default: 'in-negotiation' },
+        vehicleTitle: { type: 'text', label: 'Vehicle title', default: '2018 Ford Somemodel' },
+        mileage: { type: 'text', label: 'Mileage', default: '250,000 miles' },
+        vin: { type: 'text', label: 'VIN', default: '192211' },
+        timeRemaining: { type: 'text', label: 'Time remaining', default: '20h 45m' },
+        acvEstimate: { type: 'text', label: 'ACV Estimate', default: '$25,000' },
+        sentAmount: { type: 'text', label: 'Sent amount, can be "--"', default: '$26,000' },
+        receivedAmount: { type: 'text', label: 'Received amount, can be "--"', default: '$7,000' },
+        statusNew: { type: 'boolean', label: 'Show New in Update column', default: true },
+        statusReceived: { type: 'boolean', label: 'Show Received in Update column', default: true },
+        updateDate: { type: 'text', label: 'Update column date', default: 'Today' }
+      },
+      mocks: rowMocks,
+      notes: '已核实（hidden=false，对照了三条真实行实例）：照片80px(图64x64圆角未从Figma拿到具体像素，占位8px)；Dealer Name(200px)名称14px/21letter-spacing.25px色#0E0E0F，编号12px/18letter-spacing.4px色#55575C，编号和下方的OfferTypeBadge在同一行水平并排（gap 8px，2026-08根据新Figma帧7403:4653更正，之前误做成竖排三行）；Vehicle(195px居中)；Sent/Received出现真实值"--"表示未发起；Update列StatusChip堆叠(0~2个)+日期。\n\n重要发现：做这个组件时对照第二行真实数据，发现"Make Offer"徽标在真实使用场景里被包在一个带边框(#8D9199)的父容器里，更正了 OfferTypeBadge 之前"无边框"的结论。\n\n待你确认：1. 车辆缩略图圆角具体数值未从Figma拿到。2. 三行示例的照片资源看起来是同一张图的两层重叠导出，组件只用了一个photoUrl。3. 只见过Update列0/1/2个StatusChip叠加的情况，"+N溢出"逻辑的触发阈值未验证。\n\n2026-08新增isMultiDealer：对照单经销商参照帧6837:16538核实，单经销商账号下第二列不显示dealerName，改用auctionId做主标题（用原dealer-name的字号字色），OfferTypeBadge单独贴左，auctionId不重复出现。'
+    },
+    StatusChip: {
+      name: 'Status Chip', group: '数据表格 (Offers Table)', order: 32, def: StatusChip,
+      controls: {
+        status: { type: 'select', label: 'Status', options: [{ value: 'new', label: 'New' }, { value: 'received', label: 'Received' }, { value: 'sent', label: 'Sent' }, { value: 'declined', label: 'Declined' }, { value: 'overflow', label: '+N (overflow badge)' }], default: 'new' },
+        label: { type: 'text', label: 'Label text', default: 'New' },
+        showIcon: { type: 'boolean', label: 'Show icon', default: true }
+      },
+      mocks: { newExample: { status: 'new', label: 'New', showIcon: true }, receivedExample: { status: 'received', label: 'Received', showIcon: true }, sentExample: { status: 'sent', label: 'Sent', showIcon: false }, declinedExample: { status: 'declined', label: 'Declined', showIcon: false }, overflowExample: { status: 'overflow', label: '+1', showIcon: false } },
+      notes: '这个组件是表格 Update 列的更新事件徽标（New/Received），不是筛选行的 FilterChipGroup——两者视觉相似但完全不同，用途和出现位置都不同。\n\n一次重要更正（2026-08）：早期版本把"Counter Received"/"Counter Sent"也列为已确认状态，依据是"能查到真实颜色数值"，但这两个node在Figma里都是hidden=true的变体，代表设计师保留的旧版本，不能等同于当前有效设计。结论：只有hidden=false的实例才算已核实。\n\n已核实（hidden=false）：New 背景#F4FFF6文字#006C4C圆角4px有icon；Received背景#F0F8FF文字#0061A5圆角4px无icon；Sent背景#E0E0E0文字#212121圆角3px无icon（2026-08新增，对照node7487:62990核实，和溢出徽标颜色一样但是巧合，不是同一状态）；Declined背景#FFEFBF文字#402D00圆角4px无icon（2026-08新增，对照node7487:62983核实）；溢出徽标"+N"背景#E0E0E0文字#212121圆角3px无icon。\n\n2026-08 你给了Frame 630266091（node 7487:62998）核实New/Received/Sent/Declined四个chip对应筛选行四个filter chip的状态，顺带发现New/Received的圆角实际是4px，不是之前统一用的3px，已经改过来；Sent单独是3px（Figma里这几个chip圆角本身没统一，不是我写错），溢出徽标保持3px不变。\n\n已移除/降级为未确认：Counter Received/Counter Sent（之前误列为已确认，现移除）；In Negotiation（实际属于OfferTypeBadge范畴，已移除避免重复冲突）；Outbid依旧未找到任何实例，Declined已在上面确认。'
+    },
+    OfferTypeBadge: {
+      name: 'Offer Type Badge', group: '数据表格 (Offers Table)', order: 33, def: OfferTypeBadge,
+      controls: {
+        type: { type: 'select', label: 'Type', options: [{ value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }], default: 'in-negotiation' },
+        label: { type: 'text', label: 'Label text', default: 'In Negotiation' }
+      },
+      mocks: { inNegotiationExample: { type: 'in-negotiation', label: 'In Negotiation' }, makeOfferExample: { type: 'make-offer', label: 'Make Offer' } },
+      notes: '和 StatusChip 的区别：StatusChip出现在表格Update列，表示"更新事件"，同一格可叠加多个；OfferTypeBadge出现在Dealer Name/Auction ID列下方，表示当前阶段/类型，每行只有一个，不叠加。\n\n已核实（均为hidden=false）：In Negotiation 背景#1C1D1F白字白色1px描边；Make Offer 芯片本身背景#FFFFFF文字#0E0E0F，边框来自包裹框#8D9199（见下方更正记录）。\n\n更正记录一：早期版本Make Offer是根据截图目测猜的占位样式（白底+虚线边框+#212121文字），之后用真实实例替换。\n\n更正记录二（做OfferTableRow时发现）：上一次更正只单独查询了芯片本身节点，得出"没有边框"结论。做OfferTableRow时连着完整表格行核实第二行数据，发现该芯片在真实使用场景里被包在父节点"status pills"包裹框里，这个包裹框本身带边框1px色#8D9199圆角3px。也就是说"没有边框"是错的——单独查询子节点会漏掉父节点上加的边框，现已更正。这也提醒了一个通用教训：核实chip/badge样式时不能只看它自己的节点，还要看真实使用场景里的父节点有没有额外叠加样式。\n\n复核记录（用户提出圆角/居中问题后）：重新核实了6837:16706和6837:16269/6837:16275，两处圆角都是rounded-[3px]，和代码里的3px一致，没有需要改的圆角数值；但漏了justify-center，已补上justify-content:center和box-sizing:border-box。如果这样之后圆角看起来还是不对，需要实际渲染截图才能继续排查。\n\n2026-08 用户直接指定覆盖：你发截图说圆角看不出来，直接要求"圆角4"，已改成border-radius:4px，不再是Figma核实的3px——这是你的明确指示，不是查到了新的Figma数值。StatusChip目前还是3px，没有跟着改。'
+    },
+    Pagination: {
+      name: 'Pagination', group: '数据表格 (Offers Table)', order: 34, def: Pagination,
+      controls: {
+        showViewingText: { type: 'boolean', label: 'Show "Viewing X out of Y results"', default: false },
+        viewingCount: { type: 'text', label: 'Current visible count', default: '6' },
+        totalCount: { type: 'text', label: 'Total count', default: '6' },
+        rowsPerPage: { type: 'select', label: 'Rows per page', options: [{ value: '10', label: '10' }, { value: '20', label: '20' }, { value: '50', label: '50' }, { value: '100', label: '100' }], default: '10' },
+        hasPrevPage: { type: 'boolean', label: 'Previous page enabled', default: false },
+        hasNextPage: { type: 'boolean', label: 'Next page enabled', default: true }
+      },
+      mocks: {
+        topExample: { showViewingText: false, rowsPerPage: '10', hasPrevPage: false, hasNextPage: true },
+        bottomExample: { showViewingText: true, viewingCount: 6, totalCount: 6, rowsPerPage: '10', hasPrevPage: false, hasNextPage: true }
+      },
+      notes: '2026-08 重大更新：下拉/箭头改用 Claude Design 项目里的 ACV Pagination 组件（components/09c-pagination.card.html），通过 DesignSync（claude_design MCP）读取，替换掉之前基于 Figma 静态稿 + 原生<select>拼出来的版本。\n\n主要变化：1. "Rows per page"字号行高改成14px/20px（去掉letter-spacing）。2. 下拉改成真正的自定义菜单（点开/点选项收起/点外部收起/Escape收起），不再是原生<select>——菜单白底边框#DCDFE8圆角(仅下2角)4px阴影0 4px 10px rgba(0,0,0,.12)，选中项背景#1A73E8文字白色，hover背景#F0F1F4，下拉箭头换成描边风格chevron。3. 打开/聚焦态新增box-shadow: 0 0 0 3px #CFE3F5。4. 上一页/下一页图标换成描边风格角括号，新增hover(圆形#F0F1F4)和focus-visible(2px #0061A5圆形描边)交互态。5. Rows per page选项还是10/20/50/100，没有变化。6. 组件自带白底+padding 12px 16px+圆角4px，作为独立卡片样式。\n\n2026-08 你指出要按之前的样子补回来：源文件的range文案格式是"{start}-{end} of {total}"（比如"1-10 of 35"），一度整个换成了这个格式，但你说"Viewing X out of Y results"这个文案还是需要的，已经改回原文案+原样式（14px/21 letter-spacing.25px色#212121），showRange/currentPage这些新加的prop已经撤掉，恢复成showViewingText/viewingCount/totalCount。\n\n待你确认：1. showViewingText这个"顶部不显示、底部显示"的开关是延续之前项目的既有做法。2. 组件自带的白底padding套进OfferDashboard后如果和周围padding叠加显得空隙过大，可能需要调整外层容器padding。3. 中间页时两个箭头样式，组件卡片本身只给了两个静态示例，没有专门演示"中间页"状态。'
+    },
+    OfferCard: {
+      name: 'Offer Card', group: '卡片视图 (Card View)', order: 40, def: OfferCard,
+      controls: {
+        photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl, empty = gray placeholder)', default: '' },
+        offerType: { type: 'select', label: 'Offer type badge (offerType)', options: [
+          { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }, { value: 'none', label: 'None' }
+        ], default: 'in-negotiation' },
+        dealerName: { type: 'text', label: 'Dealer / lane badge (dealerName)', default: 'CarMax Boston' },
+        vehicleTitle: { type: 'text', label: 'Vehicle title (vehicleTitle)', default: 'Year Make Model' },
+        mileage: { type: 'text', label: 'Mileage (mileage)', default: '250,000 miles' },
+        vin: { type: 'text', label: 'VIN (vin)', default: '192211' },
+        auctionId: { type: 'text', label: 'Auction ID (auctionId)', default: '452161' },
+        timeLeft: { type: 'text', label: 'Time left (timeLeft, empty = hide)', default: '45m Left' },
+        statusNew: { type: 'boolean', label: 'Show "New" status chip (statusNew)', default: true },
+        statusReceived: { type: 'boolean', label: 'Show "Received" status chip (statusReceived)', default: true },
+        statusSent: { type: 'boolean', label: 'Show "Sent" status chip (statusSent)', default: false },
+        statusDeclined: { type: 'boolean', label: 'Show "Declined" status chip (statusDeclined)', default: false },
+        primaryMessage: { type: 'text', label: 'Primary message (primaryMessage, empty = hide message block)', default: 'Seller countered $4,500' },
+        secondaryMessage: { type: 'text', label: 'Secondary message (secondaryMessage)', default: 'You offered $3,800 · Today, 08:45 AM' },
+        // 2026-08 按你的要求新增:卡片按钮 V1/V2 切换,对照节点
+        // 7498:68345(V1)/7499:69479(V2)核实
+        buttonVersion: { type: 'select', label: 'Card buttons version (buttonVersion)', options: [
+          { value: 'none', label: 'None' }, { value: 'v1', label: 'V1 (hover to reveal, 3 buttons)' }, { value: 'v2', label: 'V2 (always visible, 2 buttons)' }
+        ], default: 'v1' },
+        // 2026-08 按你的要求新增,对照节点 7501:69741 核实:V1 下按钮数量
+        // 1/2/3,只在 buttonVersion 是 v1 时才有效果
+        buttonCount: { type: 'select', label: 'V1 button count (buttonCount, only affects V1)', options: [
+          { value: '1', label: '1 (Primary only)' }, { value: '2', label: '2 (Primary + Tertiary)' }, { value: '3', label: '3 (Primary + Secondary + Tertiary)' }
+        ], default: '3' }
+      },
+      mocks: {
+        inNegotiationExample: { offerType: 'in-negotiation', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', statusNew: true, statusReceived: true, primaryMessage: 'Seller countered $4,500', secondaryMessage: 'You offered $3,800 · Today, 08:45 AM' },
+        makeOfferExample: { offerType: 'make-offer', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '45m Left', statusNew: false, statusReceived: true, primaryMessage: 'Seller countered $4,500', secondaryMessage: 'You offered $3,800 · Today, 08:45 AM' },
+        vehicleOnlyExample: { offerType: 'none', dealerName: 'CarMax Boston', vehicleTitle: 'Year Make Model', mileage: '250,000 miles', vin: '192211', auctionId: '452161', timeLeft: '', statusNew: false, statusReceived: false, primaryMessage: '', secondaryMessage: '' }
+      },
+      notes: '这是 tile version（Figma node 7432:68669）里的卡片，对应 ACV 通用 Auction Card 结构（acv-auction-cards 技能）：图片区（带经销商/lane徽标 + 状态徽标叠加）+ Vehicle Detail区（标题/里程・VIN/Auction ID，字段顺序按技能要求保留）+ Flexible区（倒计时+New/Received StatusChip+分隔线+一句话消息）。之后会有不同scenario复用这个组件传不同数据，所以除了标题/里程/VIN/Auction ID之外的字段都做成可选（不传/传空字符串就不渲染）。\n\n已核实（节点7432:69394，hidden=false）：卡片容器白底边框#E8E9EB圆角12px；图片区高210px；图片左下角状态徽标——In Negotiation背景#1C1D1F白字圆角8px无边框（注意和表格版OfferTypeBadge不一样，表格版是圆角3px带白色描边，这里是两套独立核实的数值，没有强行合并）；Make Offer（核实自7441:5248/5254）外层描边1px#8D9199圆角3px内层白底，和表格版完全一致；经销商/lane徽标背景rgba(0,0,0,.4)+blur(.75px)白字圆角8px。\n\nVehicle Detail区：标题16px/24 Medium色#0E0E0F；里程・VIN+复制图标（真实下载的SVG，点击复制VIN到剪贴板）14px/21色#55575C；Auction ID同色号。Flexible区：Clock图标(真实下载)+倒计时文字14px/20 Medium色#CC433A；New/Received直接复用已核实的StatusChip颜色；分隔线#EBEBEB；消息块主/副文案14px。\n\n待确认：1. vehicleTitle示例文案字面就是"Year Make Model"，看起来像设计师没替换的占位文案，不是编的假数据，原样保留。2. 图片区右上角的操作图标列（watchlist/hide/note/more共4个，节点7432:69398）hidden=true，没有实现。3. 倒计时/状态chip/消息块是否所有场景卡片都会出现，只看到这一个例子，已做成可选，等后续scenario数据确认。'
+    },
+    OfferDashboard: {
+      name: 'Offer Dashboard（整页组装）', group: '页面组装 (Page Assembly)', order: 90, def: OfferDashboard,
+      controls: {
+        reset: { type: 'button', label: 'Reset dashboard' },
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
+        buyingVehicleCount: { type: 'number', label: 'Vehicles shown on Buying (buyingVehicleCount, 1-6)', min: 1, max: 6, step: 1, default: 6 },
+        sellingVehicleCount: { type: 'number', label: 'Vehicles shown on Selling (sellingVehicleCount, 1-6)', min: 1, max: 6, step: 1, default: 6 },
+        // 2026-08 按你的要求新增:只在 Offer Dashboard 才出现的 screensize
+        // 滑块,模拟任意屏幕宽度看响应式效果,不用真的去拖浏览器窗口或者
+        // 切全屏。这个不是传给组件的真实 prop(OfferDashboard 没有叫
+        // screenWidth 的 prop),Harness 单独处理成 .pg-stage__resize-frame
+        // 的宽度,渲染前会从要 v-bind 给组件的 props 里过滤掉,不会变成
+        // 组件根元素上一个奇怪的 DOM attribute
+        screenWidth: { type: 'range', label: 'Screen width (screenWidth, px)', min: 768, max: 2560, step: 10, default: 1422, uiOnly: true }
+      },
+      mocks: {
+        defaultExample: { isMultiDealer: true, buyingVehicleCount: 6, sellingVehicleCount: 6 },
+        singleDealerExample: { isMultiDealer: false, buyingVehicleCount: 6, sellingVehicleCount: 6 },
+        fewVehiclesExample: { isMultiDealer: true, buyingVehicleCount: 3, sellingVehicleCount: 3 }
+      },
+      notes: '这是整页的组装，不是任务清单里 order 10-34 要求的独立"模具"组件，是把前面这些已经核实过的 fragment（AppHeader/Breadcrumb/SidebarNav/OfferTabs/SearchInput/FilterChipGroup/OfferTableHeader/OfferTableRow/StatusChip/OfferTypeBadge/Pagination）按 Figma 主 "Offers" 页面的真实布局拼在一起，方便先看整体效果。\n\n2026-08 新增 vehicleCount（数字输入，1~12）：你要求"需要有一个显示多少vehicle的control"，加了这个 control 控制 table/tile 实际显示 12 条 mock 行里的前几条（`rowsLimited = rows.slice(0, vehicleCount)`），不是真实分页。SidebarNav 的 "Offers" 数量、OfferTabs 的 Buying 数量、FilterChipGroup 各 chip 的数量全部跟着 rowsLimited 动态变化（不受下面的 filter chip/Dealership 筛选影响，见下一段）。这是纯 UI 演示用途，不代表真实业务里"车辆数量"和这些字段有这样的计算关系。\n\n2026-08 按你的要求：点 filter chip / Dealership 下拉要真的过滤 table/tile 内容，不只是自己变色。FilterChipGroup 新增 filter-change 事件把选中状态 emit 出来存进 chipFilter；DealershipFilterDropdown 的 Apply/Reset 都会 emit apply（Reset emit 空数组），存进 dealerFilter，重新打开下拉时用 pre-selected 把当前状态带回去。真正渲染的 visibleRows 在 rowsLimited 基础上再套一层 matchesFilters：Dealership 是 AND；In negotiation/Make Offer 是 OR（两个都能选，命中任一个 offerType 就算数，这是 Figma 标注"多选"的自然结果）；New/Received/Sent 互斥单选对应行上的字段；Declined 目前没有任何行数据能匹配，选中后必然是空列表（是正确结果不是漏做）。筛选结果为空时会显示 "No vehicles match the current filters." 提示，不是空白一片。FilterChipGroup 自己 chip 上的数量故意没有跟着这个筛选结果联动。\n\n2026-08 按你的要求新增了两个 controls：1. Reset dashboard（按钮型控件，在面板最上方）——点击会让这个组件重新挂载一次，回到默认状态（Dealership 下拉收起、排序清空，子组件自己维护的状态比如搜索框文字/筛选 chip 选中态也一起重置）。2. isMultiDealer（布尔开关）——对照单经销商参照帧6837:16538核实后，现在统一透传给三处：FilterChipGroup（不显示Dealership chip）、OfferTableHeader（第二列标题变Auction ID、无排序）、每一行OfferTableRow（第二列主标题直接显示Auction ID，不显示Dealer Name）。点击"Dealership"chip仍会展开DealershipFilterDropdown（order 23），但单经销商模式下这颗chip本身已经不显示。[2026-08 已解决，见下一段] DealershipFilterDropdown 展开后的布局之前是紧贴筛选行下方往下排，现在已经改成参照真实原型做的真正悬浮浮层。\n\n2026-08 按你的要求，参照真实原型（本地文件 My-ACV--Dealer-filter-main/index.html，你说只看它的 V1 web 版本 dealership filter 部分，其他都是老旧内容）重做了 Dealership 弹层 + 交互：FilterChipGroup 用 ref="filterChipGroupRef" 暴露出 Dealership 按钮的真实 DOM 节点，这边用 getBoundingClientRect() 算出 dealerPopoverStyle（position:fixed + top/left）让浮层真正悬浮在按钮下方（对齐方向从原型的右对齐改成了左对齐，因为我们的按钮在筛选行最左边，右对齐会超出视口）。点击浮层外部（mousedown）、按 Escape 都会关闭，滚动/resize 时如果还开着会重新定位——这三个全局监听照抄原型的对应逻辑。应用后会在筛选行下面出现一个 .offer-dashboard__dealer-chip 摘要（浅蓝底描边，照抄原型 .dfc-chip），文字是"按字母排序第一个+逗号+N"，点击×只清空经销商筛选，不牵连其他 filter chip。DealershipFilterDropdown 组件本身也换了经销商名单（原型给的10个真实名字，之前 Figma 稿"Apple Chevrolet"重复两次已确认是设计稿遗留错误）、checkbox 画法（CSS方框+::after画勾，不再是SVG资源）、"Select all"⇄"Deselect all"切换、Apply Filter渐变（linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%)，原型CSS里的确切值），细节见该组件自己的notes.md。\n\n布局本身待你确认：1. Sidebar 和右侧内容区之间要不要一条竖向分隔线——Figma metadata 里没有看到对应的 divider 节点，没有加。2. 整页空白区域的背景色没有单独核实过，用了白色。3. 每个子组件各自的"待确认"项没有在这里重复列出，请分别切到各自的条目查看 Notes。\n\n2026-08 新增 tile version（对照 node 7432:68669/7432:69394）：内部加了 viewMode（\'table\'|\'tile\'，纯UI状态，默认table，不是外部prop）。搜索筛选那一行在两种视图下完全不变（Figma里表格版6837:16129和卡片版7432:68713共享同一个搜索筛选区节点，不是我猜的），只是下面表格/卡片网格部分切换。tile模式下按node 7432:70555核实的样子改成"Viewing N results"文字，卡片网格3列gap16px（来自两张卡片x坐标差363.33/16px反推），**没有**底部Pagination——tile版Figma帧本身就没有这个区域。视图切换的两个图标按钮（真实核实自node 7432:70565）本来只在tile版Figma帧里见过，为了让用户能在两个视图间来回切换，同样的按钮也放进了表格视图的顶部工具条——这一步是为了交互闭环做的合理推断，没有单独核实过表格视图顶部本来就有这个控件，待确认。rowsAsCards把已核实的表格行数据原样映射进OfferCard，primaryMessage/secondaryMessage现有mock没有真实数据不编造，直接留空。\n\n2026-08 按你的要求：去掉筛选chip下面的横线+重新核实整页垂直间距。对照新节点7448:9826（hidden=false，App Bar到表格的完整一页）重新量了从上到下每一段的真实间距：App Bar→Breadcrumb 24px、Breadcrumb→Tabs 14px、Tabs→搜索框 24px、搜索框→筛选chip行 16px、筛选chip行→Private Lane/Pagination行 20px纯留白（之前是16px+一条border-top分割线，这条线在Figma里根本不存在，已删掉改成margin-top:20px）、Private Lane/Pagination行→表头 16px（通过.offer-dashboard__table-top的padding-bottom实现，不是额外的空div）。已用getBoundingClientRect()实测浏览器渲染结果逐项核对，六个数值全部吻合，横线确认已消失。'
+    }
+  };
+
+  // ============================================================
+  // Harness App
+  // ============================================================
+  var Harness = defineComponent({
+    setup: function () {
+      var selectedKey = ref('AppHeader');
+      var controlValues = reactive({});
+      var current = computed(function () { return REGISTRY[selectedKey.value]; });
+      var sidebarOpen = ref(true);
+      var controlsOpen = ref(true);
+      var fullscreenOpen = ref(false);
+      // 2026-08 按你的反馈撤掉了上一版的 CSS zoom 整体放大方案——你说得对,
+      // 这不是"responsive",只是把固定宽度内容硬放大,不应该这么做,已经
+      // 删掉。
+      var controlsOpenBeforeFullscreen = true;
+      // 每次点 "Reset" 型按钮控件就 +1,绑在 <component :key> 上强制重新
+      // 挂载,让组件内部自己维护的状态(搜索框文字、筛选选中态等)也一起
+      // 回到初始值,不只是重置外部传入的 props。
+      var stageKey = ref(0);
+
+      function resetControls(entry) {
+        Object.keys(controlValues).forEach(function (k) { delete controlValues[k]; });
+        Object.entries(entry.controls || {}).forEach(function (pair) {
+          if (pair[1].type !== 'button') controlValues[pair[0]] = pair[1].default;
+        });
+      }
+      watch(current, function (entry) { resetControls(entry); }, { immediate: true });
+
+      function applyMock(mockObj) { Object.assign(controlValues, mockObj); }
+      function selectComponent(key) { selectedKey.value = key; }
+      function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value; }
+      function toggleControls() { controlsOpen.value = !controlsOpen.value; }
+      var stageRef = ref(null);
+      var screenWidthBeforeFullscreen = null;
+      function toggleFullscreen() {
+        fullscreenOpen.value = !fullscreenOpen.value;
+        if (fullscreenOpen.value) {
+          // 2026-08 按你的要求:进全屏时 controls 默认收起(隐藏),用
+          // 右边那条 rail-toggle 箭头可以随时点开("slide out"),退出全屏
+          // 再恢复成你进全屏前的开合状态,不强行覆盖你平时编辑时的习惯
+          controlsOpenBeforeFullscreen = controlsOpen.value;
+          controlsOpen.value = false;
+          // 2026-08 新增 screenWidth 滑块后:全屏刚点开的一瞬间,应该还是
+          // 像之前那样直接铺满整块屏幕(不是停在滑块默认的1422px不动,
+          // 那样宽屏下反而会看到空白/需要横向滚动)。这里等 pg-shell 的
+          // fullscreen class/class 触发的布局变化都应用完(nextTick)之后,
+          // 现场量一下 pg-stage 真实可用宽度,把滑块也顺手拨到那个值——
+          // 拨完之后你还是可以在全屏状态里继续手动拖滑块模拟更窄的屏幕。
+          // 退出全屏时把滑块还原回进全屏前的值,不影响你平时编辑用的宽度。
+          if (current.value.controls && current.value.controls.screenWidth) {
+            screenWidthBeforeFullscreen = controlValues.screenWidth;
+            // controls 收起用的是 CSS transition(.pg-controls 那条
+            // width .22s ease),不是瞬间完成的——只等 nextTick(DOM class
+            // 应用完)去量宽度,量到的是动画中间某一帧的宽度,不是收起后
+            // 的最终宽度。这里多等一个 setTimeout(跟 CSS 那个 .22s 对上,
+            // 稍微多留一点余量)才量,量到的才是真正收起完成后的可用宽度
+            setTimeout(function () {
+              if (stageRef.value) controlValues.screenWidth = stageRef.value.clientWidth;
+            }, 260);
+          }
+        } else {
+          controlsOpen.value = controlsOpenBeforeFullscreen;
+          if (screenWidthBeforeFullscreen !== null) {
+            controlValues.screenWidth = screenWidthBeforeFullscreen;
+            screenWidthBeforeFullscreen = null;
+          }
+        }
+      }
+      function handleControlButton(key) {
+        if (key === 'reset') {
+          resetControls(current.value);
+          stageKey.value++;
+        }
+      }
+
+      // uiOnly 的控件(目前只有 screenWidth)只是给 Playground 外壳自己用
+      // 的,不是组件的真实 prop,v-bind 到 <component> 之前先过滤掉,
+      // 避免 Vue 把它当成没声明的 prop 落到根元素上变成一个奇怪的
+      // DOM attribute(比如 <div screenwidth="1422">)
+      var componentProps = computed(function () {
+        var defs = current.value.controls || {};
+        var out = {};
+        Object.keys(controlValues).forEach(function (k) {
+          if (!(defs[k] && defs[k].uiOnly)) out[k] = controlValues[k];
+        });
+        return out;
+      });
+      // screenWidth 滑块控制的是这个 stage frame 的宽度,不是组件本身的
+      // 宽度——组件(比如 .offer-dashboard)自己改成了 width:100%,始终
+      // 填满这个 frame。没有 screenWidth 控件的组件(现在只有 Offer
+      // Dashboard 有)这里给 null,frame 就是普通 block,宽度跟 pg-stage
+      // 走,不受影响
+      var stageFrameStyle = computed(function () {
+        var defs = current.value.controls || {};
+        if (defs.screenWidth) {
+          var w = controlValues.screenWidth || defs.screenWidth.default;
+          return { width: w + 'px' };
+        }
+        // 2026-08 按你的要求:OfferCard 单独在 Playground 里看的时候固定
+        // 360px 宽,方便展示——OfferCard 组件本身没有(也不需要有)固定
+        // 宽度,真实场景里它的宽度是外面 Dashboard 卡片网格分配给它的,
+        // 这里只是 Playground 预览用的显示宽度,不是给组件本身加限制
+        if (selectedKey.value === 'OfferCard') return { width: '360px' };
+        return null;
+      });
+
+      return {
+        groups: GROUPS, selectedKey: selectedKey, current: current,
+        controlValues: controlValues, applyMock: applyMock, selectComponent: selectComponent,
+        sidebarOpen: sidebarOpen, controlsOpen: controlsOpen, fullscreenOpen: fullscreenOpen,
+        toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
+        stageKey: stageKey, handleControlButton: handleControlButton,
+        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageRef: stageRef
+      };
+    },
+    template:
+      '<div class="pg-shell" :class="{ \'pg-shell--fullscreen\': fullscreenOpen }">' +
+      '<aside class="pg-sidebar" :class="{ \'pg-sidebar--collapsed\': !sidebarOpen }">' +
+      '<div class="pg-sidebar__inner">' +
+      '<div class="pg-sidebar__title">ACV Offer Dashboard<br>Component Playground</div>' +
+      '<div v-for="group in groups" :key="group.title" class="pg-group">' +
+      '<div class="pg-group__title">{{ group.title }}</div>' +
+      '<button v-for="item in group.items" :key="item.key" type="button" class="pg-nav-item" ' +
+      ':class="{ \'pg-nav-item--active\': item.key === selectedKey }" @click="selectComponent(item.key)">' +
+      '<span class="pg-nav-item__order">{{ item.order }}</span>{{ item.name }}' +
+      '</button></div></div></aside>' +
+      '<button type="button" class="pg-rail-toggle pg-rail-toggle--sidebar" @click="toggleSidebar" ' +
+      ':title="sidebarOpen ? \'Hide nav\' : \'Show nav\'">{{ sidebarOpen ? \'‹\' : \'›\' }}</button>' +
+      '<main class="pg-main">' +
+      '<button v-if="selectedKey === \'OfferDashboard\'" type="button" class="pg-fullscreen-btn" @click="toggleFullscreen">' +
+      '{{ fullscreenOpen ? \'✕ Exit full page\' : \'⛶ Expand to full page\' }}</button>' +
+      '<div class="pg-header"><h1>{{ current.name }}</h1><span class="pg-header__meta">{{ current.group }} · order {{ current.order }}</span></div>' +
+      '<div class="pg-mocks" v-if="Object.keys(current.mocks || {}).length">' +
+      '<span class="pg-mocks__label">Mock 示例：</span>' +
+      '<button v-for="(mockObj, mockKey) in current.mocks" :key="mockKey" type="button" class="pg-mock-btn" @click="applyMock(mockObj)">{{ mockKey }}</button>' +
+      '</div>' +
+      '<div class="pg-workspace">' +
+      '<div class="pg-stage" ref="stageRef"><div class="pg-stage__resize-frame" :style="stageFrameStyle">' +
+      '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
+      '</div></div>' +
+      '<template v-if="Object.keys(current.controls || {}).length">' +
+      '<button type="button" class="pg-rail-toggle pg-rail-toggle--controls" @click="toggleControls" ' +
+      ':title="controlsOpen ? \'Hide controls\' : \'Show controls\'">{{ controlsOpen ? \'›\' : \'‹\' }}</button>' +
+      '<aside class="pg-controls" :class="{ \'pg-controls--collapsed\': !controlsOpen }">' +
+      '<div class="pg-controls__inner">' +
+      '<div class="pg-controls__title">Controls</div>' +
+      '<div v-for="(def, key) in current.controls" :key="key" class="pg-control-field">' +
+      '<button v-if="def.type === \'button\'" type="button" class="pg-control-button" @click="handleControlButton(key)">{{ def.label || key }}</button>' +
+      '<template v-else>' +
+      '<label>{{ def.label || key }}</label>' +
+      '<select v-if="def.type === \'select\'" v-model="controlValues[key]">' +
+      '<option v-for="opt in def.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>' +
+      '</select>' +
+      '<input v-else-if="def.type === \'boolean\'" type="checkbox" v-model="controlValues[key]">' +
+      '<input v-else-if="def.type === \'number\'" type="number" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]">' +
+      '<div v-else-if="def.type === \'range\'" class="pg-control-range">' +
+      '<input type="range" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]">' +
+      '<span class="pg-control-range__value">{{ controlValues[key] }}px</span>' +
+      '</div>' +
+      '<input v-else type="text" v-model="controlValues[key]">' +
+      '</template>' +
+      '</div></div></aside>' +
+      '</template>' +
+      '<p v-else class="pg-no-controls">这个组件没有可调的 controls（详见 Notes）。</p>' +
+      '</div>' +
+      '<details class="pg-notes" open>' +
+      '<summary>Notes / 待确认事项</summary>' +
+      '<pre>{{ current.notes }}</pre>' +
+      '</details>' +
+      '</main></div>'
+  });
+
+  createApp(Harness).mount('#app');
+})();
+</script>
+
+<script>
+// 只在通过 http:// 本地服务器打开时才轮询检查文件是否被改过(改了就自动
+// 刷新页面);直接双击用 file:// 打开时 fetch 会失败,不影响正常使用。
+(function () {
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  var lastModified = null;
+  function checkForUpdate() {
+    fetch(location.pathname, { method: 'HEAD', cache: 'no-store' })
+      .then(function (res) {
+        var lm = res.headers.get('Last-Modified');
+        if (lastModified === null) { lastModified = lm; return; }
+        if (lm && lm !== lastModified) { location.reload(); }
+      })
+      .catch(function () {});
+  }
+  setInterval(checkForUpdate, 1500);
+})();
+</script>
+</body>
+</html>
