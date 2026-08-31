@@ -1,5 +1,17 @@
 # StatusChip — Notes
 
+## 2026-08 按你给的 "Offer card — content & interaction spec" 新增 Expired 状态
+你的文档明确"States 一共有5个,不能自己发明其他状态":New/Received/Sent/
+Declined/**Expired**(超时关闭,没有人 decline)。之前组件只有前4个,补上
+了 `status="expired"`(灰底 #E0E0E0,深灰字 #55575C,圆角4px)。这个配色
+**不是 Figma 核实数值**——Figma 里没有找到 Expired 对应的 chip 实例,是
+照你规范里"grey fill, dark grey text"的文字描述,参考已有的灰色系
+(Sent 的 #E0E0E0/#212121)估的一个更浅的深灰,待你确认真实设计稿数值。
+文档里同时说明 Declined 和 Expired 互斥(同一时间只显示一个),New 只能
+和 Received/Declined 搭配,不会和 Sent 一起出现——这些规则在
+`fragments/OfferCard` 里通过 `dealState`/`isNew` 两个 prop 的组合方式
+强制保证,不会出现非法组合,细节见 OfferCard 自己的 notes.md。
+
 ## 这个组件是什么,不是什么
 - **是**:表格 **Update 列**的更新事件徽标(比如同一行同时显示 New +
   Received)。

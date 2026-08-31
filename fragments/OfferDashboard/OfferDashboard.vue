@@ -192,15 +192,14 @@
       "边界感",但那是表头背景色本身的对比效果,不是一条独立画出来的
       分割线,不需要额外加 border。
 
-    【2026-08 按你的要求:tile 视图卡片 hover 按钮固定用 V1 1个按钮】
-    `OfferCard` 组件本身支持 `buttonVersion`(v1/v2)+ `buttonCount`
-    (1/2/3,仅 v1 生效)两个可切换的 prop(细节见 OfferCard 自己的
-    METADATA/notes.md),但这两个 prop 之前在这里(Dashboard 页面组装)
-    完全没传,是靠 OfferCard 组件自己的默认值(v1/3个按钮)。你明确要求
-    Dashboard 的卡片 hover 效果固定成 "V1、1个按钮",所以在这里给
-    `<OfferCard>` 显式写死了 `button-version="v1"` `:button-count="1"`,
-    不再依赖组件默认值,也不受 `rowsAsCards` 里每行数据的影响(每一张
-    卡片都是同一个固定效果,不是从 Figma 里每行核实出不同的按钮数量)。
+    【2026-08 已废弃】之前这里给 `<OfferCard>` 写死了 `button-version=
+    "v1"` `:button-count="1"`,让所有卡片固定用同一个按钮效果。这次按
+    "Offer card — content & interaction spec" 重写后,`OfferCard` 不再有
+    `buttonVersion`/`buttonCount` 这两个 prop 了——按钮的个数/文案完全由
+    `viewerRole`+`offerType`+`dealState` 决定(见 OfferCard 自己的
+    METADATA),所以这里也不再写死任何按钮相关的值,`rowsAsCards` 现在
+    会给每张卡片传真正对应的 `viewerRole`/`dealState` 等字段,不同卡片的
+    hover 按钮组会跟着这些字段真的变化,不再是固定统一的效果。
 
     【2026-08 对照节点 7432:69595 核实的三处改动】
     1. **"My ACV" 旁边的 New 红点**:AppHeader 新增 `hasNewOffers` prop,
@@ -332,7 +331,7 @@
 
           <template v-else>
             <div class="offer-dashboard__card-grid" :style="cardGridStyle">
-              <OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" button-version="v1" :button-count="1" />
+              <OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" />
             </div>
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
               No vehicles match the current filters.
@@ -631,22 +630,48 @@ const rowsWithDealerMode = computed(() =>
 // $4,500"/"You offered $3,800 · Today, 08:45 AM",来自这同一个 Figma
 // 节点),而不是留空——这样才能满足"每个 card 都有 message"这个要求,
 // 12 张卡片文案会完全一样,这是刻意的取舍,不是漏做。
-const rowsAsCards = computed(() =>
-  visibleRows.value.map((row) => ({
-    photoUrl: row.photoUrl,
-    dealerName: row.dealerName,
-    offerType: row.offerType,
-    vehicleTitle: row.vehicleTitle,
-    mileage: row.mileage,
-    vin: row.vin,
-    auctionId: row.auctionId,
-    timeLeft: row.timeRemaining ? `${row.timeRemaining} Left` : '',
-    statusNew: row.statusNew,
-    statusReceived: row.statusReceived,
-    statusSent: row.statusSent,
-    statusDeclined: row.statusDeclined
-  }))
-)
+// 2026-08 按 "Offer card — content & interaction spec" 重写:OfferCard
+// 不再吃 statusNew/statusReceived/statusSent/statusDeclined 4个布尔值,
+// 改成 dealState(单值)+ isNew,这里把表格行原有的4个布尔值折算成一个
+// dealState(declined优先,再sent,再received,默认received)。viewerRole
+// 按当前 Buying/Selling tab 决定(Buying=buyer 视角,Selling=seller 视角)。
+// counterpartyAmount/ownAmount 拿表格行已有的 receivedAmount/sentAmount
+// 对应过去(对方给的钱=receivedAmount,你自己出的钱=sentAmount),'--'
+// 占位值时退回 acvEstimate 兜底——这是尽力而为的映射,不是逐行按规范核实
+// 过的真实业务数据,ownTimestamp 也只是借用了 updateDate 这个粗粒度字段,
+// 不是真实的精确时间戳。
+function rowTimeLeftUrgent(timeRemaining) {
+  return !!timeRemaining && !/[hd]/.test(timeRemaining) && /m/.test(timeRemaining)
+}
+function rowToDealState(row) {
+  if (row.statusDeclined) return 'declined'
+  if (row.statusSent) return 'sent'
+  return 'received'
+}
+const rowsAsCards = computed(() => {
+  const role = activeMainTab.value === 'selling' ? 'seller' : 'buyer'
+  return visibleRows.value.map((row) => {
+    const counterparty = row.receivedAmount && row.receivedAmount !== '--' ? row.receivedAmount : row.acvEstimate
+    const own = row.sentAmount && row.sentAmount !== '--' ? row.sentAmount : row.acvEstimate
+    return {
+      photoUrl: row.photoUrl,
+      dealerName: row.dealerName,
+      offerType: row.offerType,
+      vehicleTitle: row.vehicleTitle,
+      mileage: row.mileage,
+      vin: row.vin,
+      auctionId: row.auctionId,
+      timeLeft: row.timeRemaining ? `${row.timeRemaining} Left` : '',
+      timeLeftUrgent: rowTimeLeftUrgent(row.timeRemaining),
+      viewerRole: role,
+      dealState: rowToDealState(row),
+      isNew: row.statusNew,
+      counterpartyAmount: counterparty,
+      ownAmount: own,
+      ownTimestamp: row.updateDate
+    }
+  })
+})
 
 // 2026-08 按你的要求:卡片数量不多时(≤2 张)不需要撑满整行宽度,固定
 // 最多 370px 就好,右边留白是刻意的,不是没铺满的 bug——这和全屏时"卡片

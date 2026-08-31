@@ -53,7 +53,10 @@
 import { computed, h } from 'vue'
 
 const props = defineProps({
-  // new | received | sent | declined | overflow  (仅保留 hidden=false 的已核实状态)
+  // new | received | sent | declined | expired | overflow
+  // (new/received/sent/declined 是 hidden=false 的已核实状态;expired 是
+  // 2026-08 按你给的 card 内容规范新增的第5个状态,Figma 里没有找到对应
+  // 实例,颜色是照现有灰色系估的,不是核实数值,见下面 CSS 注释)
   status: {
     type: String,
     default: 'new'
@@ -135,6 +138,16 @@ const iconComponent = computed(() => {
 .status-chip--declined {
   background: #FFEFBF;
   color: #402D00;
+  border-radius: 4px;
+}
+
+/* ── Expired ── (2026-08 新增,来自你给的 card 内容规范"grey fill, dark
+   grey text",不是 Figma 核实数值——照 Sent 的灰底 #E0E0E0 配了个比 Sent
+   的 #212121 浅一点的深灰 #55575C 做区分,圆角跟 New/Received/Declined
+   一样用 4px,待你确认真实设计稿数值) */
+.status-chip--expired {
+  background: #E0E0E0;
+  color: #55575C;
   border-radius: 4px;
 }
 

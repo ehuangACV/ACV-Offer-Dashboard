@@ -1,10 +1,21 @@
-// 与 Figma node 7432:69394("Card/General Auction/Desktop")布局/样式一致的
-// 示例数据。2026-08 更新:换成了你给的真实车辆照片(黑色 Ford Focus RS),
-// vehicleTitle 也跟着改成真实车型,不再是 Figma 原稿里那个像是没替换掉的
-// 占位文案 "Year Make Model"(那个占位文案的推测记录见 notes.md)。
-// mileage/vin 是你说的"可以随意编"的字段,按这辆车编了合理数值。
-export const inNegotiationExample = {
+/*
+  2026-08 按你给的 "Offer card — content & interaction spec" 重写:原来
+  只有 3 个例子(inNegotiationExample/makeOfferExample/vehicleOnlyExample),
+  自由文本 primaryMessage/secondaryMessage 手写,容易写出不符合规范的
+  措辞。现在改成 viewerRole + dealState 驱动,文案由组件自己按规范表格
+  算,这里只提供每一行"角色×类型×状态"组合需要的数值型 prop
+  (counterpartyAmount/ownAmount/ownTimestamp 等)。10 个例子对应规范
+  第2/4节两张表(buyer 5 行 + seller 5 行)里的每一行,车辆照片/车型是
+  之前已经用过的两张真实照片,不是新素材;金额/时间戳是延用规范文档里
+  给的示例数值,不是重新核实的真实业务数据。
+*/
+
+// ── Buyer 视角 ──────────────────────────────────────────────
+
+export const buyerReceivedExample = {
   offerType: 'in-negotiation',
+  viewerRole: 'buyer',
+  dealState: 'received',
   photoUrl: '/assets/vehicle-photos/2018-ford-focus-rs.jpg',
   dealerName: 'CarMax Boston',
   vehicleTitle: '2018 Ford Focus RS',
@@ -12,50 +23,168 @@ export const inNegotiationExample = {
   vin: '884523',
   auctionId: '452161',
   timeLeft: '45m Left',
-  statusNew: true,
-  statusReceived: true,
-  primaryMessage: 'Seller countered $4,500',
-  secondaryMessage: 'You offered $3,800 · Today, 08:45 AM'
+  timeLeftUrgent: false,
+  isNew: true,
+  counterpartyAmount: '$4,500',
+  ownAmount: '$3,800',
+  ownTimestamp: 'Today, 08:45 AM'
 }
 
-// Make Offer 状态徽标核实自节点 7441:5248/7441:5254。换成你给的第二张真实
-// 照片(2022 BMW X5,年份/车型是你自己确认的),对应表格里 Asbury
-// Automotive Group 那一行的同一台车,auctionId 也保持一致(876143)。
-export const makeOfferExample = {
+export const buyerSentNegotiationExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'buyer',
+  dealState: 'sent',
+  photoUrl: '/assets/vehicle-photos/2018-ford-focus-rs.jpg',
+  dealerName: 'CarMax Boston',
+  vehicleTitle: '2018 Ford Focus RS',
+  mileage: '32,450 miles',
+  vin: '884523',
+  auctionId: '452161',
+  timeLeft: '2h 40m Left',
+  timeLeftUrgent: false,
+  isNew: false,
+  ownAmount: '$4,200',
+  ownTimestamp: 'Today, 09:10 AM'
+}
+
+export const buyerSentMakeOfferExample = {
   offerType: 'make-offer',
+  viewerRole: 'buyer',
+  dealState: 'sent',
   photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
   dealerName: 'Asbury Automotive Group',
   vehicleTitle: '2022 BMW X5',
   mileage: '8,240 miles',
   vin: '410877',
   auctionId: '876143',
-  timeLeft: '45m Left',
-  statusNew: false,
-  statusReceived: true,
-  primaryMessage: 'Seller countered $4,500',
-  secondaryMessage: 'You offered $3,800 · Today, 08:45 AM'
+  timeLeft: '18h Left',
+  timeLeftUrgent: false,
+  isNew: false,
+  ownAmount: '$22,000',
+  ownTimestamp: 'Today, 10:49 AM'
 }
 
-// 演示"以后不同 scenario 卡片字段可以缺省"——没有倒计时/状态chip/消息文案,
-// 只保留车辆信息区。目前没有对应的 Figma 节点,纯粹是为了验证组件的可选
-// 字段(timeLeft/statusNew/statusReceived/primaryMessage)行为,标注清楚
-// 不是 Figma 核实的示例。
-export const vehicleOnlyExample = {
-  offerType: 'none',
+export const buyerDeclinedExample = {
+  offerType: 'make-offer',
+  viewerRole: 'buyer',
+  dealState: 'declined',
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  vehicleTitle: '2022 BMW X5',
+  mileage: '8,240 miles',
+  vin: '410877',
+  auctionId: '876143',
+  isNew: false,
+  ownAmount: '$20,000'
+}
+
+export const buyerExpiredExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'buyer',
+  dealState: 'expired',
+  photoUrl: '/assets/vehicle-photos/2018-ford-focus-rs.jpg',
   dealerName: 'CarMax Boston',
-  vehicleTitle: 'Year Make Model',
-  mileage: '250,000 miles',
-  vin: '192211',
+  vehicleTitle: '2018 Ford Focus RS',
+  mileage: '32,450 miles',
+  vin: '884523',
   auctionId: '452161',
-  timeLeft: '',
-  statusNew: false,
-  statusReceived: false,
-  primaryMessage: '',
-  secondaryMessage: ''
+  isNew: false,
+  ownAmount: '$4,200',
+  expiredAt: ''
+}
+
+// ── Seller 视角 ─────────────────────────────────────────────
+
+export const sellerReceivedNegotiationExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'seller',
+  dealState: 'received',
+  photoUrl: '/assets/vehicle-photos/2018-ford-focus-rs.jpg',
+  dealerName: 'CarMax Boston',
+  vehicleTitle: '2018 Ford Focus RS',
+  mileage: '32,450 miles',
+  vin: '884523',
+  auctionId: '452161',
+  timeLeft: '45m Left',
+  timeLeftUrgent: true,
+  isNew: true,
+  counterpartyAmount: '$4,200',
+  ownAmount: '$4,500',
+  ownTimestamp: 'Today, 08:29 AM'
+}
+
+export const sellerSentExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'seller',
+  dealState: 'sent',
+  photoUrl: '/assets/vehicle-photos/2018-ford-focus-rs.jpg',
+  dealerName: 'CarMax Boston',
+  vehicleTitle: '2018 Ford Focus RS',
+  mileage: '32,450 miles',
+  vin: '884523',
+  auctionId: '452161',
+  timeLeft: '3h 20m Left',
+  timeLeftUrgent: false,
+  isNew: false,
+  ownAmount: '$30,000',
+  ownTimestamp: 'Yesterday, 11:39 PM'
+}
+
+export const sellerReceivedMakeOfferExample = {
+  offerType: 'make-offer',
+  viewerRole: 'seller',
+  dealState: 'received',
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  vehicleTitle: '2022 BMW X5',
+  mileage: '8,240 miles',
+  vin: '410877',
+  auctionId: '876143',
+  timeLeft: '18h Left',
+  timeLeftUrgent: false,
+  isNew: true,
+  counterpartyAmount: '$30,000',
+  ownAmount: '$32,000'
+}
+
+export const sellerDeclinedExample = {
+  offerType: 'make-offer',
+  viewerRole: 'seller',
+  dealState: 'declined',
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  vehicleTitle: '2022 BMW X5',
+  mileage: '8,240 miles',
+  vin: '410877',
+  auctionId: '876143',
+  isNew: false,
+  counterpartyAmount: '$26,500'
+}
+
+export const sellerExpiredExample = {
+  offerType: 'make-offer',
+  viewerRole: 'seller',
+  dealState: 'expired',
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  vehicleTitle: '2022 BMW X5',
+  mileage: '8,240 miles',
+  vin: '410877',
+  auctionId: '876143',
+  isNew: false,
+  counterpartyAmount: '$26,500',
+  expiredAt: ''
 }
 
 export default {
-  inNegotiationExample,
-  makeOfferExample,
-  vehicleOnlyExample
+  buyerReceivedExample,
+  buyerSentNegotiationExample,
+  buyerSentMakeOfferExample,
+  buyerDeclinedExample,
+  buyerExpiredExample,
+  sellerReceivedNegotiationExample,
+  sellerSentExample,
+  sellerReceivedMakeOfferExample,
+  sellerDeclinedExample,
+  sellerExpiredExample
 }

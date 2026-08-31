@@ -144,16 +144,66 @@
       和表格视图 `OfferTableRow` 点缩略图的行为保持一致——细节/取舍(为
       什么是占位页不是真的 VDP 集成)见 fragments/OfferTableRow/notes.md,
       这里不重复。
+
+    【2026-08 按你给的 "Offer card — content & interaction spec" 重写内容
+    模型】你明确说"card 的 layout 和 hover 的 interaction 都不需要调整,
+    只需要改 copy,和应该对应显示的状态"——这次改动没有动卡片的整体结构
+    (图片区/Vehicle Detail 区/Flexible 区/hover 浮层这套 DOM 骨架不变),
+    也没有动 hover 时"模糊+按钮块浮出"这套底层机制,改的是:
+    1. 用 `dealState`('received'/'sent'/'declined'/'expired')+ `isNew`
+       两个 prop 取代原来 4 个互相独立的布尔值
+       (statusNew/statusReceived/statusSent/statusDeclined)——原来的写法
+       可以传出"同时 Received+Sent"这种规范里明确禁止的非法组合,新的写法
+       从结构上就不可能选出两个状态芯片。`isNew` 只在 `dealState` 是
+       received/declined 时才会真的渲染(规范:"New 从不和 Sent 一起
+       出现")。
+    2. 新增 `viewerRole`('buyer'/'seller')prop——这是这份规范第一次把
+       "谁在看这张卡"变成一个需要感知的维度,之前组件完全不区分买家/卖家
+       视角。
+    3. 原来 `primaryMessage`/`secondaryMessage` 两个自由文本 prop 删掉了,
+       改成由 `viewerRole` + `offerType` + `dealState` + 几个数值/时间戳
+       prop(`counterpartyAmount`/`ownAmount`/`ownTimestamp`/`expiredAt`/
+       `gapAmount`+`showGap`)在组件内部按规范里两张表(buyer/seller)逐条
+       算出来——这样这两行文案不可能被手写成不符合规范的措辞(比如在芯片
+       文字里重复"Received"这种规范明确禁止的写法)。9 种"角色×类型×状态"
+       组合的文案是**逐条照抄规范表格**,不是套一个通用公式生成的——因为
+       规范里同样是"关闭状态"的 declined/expired,buyer 侧 line2 用的是
+       "你自己"的金额,seller 侧 line2 用的却是"对方"的金额,两边不对称,
+       没法用一个公式覆盖,只能按行抄。
+    4. hover 按钮的文案/个数/顺序也不再是写死的"Manage Offer/Secondary/
+       Tertiary",改成按 `viewerRole`+`offerType`+`dealState` 从规范第4节
+       两张表里查出来的按钮组(见下面 `hoverButtons` computed)。规范里
+       "Remove From List" 是"grey outlined"、和 "View Details" 的橙色
+       outline 视觉上不一样,新增了 `.offer-card__hover-btn--grey-outline`
+       这个 CSS 变体(之前没有这个按钮样式)。
+    5. 【这是唯一一处真正动到"hover 机制"数值的地方,不是纯 copy】规范
+       第4节的表格写明"1个按钮"和"2个按钮"两种情况的模糊覆盖范围是一样的
+       ("identity + status dimmed, message stays readable"),但组件原来
+       1按钮只模糊车辆信息、2按钮才连倒计时/状态chip那一行一起模糊,两者
+       不一致。已经把 1 按钮的模糊范围也扩大到和 2 按钮一样(vehicle +
+       flex-row),3按钮模糊整个info区不变。这个改动是这份新规范自己明确
+       写出来的规则,不是我顺便调整的。
+    6. 倒计时新增 `timeLeftUrgent` prop(< 1小时 =true,红色;否则灰色)
+       ——因为这是 mock 数据不是真的实时倒计时,没法在组件里自己算"是否
+       小于1小时",这个判断交给传值的人(mock/Dashboard)。`dealState` 是
+       declined/expired 时倒计时整块都不渲染(规范:"closed deals remove
+       the whole countdown")。
+    7. 【规范第2节"可选:the gap",规范自己标了是 open question】新增
+       `showGap`+`gapAmount` 两个 prop,默认 `showGap:false`。只在
+       `dealState==='received'` 时,打开后会把 line2 的时间戳换成
+       "· {gapAmount} apart",不会用在 sent 状态(规范:"不能在等待的
+       状态下对一个还没实现的差额采取行动")。这个功能默认关闭,因为规范
+       第7节把它列为待产品确认的问题,不是已经拍板的设计。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
   <div
     class="offer-card"
     :class="{
-      'offer-card--v1': buttonVersion === 'v1',
-      'offer-card--v1-btn-1': buttonVersion === 'v1' && v1ButtonCount === 1,
-      'offer-card--v1-btn-2': buttonVersion === 'v1' && v1ButtonCount === 2,
-      'offer-card--v1-btn-3': buttonVersion === 'v1' && v1ButtonCount === 3
+      'offer-card--v1': hoverButtons.length > 0,
+      'offer-card--v1-btn-1': hoverButtons.length === 1,
+      'offer-card--v1-btn-2': hoverButtons.length === 2,
+      'offer-card--v1-btn-3': hoverButtons.length === 3
     }"
   >
     <!-- 2026-08 按你的要求:点卡片图片也进 VDP,和表格视图
@@ -195,57 +245,43 @@
         <div v-if="auctionId" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>
       </div>
 
-      <div v-if="timeLeft || statusNew || statusReceived || statusSent || statusDeclined || primaryMessage" class="offer-card__flex-section">
-        <div v-if="timeLeft || statusNew || statusReceived || statusSent || statusDeclined" class="offer-card__flex-row">
-          <div v-if="timeLeft" class="offer-card__time-left">
+      <div v-if="hasCountdown || hasStateChip || messageLine1" class="offer-card__flex-section">
+        <div v-if="hasCountdown || hasStateChip" class="offer-card__flex-row">
+          <div v-if="hasCountdown" class="offer-card__time-left" :class="{ 'offer-card__time-left--grey': !timeLeftUrgent }">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 13.3333C9.41449 13.3333 10.771 12.7714 11.7712 11.7712C12.7714 10.771 13.3333 9.41449 13.3333 8C13.3333 6.58551 12.7714 5.22896 11.7712 4.22876C10.771 3.22857 9.41449 2.66667 8 2.66667C6.58551 2.66667 5.22896 3.22857 4.22876 4.22876C3.22857 5.22896 2.66667 6.58551 2.66667 8C2.66667 9.41449 3.22857 10.771 4.22876 11.7712C5.22896 12.7714 6.58551 13.3333 8 13.3333ZM8 1.33333C8.87548 1.33333 9.74239 1.50577 10.5512 1.8408C11.3601 2.17583 12.095 2.6669 12.714 3.28595C13.3331 3.90501 13.8242 4.63994 14.1592 5.44878C14.4942 6.25761 14.6667 7.12452 14.6667 8C14.6667 9.76811 13.9643 11.4638 12.714 12.714C11.4638 13.9643 9.76811 14.6667 8 14.6667C4.31333 14.6667 1.33333 11.6667 1.33333 8C1.33333 6.23189 2.03571 4.5362 3.28595 3.28595C4.5362 2.03571 6.23189 1.33333 8 1.33333ZM8.33333 4.66667V8.16667L11.3333 9.94667L10.8333 10.7667L7.33333 8.66667V4.66667H8.33333Z" fill="#CC433A"/>
+              <path d="M8 13.3333C9.41449 13.3333 10.771 12.7714 11.7712 11.7712C12.7714 10.771 13.3333 9.41449 13.3333 8C13.3333 6.58551 12.7714 5.22896 11.7712 4.22876C10.771 3.22857 9.41449 2.66667 8 2.66667C6.58551 2.66667 5.22896 3.22857 4.22876 4.22876C3.22857 5.22896 2.66667 6.58551 2.66667 8C2.66667 9.41449 3.22857 10.771 4.22876 11.7712C5.22896 12.7714 6.58551 13.3333 8 13.3333ZM8 1.33333C8.87548 1.33333 9.74239 1.50577 10.5512 1.8408C11.3601 2.17583 12.095 2.6669 12.714 3.28595C13.3331 3.90501 13.8242 4.63994 14.1592 5.44878C14.4942 6.25761 14.6667 7.12452 14.6667 8C14.6667 9.76811 13.9643 11.4638 12.714 12.714C11.4638 13.9643 9.76811 14.6667 8 14.6667C4.31333 14.6667 1.33333 11.6667 1.33333 8C1.33333 6.23189 2.03571 4.5362 3.28595 3.28595C4.5362 2.03571 6.23189 1.33333 8 1.33333ZM8.33333 4.66667V8.16667L11.3333 9.94667L10.8333 10.7667L7.33333 8.66667V4.66667H8.33333Z" :fill="timeLeftUrgent ? '#CC433A' : '#55575C'"/>
             </svg>
             {{ timeLeft }}
           </div>
-          <div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-card__status-pills">
-            <StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />
-            <StatusChip v-if="statusReceived" status="received" label="Received" />
-            <StatusChip v-if="statusSent" status="sent" label="Sent" />
-            <StatusChip v-if="statusDeclined" status="declined" label="Declined" />
+          <div v-if="hasStateChip" class="offer-card__status-pills">
+            <StatusChip v-if="showNewChip" status="new" label="New" :show-icon="false" />
+            <StatusChip :status="dealState" :label="stateChipLabel" />
           </div>
         </div>
 
-        <template v-if="primaryMessage">
+        <template v-if="messageLine1">
           <div class="offer-card__divider" />
           <div class="offer-card__message">
-            <div class="offer-card__message-primary">{{ primaryMessage }}</div>
-            <div v-if="secondaryMessage" class="offer-card__message-secondary">{{ secondaryMessage }}</div>
+            <div class="offer-card__message-primary">{{ messageLine1 }}</div>
+            <div v-if="messageLine2" class="offer-card__message-secondary">{{ messageLine2 }}</div>
           </div>
         </template>
       </div>
-
-      <!-- 2026-08 按你的要求新增,对照节点 7499:69479 核实的 V2 版本:
-           按钮不是 hover 才出现,是正常排在卡片信息区最下面,一直可见,
-           没有模糊效果,只有 Primary + Secondary 两个按钮(没有V1那个
-           Tertiary)。按钮上方多一条分隔线(#EBEBEB,该节点里确实是
-           message 下面又加了一条,不是我多画的)。 -->
-      <template v-if="buttonVersion === 'v2'">
-        <div class="offer-card__divider" />
-        <div class="offer-card__v2-buttons">
-          <button type="button" class="offer-card__hover-btn offer-card__hover-btn--primary">Primary Action</button>
-          <button type="button" class="offer-card__hover-btn offer-card__hover-btn--secondary">Secondary</button>
-        </div>
-      </template>
     </div>
 
-    <!-- 2026-08 按你的要求新增,对照节点 7498:68345 核实的 V1 版本:鼠标
-         hover 卡片时,信息区变模糊,叠一层按钮。
-         【2026-08 补充,对照节点 7501:69741 核实】V1 不是只有 3 按钮
-         一种效果,这个新节点里同一个 V1 卡片给了 1 按钮/2 按钮两个真实
-         实例:1 按钮时只有 Primary Action;2 按钮时是 Primary Action +
-         一个标签写着 "Tertiary" 的描边按钮(和 Secondary 视觉完全一样,
-         这个实例里就是叫 Tertiary,不是我瞎猜按钮数量少了该保留哪个)。
-         新增 `buttonCount` prop(1/2/3,默认 3)控制显示几个按钮。 -->
-    <div v-if="buttonVersion === 'v1'" class="offer-card__hover-buttons">
-      <button type="button" class="offer-card__hover-btn offer-card__hover-btn--primary">Manage Offer</button>
-      <button v-if="v1ButtonCount === 3" type="button" class="offer-card__hover-btn offer-card__hover-btn--secondary">Secondary</button>
-      <button v-if="v1ButtonCount >= 2" type="button" class="offer-card__hover-btn offer-card__hover-btn--tertiary">Tertiary</button>
+    <!-- 2026-08 按你给的 "Offer card — content & interaction spec" 重写:
+         按钮的文案/个数/顺序不再写死,改成按 viewerRole+offerType+
+         dealState 从 hoverButtons computed 查出来的按钮组渲染,细节和
+         "这是唯一动到 hover 机制数值的地方"那条说明见上面 METADATA。
+         hover 时信息区变模糊、按钮块浮出这套底层机制本身没有变。 -->
+    <div v-if="hoverButtons.length" class="offer-card__hover-buttons">
+      <button
+        v-for="(btn, i) in hoverButtons"
+        :key="i"
+        type="button"
+        class="offer-card__hover-btn"
+        :class="`offer-card__hover-btn--${btn.style}`"
+      >{{ btn.label }}</button>
     </div>
   </div>
 </template>
@@ -256,7 +292,9 @@ import StatusChip from '../StatusChip/StatusChip.vue'
 
 const props = defineProps({
   photoUrl: { type: String, default: '' },
-  // in-negotiation | make-offer | none
+  // in-negotiation | make-offer —— 每笔 deal 必然是这两种之一,这是
+  // deal 的"类型"(固定不变),不是会变化的"状态"。'none' 只作为防御性
+  // 兜底保留(徽标就不渲染),规范里不存在这个值。
   offerType: { type: String, default: 'in-negotiation' },
   dealerName: { type: String, default: 'CarMax Boston' },
   vehicleTitle: { type: String, default: 'Year Make Model' },
@@ -264,29 +302,141 @@ const props = defineProps({
   vin: { type: String, default: '192211' },
   auctionId: { type: String, default: '452161' },
   timeLeft: { type: String, default: '45m Left' },
-  statusNew: { type: Boolean, default: true },
-  statusReceived: { type: Boolean, default: true },
-  // 2026-08 按你的要求新增,业务逻辑说明见 fragments/OfferTableRow 的
-  // METADATA(Sent=发出counter/offer,Declined=deal被拒绝,New可以和其他
-  // 三个状态同时出现)
-  statusSent: { type: Boolean, default: false },
-  statusDeclined: { type: Boolean, default: false },
-  primaryMessage: { type: String, default: 'Seller countered $4,500' },
-  secondaryMessage: { type: String, default: 'You offered $3,800 · Today, 08:45 AM' },
-  // 2026-08 按你的要求新增:卡片上的按钮有 V1/V2 两个版本,在 Playground
-  // 的 Controls 面板切换看效果。none = 不显示按钮(之前的样子)。
-  buttonVersion: { type: String, default: 'v1' },
-  // 2026-08 按你的要求新增,对照节点 7501:69741 核实:V1 下按钮数量可以
-  // 是 1/2/3 个,悬浮时模糊的范围也跟着按钮数量变化(见下面 CSS 注释),
-  // 只在 buttonVersion==='v1' 时生效,V2 不受影响。
-  buttonCount: { type: [String, Number], default: 3 }
+  // 2026-08 按你给的 card 内容规范新增:< 1小时 = 红色,否则灰色。因为
+  // 这里是 mock 数据不是真的实时倒计时,没法自己算"是否小于1小时",这个
+  // 判断交给传值的人。
+  timeLeftUrgent: { type: Boolean, default: false },
+  // 2026-08 按你给的 "Offer card — content & interaction spec" 重写:
+  // 谁在看这张卡——buyer 还是 seller,决定文案的措辞和 hover 按钮的行为
+  viewerRole: { type: String, default: 'seller' },
+  // received | sent | declined | expired —— 5 个状态里"New"是独立的
+  // 标记(见下面 isNew),不算这 4 个互斥状态之一
+  dealState: { type: String, default: 'received' },
+  // New 是"未读"标记,不是一个独立状态,只在 dealState 是
+  // received/declined 时才会真的渲染(规范:New 从不和 Sent 一起出现)
+  isNew: { type: Boolean, default: true },
+  // 对方最近的金额(Received 时对方刚出的价;Declined/Expired 时是"桌上
+  // 最后那个数字")
+  counterpartyAmount: { type: String, default: '$4,500' },
+  // 你自己最近的金额(offer/counter/reserve,视 role+state 而定)
+  ownAmount: { type: String, default: '$3,800' },
+  // 你自己那个金额发出的时间,只在 received/sent 这种"进行中"的状态下
+  // 显示在 line2(Declined/Expired 不显示时间,规范:deal 已经结束,
+  // 什么时候结束不重要)
+  ownTimestamp: { type: String, default: 'Today, 08:45 AM' },
+  // Expired 状态下可选的结束时间,拼在 line1 "Time ran out" 后面
+  // (规范:"if the timeout moment matters"),不传就只显示 "Time ran out"
+  expiredAt: { type: String, default: '' },
+  // 2026-08 规范第2节"可选:the gap",规范自己标了是待产品确认的问题,
+  // 默认关闭。打开后只在 dealState==='received' 时把 line2 的时间戳换成
+  // "· {gapAmount} apart"
+  showGap: { type: Boolean, default: false },
+  gapAmount: { type: String, default: '$700 apart' }
 })
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'
 )
 
-const v1ButtonCount = computed(() => Number(props.buttonCount) || 3)
+const isBuyer = computed(() => props.viewerRole === 'buyer')
+const isMakeOffer = computed(() => props.offerType === 'make-offer')
+
+// 2026-08 按你给的规范:倒计时/状态chip在 declined/expired 时整块消失
+const isClosed = computed(() => props.dealState === 'declined' || props.dealState === 'expired')
+const hasCountdown = computed(() => !!props.timeLeft && !isClosed.value)
+const hasStateChip = computed(() => !!props.dealState)
+
+// New 只能和 received/declined 搭配,从不和 sent 一起出现——这里直接
+// 从结构上挡掉非法组合,不是靠调用方自己记得别传错
+const showNewChip = computed(() =>
+  props.isNew && (props.dealState === 'received' || props.dealState === 'declined')
+)
+
+const stateChipLabel = computed(() => {
+  const labels = { received: 'Received', sent: 'Sent', declined: 'Declined', expired: 'Expired' }
+  return labels[props.dealState] || ''
+})
+
+// 2026-08 按你给的 "Offer card — content & interaction spec" 第2节两张
+// 表(buyer/seller)逐条抄的文案——不是套一个通用公式生成的,因为
+// declined/expired 这两个"关闭状态"在 buyer 侧 line2 用的是自己的金额,
+// seller 侧用的却是对方的金额,两边不对称,没法用一个公式覆盖。
+const messageLine1 = computed(() => {
+  const s = props.dealState
+  if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
+  if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
+  if (isBuyer.value) {
+    if (s === 'received') return `Seller countered ${props.counterpartyAmount}`
+    if (s === 'sent') return 'Waiting on the seller'
+  } else {
+    if (s === 'received') return isMakeOffer.value ? `Buyer offered ${props.counterpartyAmount}` : `Buyer countered ${props.counterpartyAmount}`
+    if (s === 'sent') return 'Waiting on the buyer'
+  }
+  return ''
+})
+
+const messageLine2 = computed(() => {
+  const s = props.dealState
+  if (s === 'declined' || s === 'expired') {
+    // 关闭状态:buyer 侧显示自己的金额,seller 侧显示对方的金额——两边
+    // 不对称,是规范表格里逐条给的,不是我推出来的公式
+    return isBuyer.value
+      ? `Your offer ${props.ownAmount}`
+      : `Buyer offered ${props.counterpartyAmount}`
+  }
+  if (isBuyer.value) {
+    if (s === 'received') {
+      const tail = props.showGap ? `${props.gapAmount}` : props.ownTimestamp
+      return `You offered ${props.ownAmount} · ${tail}`
+    }
+    if (s === 'sent') {
+      const verb = isMakeOffer.value ? 'offer' : 'counter'
+      return `Your ${verb} ${props.ownAmount} · ${props.ownTimestamp}`
+    }
+  } else {
+    if (s === 'received') {
+      if (isMakeOffer.value) return `Your reserve ${props.ownAmount}`
+      const tail = props.showGap ? `${props.gapAmount}` : props.ownTimestamp
+      return `Your counter ${props.ownAmount} · ${tail}`
+    }
+    if (s === 'sent') return `Your counter ${props.ownAmount} · ${props.ownTimestamp}`
+  }
+  return ''
+})
+
+// 2026-08 按规范第4节两张表(buyer/seller)查出来的 hover 按钮组——
+// label + style('filled'/'outlined'/'grey-outline'),数组长度决定
+// hover 时模糊覆盖范围(1/2/3 按钮对应 .offer-card--v1-btn-N,见 CSS)
+const hoverButtons = computed(() => {
+  const s = props.dealState
+  if (s === 'declined' || s === 'expired') {
+    return [
+      { label: 'View Details', style: 'outlined' },
+      { label: 'Remove From List', style: 'grey-outline' }
+    ]
+  }
+  if (isBuyer.value) {
+    if (s === 'received') {
+      return [
+        { label: `Accept ${props.counterpartyAmount}`, style: 'filled' },
+        { label: 'Counter', style: 'outlined' },
+        { label: 'View Details', style: 'outlined' }
+      ]
+    }
+    if (s === 'sent') {
+      return isMakeOffer.value
+        ? [
+            { label: 'Raise Your Offer', style: 'filled' },
+            { label: 'View Details', style: 'outlined' }
+          ]
+        : [{ label: 'View Details', style: 'filled' }]
+    }
+  } else {
+    if (s === 'received') return [{ label: 'Manage Offer', style: 'filled' }]
+    if (s === 'sent') return [{ label: 'View Details', style: 'filled' }]
+  }
+  return []
+})
 
 function copyVin() {
   if (navigator.clipboard) {
@@ -337,30 +487,26 @@ function copyVin() {
    是随按钮数量变化的——按钮越少,浮层按钮块本身越矮,盖住的信息区范围
    越小,Figma 里三个按钮数量的真实实例各自标注的 blur-[2px] 范围本来
    就不一样(不是设计师漏标,是这几个实例分别核实到的真实数值):
-   - 1 个按钮(7501:69741 下面那张卡):只模糊车辆信息(标题/里程/VIN/
-     Auction ID)。
+   - 1 个按钮(7501:69741 下面那张卡):Figma 里只模糊车辆信息(标题/
+     里程/VIN/Auction ID)。
    - 2 个按钮(7501:69741 上面那张卡):车辆信息 + 倒计时/状态chip 那一
      行都模糊,消息块不模糊。
    - 3 个按钮(7498:68345):连最下面的消息块也一起模糊,等于整个 info
-     区。 */
-.offer-card--v1-btn-1:hover .offer-card__vehicle {
-  filter: blur(2px);
-}
+     区。
+   【2026-08 按你给的 "Offer card — content & interaction spec" 第4节
+   更正 1 按钮的模糊范围】规范表格明确写 1 按钮和 2 按钮的覆盖范围应该是
+   一样的("identity + status dimmed, message stays readable"),不是
+   1按钮更小范围。已经把 1 按钮也扩大到和 2 按钮一样同时模糊车辆信息+
+   倒计时/状态chip那一行,不再只模糊车辆信息。这是规范自己明确写出来的
+   规则,不是我顺便调整的。 */
+.offer-card--v1-btn-1:hover .offer-card__vehicle,
+.offer-card--v1-btn-1:hover .offer-card__flex-row,
 .offer-card--v1-btn-2:hover .offer-card__vehicle,
 .offer-card--v1-btn-2:hover .offer-card__flex-row {
   filter: blur(2px);
 }
 .offer-card--v1-btn-3:hover .offer-card__info {
   filter: blur(2px);
-}
-
-/* V2(节点 7499:69479):按钮正常排在信息区最下面,一直可见,不需要
-   hover/blur 效果,和 V1 的 hover 浮层是两套完全不同的实现 */
-.offer-card__v2-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
 }
 
 /* 2026-08 你指出按钮位置要按截图调整:之前用 top:222px + bottom:12px +
@@ -404,17 +550,30 @@ function copyVin() {
   box-sizing: border-box;
 }
 
-.offer-card__hover-btn--primary {
+/* 2026-08 按新的 content & interaction spec 重命名:原来的
+   --primary/--secondary/--tertiary(对应 Figma "Primary/Secondary/
+   Tertiary Button" 图层名)改成规范里的 --filled/--outlined,视觉数值
+   完全没变,只是类名换成规范自己用的词("filled"/"outlined") */
+.offer-card__hover-btn--filled {
   border: none;
   background: linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%);
   color: #FFFFFF;
 }
 
-.offer-card__hover-btn--secondary,
-.offer-card__hover-btn--tertiary {
+.offer-card__hover-btn--outlined {
   border: 1px solid #F26522;
   background: #FFFFFF;
   color: #F26522;
+}
+
+/* 2026-08 新增,规范里 "Remove From List" 是"grey outlined",和上面
+   "View Details" 的橙色 outline 是两种不同视觉,之前没有这个按钮样式。
+   灰色数值不是 Figma 核实的,是照项目里已有的灰色系(#D1D3D6 边框/
+   #55575C 文字,和 Pagination/表格里用的灰色描边按钮一致)估的,待确认 */
+.offer-card__hover-btn--grey-outline {
+  border: 1px solid #D1D3D6;
+  background: #FFFFFF;
+  color: #55575C;
 }
 
 .offer-card__image {
@@ -553,6 +712,16 @@ function copyVin() {
   line-height: 20px;
   letter-spacing: 0.1px;
   color: #CC433A;
+}
+
+/* 2026-08 你指出:倒计时不管紧急不紧急,字体都保持 14px medium,只有
+   颜色跟着变(<1小时红色#CC433A,>=1小时灰色#55575C)——之前按规范文档
+   字面"1 hour or more: grey, 14px regular"把字重也一起降成了regular,
+   你说不对,已经改成只换颜色不换字重,字重统一沿用
+   .offer-card__time-left 本身的 500(medium)。图标颜色在模板里用
+   :fill 联动同一个判断。 */
+.offer-card__time-left--grey {
+  color: #55575C;
 }
 
 .offer-card__status-pills {

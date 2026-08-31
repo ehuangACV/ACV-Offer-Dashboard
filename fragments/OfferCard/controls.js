@@ -6,11 +6,10 @@ export default {
   },
   offerType: {
     type: 'select',
-    label: 'Offer type badge (offerType)',
+    label: 'Deal type (offerType) — fixed for the deal, not a status',
     options: [
       { value: 'in-negotiation', label: 'In Negotiation' },
-      { value: 'make-offer', label: 'Make Offer' },
-      { value: 'none', label: 'None' }
+      { value: 'make-offer', label: 'Make Offer' }
     ],
     default: 'in-negotiation'
   },
@@ -39,64 +38,71 @@ export default {
     label: 'Auction ID (auctionId)',
     default: '452161'
   },
+  // 2026-08 按 "Offer card — content & interaction spec" 重写:viewerRole
+  // 决定文案措辞和 hover 按钮组
+  viewerRole: {
+    type: 'select',
+    label: 'Viewer role (viewerRole)',
+    options: [
+      { value: 'buyer', label: 'Buyer' },
+      { value: 'seller', label: 'Seller' }
+    ],
+    default: 'seller'
+  },
+  dealState: {
+    type: 'select',
+    label: 'Deal state (dealState)',
+    options: [
+      { value: 'received', label: 'Received — their move, your turn' },
+      { value: 'sent', label: 'Sent — your move, waiting on them' },
+      { value: 'declined', label: 'Declined — closed' },
+      { value: 'expired', label: 'Expired — closed' }
+    ],
+    default: 'received'
+  },
+  isNew: {
+    type: 'boolean',
+    label: 'New flag (isNew, only shows with Received/Declined)',
+    default: true
+  },
   timeLeft: {
     type: 'text',
-    label: 'Time left (timeLeft, empty = hide)',
+    label: 'Countdown text (timeLeft, empty = hide; auto-hidden on Declined/Expired)',
     default: '45m Left'
   },
-  statusNew: {
+  timeLeftUrgent: {
     type: 'boolean',
-    label: 'Show "New" status chip (statusNew)',
-    default: true
-  },
-  statusReceived: {
-    type: 'boolean',
-    label: 'Show "Received" status chip (statusReceived)',
-    default: true
-  },
-  statusSent: {
-    type: 'boolean',
-    label: 'Show "Sent" status chip (statusSent)',
+    label: 'Countdown < 1h (timeLeftUrgent → red, else grey)',
     default: false
   },
-  statusDeclined: {
+  counterpartyAmount: {
+    type: 'text',
+    label: "Counterparty's amount (counterpartyAmount)",
+    default: '$4,500'
+  },
+  ownAmount: {
+    type: 'text',
+    label: 'Your own amount — offer/counter/reserve (ownAmount)',
+    default: '$3,800'
+  },
+  ownTimestamp: {
+    type: 'text',
+    label: 'Your amount timestamp (ownTimestamp)',
+    default: 'Today, 08:45 AM'
+  },
+  expiredAt: {
+    type: 'text',
+    label: 'Expired-at time, optional (expiredAt, empty = omit)',
+    default: ''
+  },
+  showGap: {
     type: 'boolean',
-    label: 'Show "Declined" status chip (statusDeclined)',
+    label: '[Open question] Show gap instead of timestamp (showGap, Received only)',
     default: false
   },
-  primaryMessage: {
+  gapAmount: {
     type: 'text',
-    label: 'Primary message (primaryMessage, empty = hide message block)',
-    default: 'Seller countered $4,500'
-  },
-  secondaryMessage: {
-    type: 'text',
-    label: 'Secondary message (secondaryMessage)',
-    default: 'You offered $3,800 · Today, 08:45 AM'
-  },
-  // 2026-08 按你的要求新增:卡片下方按钮,V1/V2 两个版本切换,对照
-  // 节点 7498:68345(V1)/ 7499:69479(V2)核实。
-  buttonVersion: {
-    type: 'select',
-    label: 'Card buttons version (buttonVersion)',
-    options: [
-      { value: 'none', label: 'None' },
-      { value: 'v1', label: 'V1 (hover to reveal, 3 buttons)' },
-      { value: 'v2', label: 'V2 (always visible, 2 buttons)' }
-    ],
-    default: 'v1'
-  },
-  // 2026-08 按你的要求新增,对照节点 7501:69741 核实:V1 下按钮数量可以是
-  // 1/2/3 个,只在 buttonVersion 是 v1 时才有效果(V2 固定 2 个按钮,不受
-  // 这个控制项影响)。
-  buttonCount: {
-    type: 'select',
-    label: 'V1 button count (buttonCount, only affects V1)',
-    options: [
-      { value: '1', label: '1 (Primary only)' },
-      { value: '2', label: '2 (Primary + Tertiary)' },
-      { value: '3', label: '3 (Primary + Secondary + Tertiary)' }
-    ],
-    default: '3'
+    label: 'Gap amount text (gapAmount)',
+    default: '$700 apart'
   }
 }

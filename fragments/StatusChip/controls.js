@@ -18,6 +18,7 @@ export default {
       { value: 'received', label: 'Received' },
       { value: 'sent', label: 'Sent' },
       { value: 'declined', label: 'Declined' },
+      { value: 'expired', label: 'Expired' },
       { value: 'overflow', label: '+N (overflow badge)' }
     ],
     default: 'new'

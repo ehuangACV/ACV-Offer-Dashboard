@@ -154,6 +154,25 @@ FilterChipGroup 各 chip 的数量也全部改成了从这 12 行数据里动态
 (不再是之前 Figma 截图核实过的静态数字)——这是你在扩充 Dashboard 时
 明确认可的取舍,细节记录在 `OfferDashboard` 的 METADATA/notes.md 里。
 
+## 2026-08 按你说明的业务规则,更正了两行 mock 数据的倒计时
+你说明了(不是 Figma 数据,是你直接告诉我的业务逻辑,记录下来避免以后
+再编出不合理的数值):
+- **In Negotiation** = 拍卖阶段的最高出价人(High bidder from the
+  auction),倒计时上限 **6 小时**,seller 能做的操作是 Accept/
+  Decline/Counter。
+- **Make Offer** = 拍卖结束后任意买家发的报价(Post-auction offer),
+  倒计时上限 **24 小时**,seller 只能 Accept/Decline,不能 Counter。
+
+按这条规则检查了 12 行 mock 数据(细节见 `OfferDashboard.vue` 的
+`sellingRows`/`buyingRows` 分组),发现 Selling 那 6 行里有两行的倒计时
+是自编时没考虑这条规则、超出了 In Negotiation 的 6 小时上限:
+- `rowToyotaMatrix`:`2d 2h` → 改成 `4h 50m`。
+- `rowFordEscapeSE`:`14h 20m` → 改成 `2h 15m`。
+Selling 里另外两个 Make Offer 状态的行(`rowFordEscapeTitanium` 9h15m /
+`rowDodgeCharger` 18h5m)本来就在 24 小时以内,没有改。这次检查范围只是
+你要求的 Selling 那 6 行,Buying 那 6 行还没按这条规则核对过,待你确认
+是否要一并检查(Buying 侧的对应业务规则你还没说明)。
+
 ## 待你确认
 1. 车辆缩略图的圆角具体数值——Figma 用的是 mask SVG,没有直接给出
    border-radius 像素值,组件先用 8px 占位。

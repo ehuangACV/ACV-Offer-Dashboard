@@ -187,7 +187,9 @@ export const rowToyotaMatrix = {
   vehicleTitle: '2010 Toyota Matrix',
   mileage: '121,760 miles',
   vin: '348852',
-  timeRemaining: '2d 2h',
+  // 2026-08 按你说明的业务规则更正:In Negotiation = 拍卖阶段的最高出价人,
+  // 上限 6 小时,原来编的 "2d 2h" 不可能出现在这个状态下,改成 6h 以内的值
+  timeRemaining: '4h 50m',
   acvEstimate: '$4,800',
   sentAmount: '$5,100',
   receivedAmount: '$1,200',
@@ -270,7 +272,9 @@ export const rowFordEscapeSE = {
   vehicleTitle: '2014 Ford Escape SE',
   mileage: '103,650 miles',
   vin: '259017',
-  timeRemaining: '14h 20m',
+  // 2026-08 按你说明的业务规则更正:In Negotiation 上限 6 小时,原来编的
+  // "14h 20m" 不可能出现在这个状态下,改成 6h 以内的值
+  timeRemaining: '2h 15m',
   acvEstimate: '$8,700',
   sentAmount: '$9,000',
   receivedAmount: '--',

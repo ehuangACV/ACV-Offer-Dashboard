@@ -12,6 +12,8 @@ export const singleExamples = [
   { status: 'received', label: 'Received' },
   { status: 'sent', label: 'Sent' },
   { status: 'declined', label: 'Declined' },
+  // 2026-08 新增,见 notes.md "按你给的 Offer card 内容规范新增 Expired 状态"
+  { status: 'expired', label: 'Expired' },
   { status: 'overflow', label: '+1' }
 ]
 

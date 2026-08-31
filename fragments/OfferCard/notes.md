@@ -1,5 +1,53 @@
 # OfferCard 核实记录
 
+## 2026-08 按你给的 "Offer card — content & interaction spec" 重写内容模型
+你明确说"card 的 layout 和 hover 的 interaction 都不需要调整,只需要改
+copy,和应该对应显示的状态"。这次没有动卡片的 DOM 骨架或 hover 模糊+
+按钮浮出的底层机制,改的是驱动内容的 prop 模型和文案/按钮的生成逻辑:
+
+- **删掉的 prop**:`statusNew`/`statusReceived`/`statusSent`/
+  `statusDeclined`(4个独立布尔值,能拼出"同时Received+Sent"这种规范
+  禁止的非法组合)、`primaryMessage`/`secondaryMessage`(自由文本,容易
+  写出不符合规范措辞的文案)、`buttonVersion`/`buttonCount`(V1/V2 概念
+  在这份新规范里完全没提到,已经废弃)。
+- **新增的 prop**:`viewerRole`('buyer'/'seller',这份规范第一次要求
+  组件感知"谁在看这张卡")、`dealState`('received'/'sent'/'declined'/
+  'expired',单值,结构上不可能选出两个状态芯片)、`isNew`(只在
+  received/declined 时真的渲染,从不和 sent 一起出现)、
+  `counterpartyAmount`/`ownAmount`/`ownTimestamp`/`expiredAt`/
+  `gapAmount`+`showGap`、`timeLeftUrgent`。
+- 两行文案(`messageLine1`/`messageLine2`)和 hover 按钮组
+  (`hoverButtons`)现在都是组件内部按规范文档第2/4节两张表(buyer 5行+
+  seller 5行)**逐条照抄**算出来的,不是套一个通用公式生成——因为
+  declined/expired 这两个"关闭状态",buyer 侧 line2 显示自己的金额
+  (`ownAmount`),seller 侧却显示对方的金额(`counterpartyAmount`),两边
+  不对称,没法用一个公式覆盖。10 个"角色×类型×状态"组合详见下面新建的
+  10 个 mock 示例(`buyerReceivedExample` 等),每个都能在 Playground 里
+  点开核对文案/芯片/按钮是否和规范表格一致。
+- **唯一真正动到"hover 机制"数值的地方**(不是纯 copy):规范第4节表格
+  写明 1 个按钮和 2 个按钮的模糊覆盖范围应该一样("identity + status
+  dimmed, message stays readable"),但组件原来 1 按钮只模糊车辆信息、
+  2 按钮才连倒计时/状态chip 一起模糊,两者不一致。已经把 1 按钮的模糊
+  范围也扩大到和 2 按钮一样。这是规范自己明确写出来的规则,不是我顺便
+  调整的。
+- Expired 是新状态,StatusChip 组件跟着加了 `status="expired"` 的样式
+  (灰底 #E0E0E0 深灰字 #55575C,不是 Figma 核实数值,照现有灰色系估的,
+  待确认真实设计稿)。
+- 倒计时:`dealState` 是 declined/expired 时整块不渲染(规范:"closed
+  deals remove the whole countdown")。< 1小时=红色/medium,否则=灰色/
+  regular,由 `timeLeftUrgent` 决定——因为这是 mock 数据不是真的实时
+  倒计时,没法自己算,这个判断交给传值的人。
+- 规范第2节"可选:the gap"(`showGap`+`gapAmount`)已经实现了功能,但
+  默认关闭——规范第7节自己把这个列为待产品确认的问题,不是已经拍板的
+  设计。
+- `OfferDashboard.vue` 的 `rowsAsCards` 也同步改了:`viewerRole` 按当前
+  Buying/Selling tab 决定,`dealState` 由表格行原有的4个布尔值折算
+  (declined优先/再sent/再received),`counterpartyAmount`/`ownAmount`
+  借用了已有的 `receivedAmount`/`sentAmount` 字段——这是**尽力而为的
+  映射**,不是逐行按这份新规范重新核实过的真实业务数据,`ownTimestamp`
+  也只是借用了粗粒度的 `updateDate` 字段。已经在 Playground 里实测切换
+  Buying/Selling tab,卡片的措辞和按钮确实跟着 viewerRole 变了。
+
 ## 2026-08 新增 hover 按钮(V1/V2 两个版本)
 对照节点 `7498:68345` 核实的 V1:鼠标 hover 卡片时 INFO 区变模糊(该节点
 自己带 blur-[2px] class)+ 叠一层三个按钮(Primary Action 渐变 / 

@@ -322,6 +322,21 @@ Pagination 组件本身改高度需要回来同步这个值)。这样两种视�
 Lane/Pagination/切换按钮三者生效——横向排成一行、纵向居中对齐,行高不再
 随模式切换变化,按钮位置也不会再跳,一次性满足两条要求。
 
+## 2026-08 按 "Offer card — content & interaction spec" 同步调整 rowsAsCards
+`OfferCard` 组件按你给的这份规范整体重写了内容模型(详见
+[OfferCard/notes.md](../OfferCard/notes.md)),不再吃
+statusNew/statusReceived/statusSent/statusDeclined/primaryMessage/
+secondaryMessage/buttonVersion/buttonCount 这些 prop。`rowsAsCards`
+跟着改成:`viewerRole` 按当前 Buying/Selling tab 决定(Buying=buyer,
+Selling=seller),`dealState` 由表格行原有的4个布尔值折算,
+`counterpartyAmount`/`ownAmount` 借用已有的
+`receivedAmount`/`sentAmount` 字段。**这是尽力而为的字段映射,不是逐行
+按这份新规范重新核实过的真实业务数据**——12 行 mock 本来就是自编的
+演示数据,这次只是让它们能正确喂给 OfferCard 新的 prop 模型,内容本身
+的业务真实性没有变化。已经在 Playground 里实测切换 Buying/Selling tab,
+卡片的措辞("Seller countered.../Buyer countered...")和按钮
+("Manage Offer"/"Accept $X"等)确实跟着 viewerRole 正确变化。
+
 ## 布局本身待你确认
 1. Sidebar 和右侧内容区之间要不要一条竖向分隔线——Figma metadata 里
    没有看到对应的 divider 节点,组装页面里没有加。
