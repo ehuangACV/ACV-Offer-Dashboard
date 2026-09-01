@@ -120,6 +120,39 @@
     `StatusChip` 组件默认 `showIcon` 时漏掉了这里)。补上
     `:show-icon="false"`,和 OfferCard 里 New chip 同样没有图标的处理
     保持一致。
+
+    【2026-09-02 新增:hover CTA + InformationDialog】你要求"table hover
+    的 CTA 完全对应 card hover 的 CTA,点击后打开同一个 Information
+    Dialog,table/tile 是同一个 deal 只是不同 view,数据和交互都该一样",
+    并给了 Figma node 1:21166(fileKey 4z7FK34Fgit7Fi9UxZu0za,"Offers -
+    Negotiation" 文件)作为 CTA 具体样式的参照。这个节点真实渲染出来是
+    一条 hover 态的表格行:Update 列的 StatusChip/日期被换成
+    "Counter"(outlined)+ "✓ Accept $26,000"(filled,渐变,字面的"✓"
+    字符,和 InformationDialog 的 Accept 按钮同一个写法)+ 一条 1px 分割
+    线 + 纯文字链接 "More Info"(颜色 #0061A5,和本项目已核实过的链接色
+    一致,不是 Figma token 给的 #004E7D)。
+    - 哪个状态显示哪些按钮,直接复用 OfferCard 的 `hoverButtons` 状态表
+      (buyer/seller × received/sent/declined,同一套 viewerRole+
+      dealState 判断,新增了 `viewerRole` prop,由 `OfferDashboard.vue`
+      按当前 Buying/Selling tab 传进来),只是多拆出一个 `infoLink`
+      字段——Figma 这个参照帧里 "More Info" 是分割线右边单独的链接,不是
+      第三个和 Counter/Accept 同等视觉权重的按钮,这一点和卡片版本(三个
+      按钮堆成一排竖排大按钮,没有分割线+链接结构)不一样,但背后对应的
+      还是同一组动作,不是新发明的交互。`declined` 这个组合两个按钮都不是
+      "主操作",没有对应的分割线+链接结构可参照,保持原来两个平级按钮的
+      样子。
+    - 点按钮组里任意一个(包括"More Info")都打开同一个
+      InformationDialog,不按点了哪个区分内容——这是延续 OfferCard 那边
+      "先这样做,之后会调整"的已知简化,不是这次新引入的。
+    - 新增了 `reservePrice`/`reportUrl`/`history` 三个 prop——这几个字段
+      本来就已经在 `mock.js` 每一行数据上了(之前是给 `rowsAsCards` 转成
+      OfferCard props 用的),只是这个组件之前没有声明成自己的 prop,
+      `v-bind="row"` 传过来的时候被当成多余的 DOM attribute 丢掉了,现在
+      declare 出来才能真正喂给这里新增的 InformationDialog。
+    - CSS 上没有照抄 OfferCard 那套"绝对定位 + backdrop-filter 模糊"的
+      hover 机制——表格行只有 80px 高,Update 列背后本来就没有车辆信息
+      挡着,直接用 `display:none`/`flex` 切换"chips+日期"和"CTA按钮组"
+      两块内容,鼠标移开恢复原状,更简单也不需要模糊任何东西。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
@@ -168,26 +201,85 @@
     </div>
 
     <div class="offer-table-row__cell offer-table-row__cell--time">{{ timeRemaining }}</div>
-    <div class="offer-table-row__cell offer-table-row__cell--estimate">{{ acvEstimate }}</div>
+    <!-- 2026-09-02 按你的要求:这一列显示的数字从 acvEstimate 换成
+         reservePrice(表头文案跟着从 "ACV Estimate" 改成 "Reserve
+         Price",见 OfferTableHeader.vue)。acvEstimate 这个 prop 本身
+         没有删除——InformationDialog 的 "ACV Estimate" 那一行还在用它,
+         只是表格这一列不再显示它,class 名字暂时还叫 --estimate,是
+         历史遗留的内部命名,不影响页面上显示的文字。 -->
+    <div class="offer-table-row__cell offer-table-row__cell--estimate">{{ reservePrice }}</div>
     <div class="offer-table-row__cell offer-table-row__cell--sent offer-table-row__cell--strong">{{ sentAmount }}</div>
     <div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>
 
     <div class="offer-table-row__cell offer-table-row__cell--update">
-      <div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">
-        <StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />
-        <StatusChip v-if="statusReceived" status="received" label="Received" />
-        <StatusChip v-if="statusSent" status="sent" label="Sent" />
-        <StatusChip v-if="statusDeclined" status="declined" label="Declined" />
+      <div class="offer-table-row__update-default">
+        <div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">
+          <StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />
+          <StatusChip v-if="statusReceived" status="received" label="Received" />
+          <StatusChip v-if="statusSent" status="sent" label="Sent" />
+          <StatusChip v-if="statusDeclined" status="declined" label="Declined" />
+        </div>
+        <div class="offer-table-row__update-date">{{ updateDate }}</div>
       </div>
-      <div class="offer-table-row__update-date">{{ updateDate }}</div>
+      <!-- 2026-09-02 按你的要求,参照 Figma node 1:21166(fileKey
+           4z7FK34Fgit7Fi9UxZu0za,"Offers - Negotiation" 文件)新增:
+           hover 这一行时,Update 列的 StatusChip/日期换成这一组 CTA——
+           小号 pill 按钮(outlined secondary + filled primary,filled
+           按钮带字面的 "✓" 字符,和 InformationDialog 的 Accept 按钮
+           同一个写法)+ 一条 1px 分割线 + 纯文字链接"More Info"。按钮组的
+           内容(哪个状态显示哪些按钮)直接复用 OfferCard 的 hoverButtons
+           状态表(见下面 script,同一套 viewerRole+dealState 判断),
+           只是这里按 Figma 参照的样子换成小号横排 pill,不是卡片那套
+           竖排大按钮——两种视图密度不同,不代表数据/交互不同,点任意一个
+           都打开同一个 InformationDialog,用的是同一行数据,和卡片视图
+           点 hover CTA 打开的效果完全对应。 -->
+      <div class="offer-table-row__ctas">
+        <button
+          v-for="(btn, i) in hoverButtons.buttons"
+          :key="i"
+          type="button"
+          class="offer-table-row__cta-btn"
+          :class="`offer-table-row__cta-btn--${btn.style}`"
+          @click="dialogOpen = true"
+        >{{ btn.label }}</button>
+        <span v-if="hoverButtons.infoLink" class="offer-table-row__cta-divider" />
+        <button
+          v-if="hoverButtons.infoLink"
+          type="button"
+          class="offer-table-row__cta-link"
+          @click="dialogOpen = true"
+        >{{ hoverButtons.infoLink }}</button>
+      </div>
     </div>
+
+    <InformationDialog
+      v-model="dialogOpen"
+      :photo-url="photoUrl"
+      :vehicle-title="vehicleTitle"
+      :vin="vin"
+      :mileage="mileage"
+      :auction-id="auctionId"
+      :offer-type="offerType"
+      :viewer-role="viewerRole"
+      :deal-state="dealState"
+      :is-new="statusNew"
+      :counterparty-amount="receivedAmount"
+      :own-amount="sentAmount"
+      :reserve-price="reservePrice"
+      :acv-estimate="acvEstimate"
+      :report-url="reportUrl"
+      :time-left="timeRemaining ? `${timeRemaining} Left` : ''"
+      :time-left-urgent="timeLeftUrgent"
+      :history="history"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import StatusChip from '../StatusChip/StatusChip.vue'
 import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
+import InformationDialog from '../InformationDialog/InformationDialog.vue'
 
 const props = defineProps({
   // 单经销商账号时不显示 dealerName,第二列改用 auctionId 做主标题
@@ -216,12 +308,90 @@ const props = defineProps({
   // 2026-08 按你的要求新增,见 METADATA 里记录的业务逻辑说明
   statusSent: { type: Boolean, default: false },
   statusDeclined: { type: Boolean, default: false },
-  updateDate: { type: String, default: 'Today' }
+  updateDate: { type: String, default: 'Today' },
+  // 2026-09-02 新增,给 hover CTA + InformationDialog 用——table view 和
+  // tile view(OfferCard)是同一笔 deal 的两种展示方式,这几个字段和
+  // OfferCard 用的是同一套(viewerRole 由 OfferDashboard 按当前
+  // Buying/Selling tab 传进来,reservePrice/reportUrl/history 本来就已经
+  // 在 mock.js 每一行上了,只是之前没有声明成这个组件的 prop,v-bind="row"
+  // 传过来的时候被当成多余的 DOM attribute 丢掉了)。
+  // 默认值要和上面 sentAmount/receivedAmount 的默认值($26,000/$26,800,
+  // 抄自 rowWithNewAndReceived,一行 Buying tab 的真实数据)保持同一个
+  // 视角——那两个默认金额里,$26,000 是买家自己出的价(sentAmount),
+  // $26,800 是买家收到的卖家还价(receivedAmount),这组默认数据本来就是
+  // "买家视角",如果这里默认给 'seller' 会让默认打开的 Information
+  // Dialog 显示反过来(Buyer High Bid 比 Seller Counter 还高,违反买家<
+  // 卖家<reserve 这条顺序)。
+  viewerRole: { type: String, default: 'buyer' },
+  reservePrice: { type: String, default: '$27,000' },
+  reportUrl: { type: String, default: '#' },
+  history: { type: Array, default: () => [] }
 })
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'
 )
+
+const dialogOpen = ref(false)
+const isBuyer = computed(() => props.viewerRole === 'buyer')
+const isMakeOffer = computed(() => props.offerType === 'make-offer')
+// 表格行没有 statusExpired 这个字段(过期这个概念目前只在 OfferCard 的
+// mock 里演示过),所以这里只会落到 declined/sent/received 三种之一,
+// 和 OfferDashboard.vue 里 rowsAsCards 用的 rowToDealState() 是同一套
+// 优先级判断(declined优先,再sent,再默认received)
+const dealState = computed(() => {
+  if (props.statusDeclined) return 'declined'
+  if (props.statusSent) return 'sent'
+  return 'received'
+})
+const timeLeftUrgent = computed(() =>
+  !!props.timeRemaining && !/[hd]/.test(props.timeRemaining) && /m/.test(props.timeRemaining)
+)
+
+// 2026-09-02 按 Figma node 1:21166 核实的样子(见上面模板注释)新增:
+// 和 OfferCard 的 hoverButtons computed 是同一套 viewerRole+dealState
+// 状态表(细节见 fragments/OfferCard/OfferCard.vue 的 hoverButtons),
+// 只是这里多拆出一个 infoLink 字段——Figma 这个参照帧里 "Counter" +
+// "Accept $X" 是两个真正的按钮,"More Info" 是分割线右边单独的纯文字
+// 链接,不是第三个同等视觉权重的按钮,和卡片版本三个按钮堆成一排视觉上
+// 不一样(卡片是竖排大按钮,没有分割线+链接这个结构),但背后对应的还是
+// 同一组动作(Accept/Counter/查看详情),点这里任意一个和点卡片任意一个
+// hover 按钮一样,统一打开同一个 InformationDialog,不按点了哪个区分
+// 内容——这个简化和卡片是同一个已知的临时决定,不是这次新引入的。
+// declined 这个组合(两个按钮都不是"主操作",没有对应的分割线+链接
+// 结构可参照)保持原来两个平级按钮的样子,不套用这个新结构。
+const hoverButtons = computed(() => {
+  const s = dealState.value
+  if (s === 'declined') {
+    return {
+      buttons: [
+        { label: 'View Details', style: 'outlined' },
+        { label: 'Remove From List', style: 'grey-outline' }
+      ],
+      infoLink: null
+    }
+  }
+  if (isBuyer.value) {
+    if (s === 'received') {
+      return {
+        buttons: [
+          { label: 'Counter', style: 'outlined' },
+          { label: `✓ Accept ${props.receivedAmount}`, style: 'filled' }
+        ],
+        infoLink: 'More Info'
+      }
+    }
+    if (s === 'sent') {
+      return isMakeOffer.value
+        ? { buttons: [{ label: 'Raise Your Offer', style: 'filled' }], infoLink: 'More Info' }
+        : { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null }
+    }
+  } else {
+    if (s === 'received') return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null }
+    if (s === 'sent') return { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null }
+  }
+  return { buttons: [], infoLink: null }
+})
 </script>
 
 <style scoped>
@@ -230,6 +400,15 @@ const offerTypeLabel = computed(() =>
   align-items: stretch;
   font-family: 'Roboto', sans-serif;
   background: #FFFFFF;
+}
+
+/* 2026-09-02 按你的要求 + 对照 Figma node 1:21166 核实:hover 这一行时
+   整行背景变成 #F0F8FF(这个节点里图片/dealer/vehicle/time/estimate/
+   sent/received/update 每个 cell 各自都标了这个背景色,不是只有
+   Update 列——cell 本身没有单独设背景,直接在行这一级设置背景色就能
+   让所有 cell 一起变色,不用逐个 cell 重复写一遍) */
+.offer-table-row:hover {
+  background: #F0F8FF;
 }
 
 .offer-table-row__cell {
@@ -326,10 +505,21 @@ const offerTypeLabel = computed(() =>
 .offer-table-row__cell--received { flex: 90 1 90px; padding-top: 30px; }
 .offer-table-row__cell--strong { font-weight: 500; }
 
+/* 2026-09-02:原来是纯 padding-top 撑开内容,现在要在同一块地方切换
+   "chips+日期"和"CTA按钮组"两种内容,改成 flex + align-items:center
+   垂直居中——不管当前显示哪一块,都能在 80px 行高里居中,不用像原来那样
+   手动算 padding-top 凑位置。左侧 padding 保持 24px 不变(原来数值),
+   右侧留 16px,和其它列右边留白一致 */
 .offer-table-row__cell--update {
   flex: 225 1 225px;
   min-width: 0;
-  padding: 21px 0 0 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 24px;
+}
+.offer-table-row__update-default {
+  display: flex;
+  flex-direction: column;
 }
 .offer-table-row__status-pills {
   display: flex;
@@ -342,5 +532,88 @@ const offerTypeLabel = computed(() =>
   line-height: 18px;
   letter-spacing: 0.4px;
   color: #757575;
+}
+
+/* 2026-09-02 按 Figma node 1:21166(fileKey 4z7FK34Fgit7Fi9UxZu0za)
+   新增:hover 这一行时,Update 列的 chips+日期换成这一组小号 CTA——细节
+   和"为什么按钮/分割线/链接是这个结构"的说明见上面模板注释。默认不显示
+   (display:none),鼠标移到整行(.offer-table-row:hover)才切换显示,
+   和 chips+日期互斥,不是叠在一起。这里没有做成像 OfferCard 那样绝对
+   定位+模糊覆盖——表格行本身只有 80px 高、Update 列只有一小块区域,
+   直接切换显示/隐藏更简单,不需要模糊背后的车辆信息(本来也没有车辆
+   信息挡在这一列)。 */
+/* 2026-09-02 按你的要求 + 对照 Figma node 1:21166:CTA 按钮组是右对齐
+   的(Figma 里这一坨按钮是 right:16px 绝对定位贴着列右边缘,不是贴左)。
+   这里没有用绝对定位(原因见上面注释),改成让这个 flex 容器自己撑满
+   整列宽度、内部子元素靠 justify-content:flex-end 推到右边——只影响
+   CTA 这一块,不影响它旁边 chips+日期(.offer-table-row__update-default)
+   那一块的对齐方式,两者是互斥显示、各自独立布局 */
+.offer-table-row__ctas {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.offer-table-row:hover .offer-table-row__update-default {
+  display: none;
+}
+.offer-table-row:hover .offer-table-row__ctas {
+  display: flex;
+}
+.offer-table-row__cta-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+/* 和 OfferCard 的 .offer-card__hover-btn--filled/--outlined/
+   --grey-outline 是同一套视觉数值(渐变色/描边色都取自已经核实过的同一
+   个 token),这里没有重新定义一套新颜色,只是按钮尺寸按表格行的小号
+   pill 缩小了(卡片是撑满宽度的大按钮,这里是内容多宽按钮就多宽) */
+.offer-table-row__cta-btn--filled {
+  border: none;
+  background: linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%);
+  color: #FFFFFF;
+}
+.offer-table-row__cta-btn--outlined {
+  border: 1px solid #F26522;
+  background: #FFFFFF;
+  color: #F26522;
+}
+.offer-table-row__cta-btn--grey-outline {
+  border: 1px solid #D1D3D6;
+  background: #FFFFFF;
+  color: #55575C;
+}
+/* Figma 里这条分割线是单独一个 16px 宽的占位框,线本身细看是居中的 1px
+   竖线,这里直接做成一条固定高度的竖线,不额外占一整个按钮宽度的空位 */
+.offer-table-row__cta-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 20px;
+  background: #DCDFE8;
+}
+/* "More Info" 是纯文字链接,不是按钮——颜色沿用项目里已经核实过的链接色
+   #0061A5(InformationDialog 的 "View Report"/"Close" 链接用的是同一个
+   颜色,不是 Figma 原始 token 给的 #004E7D,细节见该组件 notes.md) */
+.offer-table-row__cta-link {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #0061A5;
+  white-space: nowrap;
+  cursor: pointer;
 }
 </style>

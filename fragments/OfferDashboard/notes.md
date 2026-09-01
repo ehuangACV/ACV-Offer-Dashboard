@@ -1,5 +1,34 @@
 # OfferDashboard — Notes
 
+## 2026-09-02(第二次)把工具条抽成独立组件 ResultsToolbar
+你给了 tile 视图("Viewing 5 results" + 切换按钮)和 table 视图
+("🔑 Private Lane" + Pagination + 切换按钮)两张截图,指出这条工具条
+应该做成"同一个组件的两个 view",不是分开各写一次。新建了
+[ResultsToolbar](../ResultsToolbar/notes.md)(名字是按你的要求自己起的,
+"你看叫什么合适"),纯粹搬迁原来 `.offer-dashboard__table-top` 那整块
+markup/CSS,没有改动任何数值/行为:
+- `viewMode` 从"组件内部按钮直接改的本地 ref"变成标准的
+  `v-model:view-mode` 双向绑定——`OfferDashboard.vue` 这边的 `viewMode`
+  ref 完全没变,只是现在通过 `<ResultsToolbar v-model:view-mode=
+  "viewMode" .../>` 接,组件内部点按钮改成 `emit('update:viewMode', ...)`。
+- `resultsCount`/`hasPrevPage`/`hasNextPage` 对应 tile 的 "Viewing N
+  results" 数字和 table 顶部 Pagination 的两个箭头状态,直接从
+  `visibleRows.length`/`topPagination` 传过去,和抽出来之前的数值来源
+  完全一样。
+- 原来这一块的 CSS 注释(76px 固定行高的推导过程、Figma 核实记录)整段
+  搬到了 `ResultsToolbar.vue` 自己的样式注释里,这个文件只留一句指向性
+  说明,不重复贴一遍。
+
+## 2026-09-02 新增 viewerRole 传给 OfferTableRow(配合它新增的 hover CTA)
+`OfferTableRow` 这次按 Figma node 1:21166 新增了 hover CTA + 自己的
+`InformationDialog`(细节见 [OfferTableRow/notes.md](../OfferTableRow/notes.md)),
+和 `rowsAsCards`(tile 视图用)一样需要知道当前是 Buying 还是 Selling
+tab(按钮组的内容 buyer/seller 不一样)。把原来写在 `rowsAsCards` 内部的
+`const role = activeMainTab.value === 'selling' ? 'seller' : 'buyer'`
+提到外面变成共享的 `viewerRoleValue` computed,`rowsWithDealerMode`(喂给
+`<OfferTableRow>` 的那份)和 `rowsAsCards` 现在用的是同一个值——table 和
+tile 是同一笔 deal 的两种展示方式,不能各算各的 viewerRole。
+
 ## 2026-09-01(第三次)修复真实bug:全屏状态下点 Reset 不会真正回到自动贴合宽度
 你截图指出全屏时 Controls 面板还在盖住右侧卡片内容(卷动条+卡片被裁切),
 并重申了之前说过的规则:面板出现时应该自动贴合宽度,除非手动拖过

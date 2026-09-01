@@ -294,6 +294,9 @@
 
   /* -- OfferTableRow -- */
   .offer-table-row { display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; background: #FFFFFF; }
+  /* 2026-09-02 按你的要求 + 对照 Figma node 1:21166 核实:hover 整行时
+     背景变 #F0F8FF */
+  .offer-table-row:hover { background: #F0F8FF; }
   .offer-table-row__cell { position: relative; height: 80px; box-sizing: border-box; padding: 21px 16px 0; border-bottom: 1px solid #DCDFE8; font-size: 14px; color: #212121; }
   .offer-table-row__cell--photo { flex: 80 1 80px; padding: 8px; display: flex; }
   .offer-table-row__photo { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
@@ -310,9 +313,22 @@
   .offer-table-row__cell--sent { flex: 85 1 85px; padding-top: 30px; }
   .offer-table-row__cell--received { flex: 90 1 90px; padding-top: 30px; }
   .offer-table-row__cell--strong { font-weight: 500; }
-  .offer-table-row__cell--update { flex: 225 1 225px; min-width: 0; padding: 21px 0 0 24px; }
+  .offer-table-row__cell--update { flex: 225 1 225px; min-width: 0; display: flex; align-items: center; padding: 0 16px 0 24px; }
+  .offer-table-row__update-default { display: flex; flex-direction: column; }
   .offer-table-row__status-pills { display: flex; align-items: center; gap: 4px; }
   .offer-table-row__update-date { margin-top: 0; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
+  /* 2026-09-02 按 Figma node 1:21166(fileKey 4z7FK34Fgit7Fi9UxZu0za)
+     新增:hover 整行时,Update 列的 chips+日期换成小号 CTA 按钮组,细节见
+     fragments/OfferTableRow/OfferTableRow.vue 里同名 class 的注释 */
+  .offer-table-row__ctas { display: none; width: 100%; align-items: center; justify-content: flex-end; gap: 8px; }
+  .offer-table-row:hover .offer-table-row__update-default { display: none; }
+  .offer-table-row:hover .offer-table-row__ctas { display: flex; }
+  .offer-table-row__cta-btn { flex-shrink: 0; padding: 8px 16px; border-radius: 999px; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; line-height: 20px; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
+  .offer-table-row__cta-btn--filled { border: none; background: linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%); color: #FFFFFF; }
+  .offer-table-row__cta-btn--outlined { border: 1px solid #F26522; background: #FFFFFF; color: #F26522; }
+  .offer-table-row__cta-btn--grey-outline { border: 1px solid #D1D3D6; background: #FFFFFF; color: #55575C; }
+  .offer-table-row__cta-divider { flex-shrink: 0; width: 1px; height: 20px; background: #DCDFE8; }
+  .offer-table-row__cta-link { flex-shrink: 0; border: none; background: none; padding: 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; line-height: 20px; color: #0061A5; white-space: nowrap; cursor: pointer; }
 
   /* -- StatusChip -- */
   .status-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; font-size: 12px; line-height: 12px; letter-spacing: 0.4px; white-space: nowrap; font-family: 'Roboto', sans-serif; }
@@ -401,30 +417,27 @@
      没有Figma依据,已删掉改成margin-top */
   .offer-dashboard__table-card { margin-top: 20px; }
   /* Private Lane行→表头16px(节点7448:9916 "Table" gap-16) */
-  /* 2026-08 你指出 Private Lane/Pagination/切换按钮要一行横向居中对齐:
-     行高钉死 min-height:76px(这个文件全局 *{box-sizing:border-box},
-     min-height 算的是含 padding 的整个盒子——76px = Pagination 组件
-     实际高度60px + padding-bottom16px,不是内容区的60px),table/tile
-     两种模式行高一样,align-items:center 统一对所有子元素生效,三者
-     居中对齐,行高也不会随模式切换变化,按钮位置不会跳 */
-  .offer-dashboard__table-top { display: flex; align-items: center; justify-content: flex-end; min-height: 76px; padding: 0 0 16px; }
-  .offer-dashboard__table-top-spacer { flex: 1; display: flex; align-items: center; }
-  /* 2026-08 按你的要求新增,参照真实原型 My-ACV--Dealer-filter-main 的 .private-lane/.lane-icon */
-  .offer-dashboard__private-lane { display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #545454; }
-  .offer-dashboard__private-lane-icon { flex-shrink: 0; }
-  .offer-dashboard__viewing-text { flex: 1; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
-  /* 2026-08 修复切换 table/tile 时按钮位置跳动:table 视图这一行有
-     Pagination(比按钮高),tile 视图只有一行文字(比按钮矮),
-     align-items:center 会让按钮跟着行高变化上下跳。以 tile 视图(按钮
-     本来贴顶部)为基准,给按钮单独 align-self:flex-start,不再跟着行高
-     居中 */
-  .offer-dashboard__view-toggle { display: flex; align-items: center; }
-  .offer-dashboard__view-toggle-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #FFFFFF; border: 1px solid #D1D3D6; border-radius: 0; cursor: pointer; }
-  .offer-dashboard__view-toggle-btn:first-child { border-radius: 999px 0 0 999px; }
-  .offer-dashboard__view-toggle-btn:last-child { border-left: none; border-radius: 0 999px 999px 0; }
-  .offer-dashboard__view-toggle-btn--active { background: #F5F5F5; }
+  /* 2026-09-02:table-top 那一条工具条(Viewing N results / Private
+     Lane+Pagination / table-tile 切换按钮)已经抽成独立组件
+     ResultsToolbar,CSS 挪到下面单独一段(class 名字从
+     offer-dashboard__* 改成 results-toolbar__*),这里不再重复定义 */
   .offer-dashboard__card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding-bottom: 16px; }
   .offer-dashboard__empty { padding: 40px 16px; text-align: center; color: #757575; font-size: 14px; }
+
+  /* -- ResultsToolbar -- */
+  .results-toolbar { display: flex; align-items: center; justify-content: flex-end; min-height: 76px; padding: 0 0 16px; }
+  .results-toolbar__spacer { flex: 1; display: flex; align-items: center; }
+  .results-toolbar__private-lane { display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #545454; }
+  .results-toolbar__private-lane-icon { flex-shrink: 0; }
+  .results-toolbar__viewing-text { flex: 1; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
+  .results-toolbar__view-toggle { display: flex; align-items: center; }
+  /* 2026-09-02 按 Figma node 7320:22065("segmented button") 重做:padding
+     驱动尺寸(10px/12px),不再写死 32x32px 正方形,细节见
+     fragments/ResultsToolbar/ResultsToolbar.vue 同一处注释 */
+  .results-toolbar__view-toggle-btn { display: flex; align-items: center; justify-content: center; padding: 10px 12px; background: #FFFFFF; border: 1px solid #D1D3D6; border-radius: 0; cursor: pointer; box-sizing: border-box; }
+  .results-toolbar__view-toggle-btn:first-child { border-radius: 111px 0 0 111px; }
+  .results-toolbar__view-toggle-btn:last-child { border-left: none; border-radius: 0 111px 111px 0; }
+  .results-toolbar__view-toggle-btn--active { background: #F5F5F5; }
 
   /* -- OfferCard -- */
   .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
@@ -454,9 +467,11 @@
   .offer-card__photo { width: 100%; height: 100%; object-fit: cover; display: block; }
   .offer-card__image-badges { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 6px; }
   .offer-card__type-badge { display: inline-flex; align-items: center; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; }
-  .offer-card__type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border-radius: 8px; padding: 2px 6px; }
+  /* 2026-09-02 按你的要求以 Make Offer 徽标高度(28px)为基准统一三个
+     徽标的高度,细节见 fragments/OfferCard/OfferCard.vue 同一处注释 */
+  .offer-card__type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border-radius: 8px; padding: 5px 6px; }
   .offer-card__type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; border-radius: 3px; padding: 4px 6px; }
-  .offer-card__lane-badge { display: inline-flex; align-items: center; backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; text-align: right; white-space: nowrap; border-radius: 8px; padding: 2px 10px; }
+  .offer-card__lane-badge { display: inline-flex; align-items: center; backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; text-align: right; white-space: nowrap; border-radius: 8px; padding: 5px 10px; }
   .offer-card__info { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
   .offer-card__vehicle { display: flex; flex-direction: column; }
   .offer-card__vehicle-title { font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.15px; color: #0E0E0F; }
@@ -1064,7 +1079,7 @@
       '<div class="offer-table-header__cell offer-table-header__cell--time">' +
       '<div class="offer-table-header__title-row"><span class="offer-table-header__title offer-table-header__title--two-line">Time<br>Remaining</span>' +
       '<button type="button" class="offer-table-header__sort" @click="$emit(\'sort\', \'time-remaining\')" v-html="SORT_ICON"></button></div></div>' +
-      '<div class="offer-table-header__cell offer-table-header__cell--estimate"><span class="offer-table-header__title">ACV Estimate</span></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--estimate"><span class="offer-table-header__title">Reserve Price</span></div>' +
       '<div class="offer-table-header__cell offer-table-header__cell--sent"><span class="offer-table-header__title">Sent</span></div>' +
       '<div class="offer-table-header__cell offer-table-header__cell--received"><span class="offer-table-header__title">Received</span></div>' +
       '<div class="offer-table-header__cell offer-table-header__cell--update"><span class="offer-table-header__title">Update</span></div>' +
@@ -1095,73 +1110,6 @@
         SORT_ICON: SORT_ICON, INFO_ICON: INFO_ICON, CLOSE_ICON: CLOSE_ICON,
         showTypeGuide: showTypeGuide, infoBtnRef: infoBtnRef, typeGuideRef: typeGuideRef
       });
-    }
-  });
-
-  // ---------- OfferTableRow (order 31) ----------
-  var OfferTableRow = defineComponent({
-    name: 'OfferTableRow',
-    components: { StatusChip: StatusChip, OfferTypeBadge: OfferTypeBadge },
-    props: {
-      isMultiDealer: { type: Boolean, default: true },
-      photoUrl: { type: String, default: '' },
-      dealerName: { type: String, default: 'CarMax Boston' },
-      auctionId: { type: String, default: '264578' },
-      offerType: { type: String, default: 'in-negotiation' },
-      vehicleTitle: { type: String, default: '2018 Ford Somemodel' },
-      mileage: { type: String, default: '250,000 miles' },
-      vin: { type: String, default: '192211' },
-      timeRemaining: { type: String, default: '3h 15m' },
-      acvEstimate: { type: String, default: '$25,000' },
-      sentAmount: { type: String, default: '$26,000' },
-      receivedAmount: { type: String, default: '$26,800' },
-      statusNew: { type: Boolean, default: true },
-      statusReceived: { type: Boolean, default: true },
-      statusSent: { type: Boolean, default: false },
-      statusDeclined: { type: Boolean, default: false },
-      updateDate: { type: String, default: 'Today' }
-    },
-    template:
-      '<div class="offer-table-row">' +
-      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--dealer">' +
-      '<template v-if="isMultiDealer">' +
-      '<div class="offer-table-row__dealer-name">{{ dealerName }}</div>' +
-      '<div class="offer-table-row__dealer-sub">' +
-      '<span class="offer-table-row__dealer-id">{{ auctionId }}</span>' +
-      '<OfferTypeBadge v-if="offerType !== \'none\'" :type="offerType" :label="offerTypeLabel" />' +
-      '</div>' +
-      '</template>' +
-      '<template v-else>' +
-      '<div class="offer-table-row__dealer-name">{{ auctionId }}</div>' +
-      '<div v-if="offerType !== \'none\'" class="offer-table-row__dealer-sub">' +
-      '<OfferTypeBadge :type="offerType" :label="offerTypeLabel" />' +
-      '</div>' +
-      '</template>' +
-      '</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--vehicle">' +
-      '<div class="offer-table-row__vehicle-title">{{ vehicleTitle }}</div>' +
-      '<div class="offer-table-row__vehicle-sub"><span>{{ mileage }}</span><span>・</span><span class="offer-table-row__vin">{{ vin }}</span></div>' +
-      '</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--time">{{ timeRemaining }}</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--estimate">{{ acvEstimate }}</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--sent offer-table-row__cell--strong">{{ sentAmount }}</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--update">' +
-      '<div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">' +
-      '<StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />' +
-      '<StatusChip v-if="statusReceived" status="received" label="Received" />' +
-      '<StatusChip v-if="statusSent" status="sent" label="Sent" />' +
-      '<StatusChip v-if="statusDeclined" status="declined" label="Declined" />' +
-      '</div>' +
-      '<div class="offer-table-row__update-date">{{ updateDate }}</div>' +
-      '</div></div>',
-    setup: function (props) {
-      var offerTypeLabel = computed(function () {
-        return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
-      });
-      var refs = toRefs(props);
-      return Object.assign({}, refs, { offerTypeLabel: offerTypeLabel });
     }
   });
 
@@ -1438,6 +1386,140 @@
         inputPanel: inputPanel, showSplitDifference: showSplitDifference, splitAmount: splitAmount,
         footerButtonEnabled: footerButtonEnabled, footerButton: footerButton,
         handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleFooterCommit: handleFooterCommit
+      });
+    }
+  });
+
+  // ---------- OfferTableRow (order 31) ----------
+  // 2026-09-02:这个组件现在也用到 InformationDialog(见下面 hover CTA
+  // 部分),所以整块挪到了 InformationDialog 定义之后——静态镜像文件里
+  // `components: { InformationDialog: InformationDialog }` 这行是在
+  // defineComponent() 调用的那一刻就去读右边这个变量的值,如果
+  // OfferTableRow 还留在原来 InformationDialog 前面的位置,这时候
+  // InformationDialog 这个 var 还没赋值,会拿到 undefined——OfferCard
+  // 本来就已经在 InformationDialog 后面定义(所以它能正常引用到),这次
+  // 只是让 OfferTableRow 也满足同样的顺序要求,不是随意挪动。
+  var OfferTableRow = defineComponent({
+    name: 'OfferTableRow',
+    components: { StatusChip: StatusChip, OfferTypeBadge: OfferTypeBadge, InformationDialog: InformationDialog },
+    props: {
+      isMultiDealer: { type: Boolean, default: true },
+      photoUrl: { type: String, default: '' },
+      dealerName: { type: String, default: 'CarMax Boston' },
+      auctionId: { type: String, default: '264578' },
+      offerType: { type: String, default: 'in-negotiation' },
+      vehicleTitle: { type: String, default: '2018 Ford Somemodel' },
+      mileage: { type: String, default: '250,000 miles' },
+      vin: { type: String, default: '192211' },
+      timeRemaining: { type: String, default: '3h 15m' },
+      acvEstimate: { type: String, default: '$25,000' },
+      sentAmount: { type: String, default: '$26,000' },
+      receivedAmount: { type: String, default: '$26,800' },
+      statusNew: { type: Boolean, default: true },
+      statusReceived: { type: Boolean, default: true },
+      statusSent: { type: Boolean, default: false },
+      statusDeclined: { type: Boolean, default: false },
+      updateDate: { type: String, default: 'Today' },
+      // 默认值要和 sentAmount/receivedAmount 的默认值($26,000/$26,800,
+      // 抄自 rowWithNewAndReceived 这行 Buying tab 的真实数据)保持同一个
+      // 视角,否则默认打开的 Dialog 会显示反过来,细节见
+      // fragments/OfferTableRow/OfferTableRow.vue 同一处的注释
+      viewerRole: { type: String, default: 'buyer' },
+      reservePrice: { type: String, default: '$27,000' },
+      reportUrl: { type: String, default: '#' },
+      history: { type: Array, default: function () { return []; } }
+    },
+    template:
+      '<div class="offer-table-row">' +
+      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--dealer">' +
+      '<template v-if="isMultiDealer">' +
+      '<div class="offer-table-row__dealer-name">{{ dealerName }}</div>' +
+      '<div class="offer-table-row__dealer-sub">' +
+      '<span class="offer-table-row__dealer-id">{{ auctionId }}</span>' +
+      '<OfferTypeBadge v-if="offerType !== \'none\'" :type="offerType" :label="offerTypeLabel" />' +
+      '</div>' +
+      '</template>' +
+      '<template v-else>' +
+      '<div class="offer-table-row__dealer-name">{{ auctionId }}</div>' +
+      '<div v-if="offerType !== \'none\'" class="offer-table-row__dealer-sub">' +
+      '<OfferTypeBadge :type="offerType" :label="offerTypeLabel" />' +
+      '</div>' +
+      '</template>' +
+      '</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--vehicle">' +
+      '<div class="offer-table-row__vehicle-title">{{ vehicleTitle }}</div>' +
+      '<div class="offer-table-row__vehicle-sub"><span>{{ mileage }}</span><span>・</span><span class="offer-table-row__vin">{{ vin }}</span></div>' +
+      '</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--time">{{ timeRemaining }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--estimate">{{ reservePrice }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--sent offer-table-row__cell--strong">{{ sentAmount }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--update">' +
+      '<div class="offer-table-row__update-default">' +
+      '<div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">' +
+      '<StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />' +
+      '<StatusChip v-if="statusReceived" status="received" label="Received" />' +
+      '<StatusChip v-if="statusSent" status="sent" label="Sent" />' +
+      '<StatusChip v-if="statusDeclined" status="declined" label="Declined" />' +
+      '</div>' +
+      '<div class="offer-table-row__update-date">{{ updateDate }}</div>' +
+      '</div>' +
+      '<div class="offer-table-row__ctas">' +
+      '<button v-for="(btn, i) in hoverButtons.buttons" :key="i" type="button" class="offer-table-row__cta-btn" :class="`offer-table-row__cta-btn--${btn.style}`" @click="dialogOpen = true">{{ btn.label }}</button>' +
+      '<span v-if="hoverButtons.infoLink" class="offer-table-row__cta-divider"></span>' +
+      '<button v-if="hoverButtons.infoLink" type="button" class="offer-table-row__cta-link" @click="dialogOpen = true">{{ hoverButtons.infoLink }}</button>' +
+      '</div>' +
+      '</div>' +
+      '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" ' +
+      ':auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="statusNew" ' +
+      ':counterparty-amount="receivedAmount" :own-amount="sentAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" ' +
+      ':report-url="reportUrl" :time-left="timeRemaining ? `${timeRemaining} Left` : \'\'" :time-left-urgent="timeLeftUrgent" :history="history" />' +
+      '</div>',
+    setup: function (props) {
+      var offerTypeLabel = computed(function () {
+        return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
+      });
+      var dialogOpen = ref(false);
+      var isBuyer = computed(function () { return props.viewerRole === 'buyer'; });
+      var isMakeOffer = computed(function () { return props.offerType === 'make-offer'; });
+      var dealState = computed(function () {
+        if (props.statusDeclined) return 'declined';
+        if (props.statusSent) return 'sent';
+        return 'received';
+      });
+      var timeLeftUrgent = computed(function () {
+        return !!props.timeRemaining && !/[hd]/.test(props.timeRemaining) && /m/.test(props.timeRemaining);
+      });
+      // 2026-09-02 按 Figma node 1:21166(fileKey 4z7FK34Fgit7Fi9UxZu0za)
+      // 新增,和 OfferCard 的 hoverButtons 是同一套 viewerRole+dealState
+      // 状态表,只是多拆出 infoLink(Figma 参照帧里 "More Info" 是分割线
+      // 右边单独的文字链接,不是第三个按钮),细节见
+      // fragments/OfferTableRow/OfferTableRow.vue 的同名 computed 注释。
+      var hoverButtons = computed(function () {
+        var s = dealState.value;
+        if (s === 'declined') {
+          return { buttons: [{ label: 'View Details', style: 'outlined' }, { label: 'Remove From List', style: 'grey-outline' }], infoLink: null };
+        }
+        if (isBuyer.value) {
+          if (s === 'received') {
+            return { buttons: [{ label: 'Counter', style: 'outlined' }, { label: '✓ Accept ' + props.receivedAmount, style: 'filled' }], infoLink: 'More Info' };
+          }
+          if (s === 'sent') {
+            return isMakeOffer.value
+              ? { buttons: [{ label: 'Raise Your Offer', style: 'filled' }], infoLink: 'More Info' }
+              : { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null };
+          }
+        } else {
+          if (s === 'received') return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null };
+          if (s === 'sent') return { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null };
+        }
+        return { buttons: [], infoLink: null };
+      });
+      var refs = toRefs(props);
+      return Object.assign({}, refs, {
+        offerTypeLabel: offerTypeLabel, dialogOpen: dialogOpen, dealState: dealState,
+        timeLeftUrgent: timeLeftUrgent, hoverButtons: hoverButtons
       });
     }
   });
@@ -1833,13 +1915,39 @@
   var VIEW_TOGGLE_GRID_ICON =
     '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M6.5 9.83301C7.41667 9.83301 8.16699 10.5833 8.16699 11.5V14.833C8.16699 15.7497 7.41667 16.5 6.5 16.5H3.16699C2.25033 16.5 1.5 15.7497 1.5 14.833V11.5C1.5 10.5833 2.25033 9.83301 3.16699 9.83301H6.5ZM14.834 9.83301C15.7504 9.83327 16.5 10.5835 16.5 11.5V14.833C16.5 15.7495 15.7504 16.4997 14.834 16.5H11.5C10.5834 16.4999 9.83398 15.7496 9.83398 14.833V11.5C9.83398 10.5834 10.5834 9.8331 11.5 9.83301H14.834ZM6.5 1.5C7.41667 1.5 8.16699 2.25033 8.16699 3.16699V6.5C8.16699 7.41667 7.41667 8.16699 6.5 8.16699H3.16699C2.25033 8.16699 1.5 7.41667 1.5 6.5V3.16699C1.5 2.25033 2.25033 1.5 3.16699 1.5H6.5ZM14.834 1.5C15.7504 1.50027 16.5 2.25049 16.5 3.16699V6.5C16.5 7.4165 15.7504 8.16673 14.834 8.16699H11.5C10.5834 8.1669 9.83398 7.41661 9.83398 6.5V3.16699C9.83398 2.25038 10.5834 1.50009 11.5 1.5H14.834Z" fill="#1C1D1F"/></svg>';
 
+  // ---------- ResultsToolbar (order 35) ----------
+  // 2026-09-02 从 OfferDashboard 里抽出来的独立组件,细节见
+  // fragments/ResultsToolbar/notes.md,这里只做逐字镜像。
+  var ResultsToolbar = defineComponent({
+    name: 'ResultsToolbar',
+    components: { Pagination: Pagination },
+    props: {
+      viewMode: { type: String, default: 'table' },
+      resultsCount: { type: Number, default: 0 },
+      hasPrevPage: { type: Boolean, default: false },
+      hasNextPage: { type: Boolean, default: true }
+    },
+    emits: ['update:viewMode', 'prev', 'next'],
+    template:
+      '<div class="results-toolbar">' +
+      '<div v-if="viewMode === \'tile\'" class="results-toolbar__viewing-text">Viewing {{ resultsCount }} results</div>' +
+      '<template v-else><div class="results-toolbar__spacer"><span class="results-toolbar__private-lane"><svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div><Pagination :has-prev-page="hasPrevPage" :has-next-page="hasNextPage" @prev="$emit(\'prev\')" @next="$emit(\'next\')" /></template>' +
+      '<div class="results-toolbar__view-toggle">' +
+      '<button type="button" class="results-toolbar__view-toggle-btn" :class="{ \'results-toolbar__view-toggle-btn--active\': viewMode === \'tile\' }" aria-label="Grid view" @click="$emit(\'update:viewMode\', \'tile\')" v-html="gridIcon"></button>' +
+      '<button type="button" class="results-toolbar__view-toggle-btn" :class="{ \'results-toolbar__view-toggle-btn--active\': viewMode === \'table\' }" aria-label="List view" @click="$emit(\'update:viewMode\', \'table\')" v-html="listIcon"></button>' +
+      '</div></div>',
+    setup: function () {
+      return { gridIcon: VIEW_TOGGLE_GRID_ICON, listIcon: VIEW_TOGGLE_LIST_ICON };
+    }
+  });
+
   var OfferDashboard = defineComponent({
     name: 'OfferDashboard',
     components: {
       AppHeader: AppHeader, Breadcrumb: Breadcrumb, SidebarNav: SidebarNav, OfferTabs: OfferTabs,
       SearchInput: SearchInput, FilterChipGroup: FilterChipGroup, OfferTableHeader: OfferTableHeader,
       OfferTableRow: OfferTableRow, Pagination: Pagination, DealershipFilterDropdown: DealershipFilterDropdown,
-      OfferCard: OfferCard
+      OfferCard: OfferCard, ResultsToolbar: ResultsToolbar
     },
     props: {
       isMultiDealer: { type: Boolean, default: true },
@@ -1867,13 +1975,8 @@
       '<DealershipFilterDropdown :is-multi-dealer="isMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
       '</div>' +
       '<div class="offer-dashboard__table-card">' +
-      '<div class="offer-dashboard__table-top">' +
-      '<div v-if="viewMode === \'tile\'" class="offer-dashboard__viewing-text">Viewing {{ visibleRows.length }} results</div>' +
-      '<template v-else><div class="offer-dashboard__table-top-spacer"><span class="offer-dashboard__private-lane"><svg class="offer-dashboard__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div><Pagination v-bind="topPagination" /></template>' +
-      '<div class="offer-dashboard__view-toggle">' +
-      '<button type="button" class="offer-dashboard__view-toggle-btn" :class="{ \'offer-dashboard__view-toggle-btn--active\': viewMode === \'tile\' }" aria-label="Grid view" @click="viewMode = \'tile\'" v-html="gridIcon"></button>' +
-      '<button type="button" class="offer-dashboard__view-toggle-btn" :class="{ \'offer-dashboard__view-toggle-btn--active\': viewMode === \'table\' }" aria-label="List view" @click="viewMode = \'table\'" v-html="listIcon"></button>' +
-      '</div></div>' +
+      '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" ' +
+      ':has-prev-page="topPagination.hasPrevPage" :has-next-page="topPagination.hasNextPage" />' +
       '<template v-if="viewMode === \'table\'">' +
       '<OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
       '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" />' +
@@ -2042,10 +2145,15 @@
       // filter chip / dealership 筛一遍
       var visibleRows = computed(function () { return rowsLimited.value.filter(matchesFilters); });
       // 每一行的 isMultiDealer 都跟着 dashboard 这个开关走,而不是各自
-      // mock 里写死的值,这样切换 control 才能真的看到表格跟着变
+      // mock 里写死的值,这样切换 control 才能真的看到表格跟着变。
+      // 2026-09 新增 viewerRole:table view 的 hover CTA 和 tile view 的
+      // OfferCard 用同一套 viewerRole+dealState 判断,两边必须拿到同一个
+      // viewerRole(按当前 Buying/Selling tab 决定),细节见
+      // fragments/OfferDashboard/OfferDashboard.vue 的同名注释。
+      var viewerRoleValue = computed(function () { return activeMainTab.value === 'selling' ? 'seller' : 'buyer'; });
       var rowsWithDealerMode = computed(function () {
         return visibleRows.value.map(function (row) {
-          return Object.assign({}, row, { isMultiDealer: props.isMultiDealer });
+          return Object.assign({}, row, { isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value });
         });
       });
       // tile 视图卡片:直接复用已核实的表格行数据,字段名对得上的原样映射。
@@ -2072,7 +2180,7 @@
         return 'received';
       }
       var rowsAsCards = computed(function () {
-        var role = activeMainTab.value === 'selling' ? 'seller' : 'buyer';
+        var role = viewerRoleValue.value;
         return visibleRows.value.map(function (row) {
           var counterparty = (row.receivedAmount && row.receivedAmount !== '--') ? row.receivedAmount : row.acvEstimate;
           var own = (row.sentAmount && row.sentAmount !== '--') ? row.sentAmount : row.acvEstimate;
@@ -2112,7 +2220,7 @@
         header: header, sidebar: sidebar, tabs: tabs, filters: filters, searchValue: searchValue,
         sortColumn: sortColumn, dealershipDropdownOpen: dealershipDropdownOpen, viewMode: viewMode,
         topPagination: topPagination, rows: rows, visibleRows: visibleRows, rowsWithDealerMode: rowsWithDealerMode,
-        rowsAsCards: rowsAsCards, cardGridStyle: cardGridStyle, listIcon: VIEW_TOGGLE_LIST_ICON, gridIcon: VIEW_TOGGLE_GRID_ICON,
+        rowsAsCards: rowsAsCards, cardGridStyle: cardGridStyle,
         activeMainTab: activeMainTab, handleTabSelect: handleTabSelect,
         dealerFilter: dealerFilter, chipFilter: chipFilter, dealerChipText: dealerChipText,
         handleApplyDealerFilter: handleApplyDealerFilter, handleClearFilters: handleClearFilters,
@@ -2143,7 +2251,8 @@
       { key: 'OfferTableRow', order: 31, name: 'Offer Table Row' },
       { key: 'StatusChip', order: 32, name: 'Status Chip' },
       { key: 'OfferTypeBadge', order: 33, name: 'Offer Type Badge' },
-      { key: 'Pagination', order: 34, name: 'Pagination' }
+      { key: 'Pagination', order: 34, name: 'Pagination' },
+      { key: 'ResultsToolbar', order: 35, name: 'Results Toolbar' }
     ]},
     { title: '卡片视图 (Card View)', items: [
       { key: 'OfferCard', order: 40, name: 'Offer Card' },
@@ -2316,6 +2425,20 @@
         bottomExample: { showViewingText: true, viewingCount: 6, totalCount: 6, rowsPerPage: '10', hasPrevPage: false, hasNextPage: true }
       },
       notes: '2026-08 重大更新：下拉/箭头改用 Claude Design 项目里的 ACV Pagination 组件（components/09c-pagination.card.html），通过 DesignSync（claude_design MCP）读取，替换掉之前基于 Figma 静态稿 + 原生<select>拼出来的版本。\n\n主要变化：1. "Rows per page"字号行高改成14px/20px（去掉letter-spacing）。2. 下拉改成真正的自定义菜单（点开/点选项收起/点外部收起/Escape收起），不再是原生<select>——菜单白底边框#DCDFE8圆角(仅下2角)4px阴影0 4px 10px rgba(0,0,0,.12)，选中项背景#1A73E8文字白色，hover背景#F0F1F4，下拉箭头换成描边风格chevron。3. 打开/聚焦态新增box-shadow: 0 0 0 3px #CFE3F5。4. 上一页/下一页图标换成描边风格角括号，新增hover(圆形#F0F1F4)和focus-visible(2px #0061A5圆形描边)交互态。5. Rows per page选项还是10/20/50/100，没有变化。6. 组件自带白底+padding 12px 16px+圆角4px，作为独立卡片样式。\n\n2026-08 你指出要按之前的样子补回来：源文件的range文案格式是"{start}-{end} of {total}"（比如"1-10 of 35"），一度整个换成了这个格式，但你说"Viewing X out of Y results"这个文案还是需要的，已经改回原文案+原样式（14px/21 letter-spacing.25px色#212121），showRange/currentPage这些新加的prop已经撤掉，恢复成showViewingText/viewingCount/totalCount。\n\n待你确认：1. showViewingText这个"顶部不显示、底部显示"的开关是延续之前项目的既有做法。2. 组件自带的白底padding套进OfferDashboard后如果和周围padding叠加显得空隙过大，可能需要调整外层容器padding。3. 中间页时两个箭头样式，组件卡片本身只给了两个静态示例，没有专门演示"中间页"状态。'
+    },
+    ResultsToolbar: {
+      name: 'Results Toolbar', group: '数据表格 (Offers Table)', order: 35, def: ResultsToolbar,
+      controls: {
+        viewMode: { type: 'select', label: 'View mode (viewMode)', options: [{ value: 'tile', label: 'Tile' }, { value: 'table', label: 'Table' }], default: 'table' },
+        resultsCount: { type: 'number', label: '"Viewing N results" count (resultsCount, tile mode only)', default: 5 },
+        hasPrevPage: { type: 'boolean', label: 'Previous page enabled (hasPrevPage, table mode only)', default: false },
+        hasNextPage: { type: 'boolean', label: 'Next page enabled (hasNextPage, table mode only)', default: true }
+      },
+      mocks: {
+        tileExample: { viewMode: 'tile', resultsCount: 5 },
+        tableExample: { viewMode: 'table', hasPrevPage: false, hasNextPage: true }
+      },
+      notes: '2026-09-02 新增：从 OfferDashboard 里抽出来的独立组件——你给了 tile 视图（"Viewing 5 results" + 切换按钮）和 table 视图（"🔑 Private Lane" + Pagination + 切换按钮）两张截图，指出这两条工具条应该做成同一个组件的两个 view，不是分开各写一次。组件名字是按你的要求自己起的（"你看叫什么合适"），取 "Viewing N results" 这行文案的 "results" + 它本身是一条工具条拼的，不是 Figma 图层自带的名字。\n\n这次是纯粹的搬迁，没有改动任何数值/行为——CSS class 名字从 offer-dashboard__* 统一改成了 results-toolbar__*，选择器本身没有变。viewMode 从组件内部按钮直接改的本地 ref 变成标准的 v-model 双向绑定（update:viewMode emit），resultsCount/hasPrevPage/hasNextPage 对应 tile 的 "Viewing N results" 数字和 table 顶部 Pagination 的两个箭头状态。所有关于"为什么长这样"的 Figma 核实记录（切换按钮 pill 形状对照节点7432:69595、Private Lane 标签抄自参照原型 My-ACV--Dealer-filter-main、76px 固定行高的推导过程）都在 fragments/OfferDashboard/notes.md 和这个组件自己的 CSS 注释里，这里不重复。'
     },
     OfferCard: {
       name: 'Offer Card', group: '卡片视图 (Card View)', order: 40, def: OfferCard,

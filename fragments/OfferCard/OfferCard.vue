@@ -824,11 +824,16 @@ function copyVin() {
   letter-spacing: 0.4px;
   white-space: nowrap;
 }
+/* 2026-09-02 按你的要求:以 Make Offer 徽标的高度为基准(18px 行高 +
+   上下4px padding + 1px描边×2 = 28px),把 In Negotiation 和下面的
+   dealership name(lane badge)都改成同一个高度——这两个都没有描边,
+   靠单独加大上下 padding 到5px凑到同样的28px(18+5+5=28),不是重新
+   核实的 Figma 数值,是你直接要求"以 Make Offer 为基准统一高度"。 */
 .offer-card__type-badge--in-negotiation {
   background: #1C1D1F;
   color: #FFFFFF;
   border-radius: 8px;
-  padding: 2px 6px;
+  padding: 5px 6px;
 }
 .offer-card__type-badge--make-offer {
   background: #FFFFFF;
@@ -850,7 +855,7 @@ function copyVin() {
   text-align: right;
   white-space: nowrap;
   border-radius: 8px;
-  padding: 2px 10px;
+  padding: 5px 10px;
 }
 
 .offer-card__info {

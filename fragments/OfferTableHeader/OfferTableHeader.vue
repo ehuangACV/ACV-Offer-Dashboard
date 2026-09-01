@@ -155,8 +155,12 @@
       </div>
     </div>
 
+    <!-- 2026-09-02 按你的要求:这一列改成显示 Reserve Price,不再是 ACV
+         Estimate(OfferTableRow.vue 那边的数据绑定也同步改了,细节见该
+         文件注释)。class 名字暂时还叫 --estimate,历史命名,不影响
+         页面上显示的文字。 -->
     <div class="offer-table-header__cell offer-table-header__cell--estimate">
-      <span class="offer-table-header__title">ACV Estimate</span>
+      <span class="offer-table-header__title">Reserve Price</span>
     </div>
     <div class="offer-table-header__cell offer-table-header__cell--sent">
       <span class="offer-table-header__title">Sent</span>

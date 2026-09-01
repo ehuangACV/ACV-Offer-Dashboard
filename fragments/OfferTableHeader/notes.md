@@ -1,5 +1,12 @@
 # OfferTableHeader — Notes
 
+## 2026-09-02 按你的要求:"ACV Estimate" 列改名 "Reserve Price"
+这一列的表头文案从 "ACV Estimate" 改成 "Reserve Price"——`OfferTableRow`
+那一列显示的数字也跟着从 `acvEstimate` 改成 `reservePrice`,细节和原因
+见 [OfferTableRow/notes.md](../OfferTableRow/notes.md)。下面"已核实"表格
+里"ACV Estimate"这一行是当时 Figma 核实到的原始列名记录,保留不改,当
+历史记录看。
+
 ## 已核实(hidden=false,节点 6837:16185)
 | 列 | 宽度 | Figma node id | 内容 |
 |---|---|---|---|

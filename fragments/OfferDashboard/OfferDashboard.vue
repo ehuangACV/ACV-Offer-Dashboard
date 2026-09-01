@@ -275,55 +275,12 @@
         </div>
 
         <div class="offer-dashboard__table-card">
-          <div class="offer-dashboard__table-top">
-            <div v-if="viewMode === 'tile'" class="offer-dashboard__viewing-text">
-              Viewing {{ visibleRows.length }} results
-            </div>
-            <template v-else>
-              <div class="offer-dashboard__table-top-spacer">
-                <span class="offer-dashboard__private-lane">
-                  <svg class="offer-dashboard__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454">
-                    <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-                  </svg>
-                  Private Lane
-                </span>
-              </div>
-              <Pagination v-bind="topPagination" />
-            </template>
-
-            <!-- 2026-08 按你的要求,对照节点 7432:69595 核实:切换 UI 改成
-                 两端全圆角的 pill 形("segmented button",不是之前 4px
-                 小圆角的方形),且顺序是先 grid(tile 视图)后
-                 list/agenda(table 视图)——这个新节点里当前显示的就是卡片
-                 视图,active 态(浅灰背景 #F5F5F5)在左边的 grid 图标上,
-                 不是之前实现里 list 在前。颜色/边框数值(#D1D3D6 描边、
-                 #F5F5F5 active 背景)和之前核实的一致,没有变,只是形状
-                 和顺序变了。 -->
-            <div class="offer-dashboard__view-toggle">
-              <button
-                type="button"
-                class="offer-dashboard__view-toggle-btn"
-                :class="{ 'offer-dashboard__view-toggle-btn--active': viewMode === 'tile' }"
-                aria-label="Grid view"
-                @click="viewMode = 'tile'"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6.5 9.83301C7.41667 9.83301 8.16699 10.5833 8.16699 11.5V14.833C8.16699 15.7497 7.41667 16.5 6.5 16.5H3.16699C2.25033 16.5 1.5 15.7497 1.5 14.833V11.5C1.5 10.5833 2.25033 9.83301 3.16699 9.83301H6.5ZM14.834 9.83301C15.7504 9.83327 16.5 10.5835 16.5 11.5V14.833C16.5 15.7495 15.7504 16.4997 14.834 16.5H11.5C10.5834 16.4999 9.83398 15.7496 9.83398 14.833V11.5C9.83398 10.5834 10.5834 9.8331 11.5 9.83301H14.834ZM6.5 1.5C7.41667 1.5 8.16699 2.25033 8.16699 3.16699V6.5C8.16699 7.41667 7.41667 8.16699 6.5 8.16699H3.16699C2.25033 8.16699 1.5 7.41667 1.5 6.5V3.16699C1.5 2.25033 2.25033 1.5 3.16699 1.5H6.5ZM14.834 1.5C15.7504 1.50027 16.5 2.25049 16.5 3.16699V6.5C16.5 7.4165 15.7504 8.16673 14.834 8.16699H11.5C10.5834 8.1669 9.83398 7.41661 9.83398 6.5V3.16699C9.83398 2.25038 10.5834 1.50009 11.5 1.5H14.834Z" fill="#1C1D1F"/>
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="offer-dashboard__view-toggle-btn"
-                :class="{ 'offer-dashboard__view-toggle-btn--active': viewMode === 'table' }"
-                aria-label="List view"
-                @click="viewMode = 'table'"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15.7105 9.75H2.28947C1.85526 9.75 1.5 10.0875 1.5 10.5V15C1.5 15.4125 1.85526 15.75 2.28947 15.75H15.7105C16.1447 15.75 16.5 15.4125 16.5 15V10.5C16.5 10.0875 16.1447 9.75 15.7105 9.75ZM15.7105 2.25H2.28947C1.85526 2.25 1.5 2.5875 1.5 3V7.5C1.5 7.9125 1.85526 8.25 2.28947 8.25H15.7105C16.1447 8.25 16.5 7.9125 16.5 7.5V3C16.5 2.5875 16.1447 2.25 15.7105 2.25Z" fill="#1C1D1F"/>
-                </svg>
-              </button>
-            </div>
-          </div>
+          <ResultsToolbar
+            v-model:view-mode="viewMode"
+            :results-count="visibleRows.length"
+            :has-prev-page="topPagination.hasPrevPage"
+            :has-next-page="topPagination.hasNextPage"
+          />
 
           <template v-if="viewMode === 'table'">
             <OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
@@ -365,6 +322,7 @@ import OfferTableRow from '../OfferTableRow/OfferTableRow.vue'
 import Pagination from '../Pagination/Pagination.vue'
 import DealershipFilterDropdown from '../DealershipFilterDropdown/DealershipFilterDropdown.vue'
 import OfferCard from '../OfferCard/OfferCard.vue'
+import ResultsToolbar from '../ResultsToolbar/ResultsToolbar.vue'
 import rowMocks from '../OfferTableRow/mock.js'
 
 const props = defineProps({
@@ -630,9 +588,15 @@ const rowsLimited = computed(() =>
 const visibleRows = computed(() => rowsLimited.value.filter(matchesFilters))
 
 // 每一行的 isMultiDealer 都跟着 dashboard 这个开关走,而不是各自 mock
-// 里写死的值,这样切换 control 才能真的看到表格跟着变
+// 里写死的值,这样切换 control 才能真的看到表格跟着变。
+// 2026-09 新增 viewerRole:table view 的 hover CTA(见 OfferTableRow 自己
+// 的改动)和 tile view 的 OfferCard 用的是同一套 viewerRole+dealState
+// 判断逻辑——table/tile 本来就是同一笔 deal 的两种展示方式,按你的要求
+// "对应的 data 和 interaction 都是一样的",两边必须拿到同一个 viewerRole
+// (按当前 Buying/Selling tab 决定),不能各算各的。
+const viewerRoleValue = computed(() => (activeMainTab.value === 'selling' ? 'seller' : 'buyer'))
 const rowsWithDealerMode = computed(() =>
-  visibleRows.value.map((row) => ({ ...row, isMultiDealer: props.isMultiDealer }))
+  visibleRows.value.map((row) => ({ ...row, isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value }))
 )
 
 // Tile 视图卡片:直接复用已核实的表格行数据,字段名能对上的原样映射,
@@ -666,7 +630,7 @@ function rowToDealState(row) {
   return 'received'
 }
 const rowsAsCards = computed(() => {
-  const role = activeMainTab.value === 'selling' ? 'seller' : 'buyer'
+  const role = viewerRoleValue.value
   return visibleRows.value.map((row) => {
     const counterparty = row.receivedAmount && row.receivedAmount !== '--' ? row.receivedAmount : row.acvEstimate
     const own = row.sentAmount && row.sentAmount !== '--' ? row.sentAmount : row.acvEstimate
@@ -831,96 +795,13 @@ const cardGridStyle = computed(() =>
 /* Private Lane/Pagination 行本身贴着上面 20px 留白,下面到表头之间是
    16px(节点 7448:9916 "Table" 的 flex gap-[16px]),不是之前对称的
    8px/8px */
-/* 2026-08 你指出 Private Lane / Pagination / 切换按钮三个要一行横向居中
-   对齐:排查发现这一行的高度是由内容自己撑出来的(table 视图里
-   Pagination 组件本身高 60px,比切换按钮/文字都高,算上 padding-bottom
-   16px 这一行自然高度是 76px;tile 视图里没有 Pagination,自然高度缩到
-   只剩切换按钮 32px+padding 16px=48px),用同一个 align-items:center 的
-   话,行高一变,居中位置就跟着变,之前为了不让按钮跳动加的
-   align-self:flex-start 反而破坏了三者原本该有的居中对齐。现在改成给
-   这一行本身钉死 min-height:76px(这个文件全局 `* { box-sizing:
-   border-box }`,min-height 量的是含 padding 的整个盒子,所以要按
-   table 视图的自然总高 76px 设,不是内容区的 60px——量的是 Pagination
-   组件在这一行里实际撑出来的高度,不是 Figma 核实数值,如果以后
-   Pagination 组件本身改高度需要回来同步这个值),table/tile 两种模式下
-   这一行的高度都固定一样高,align-items:center 可以放心统一对所有子
-   元素生效——三个元素之间保持居中对齐,行高也不再随模式切换变化,按钮
-   位置自然也不会再跳。这个组件自己的 `<style scoped>` 没有全局
-   `box-sizing:border-box` reset(不像 component-playground.html 那边有
-   `* { box-sizing:border-box }`),所以这里额外显式加了
-   `box-sizing:border-box`,让 `min-height:76px` 在两边算出来的是同一个
-   数值(含 padding 的整个盒子),不然这里会变成内容区 76px + padding
-   16px = 92px,和 Playground 预览的效果就不一致了。 */
-.offer-dashboard__table-top {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: 76px;
-  padding: 0 0 16px;
-  box-sizing: border-box;
-}
-
-.offer-dashboard__table-top-spacer {
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-/* 2026-08 按你的要求新增,参照真实原型(My-ACV--Dealer-filter-main)的
-   .private-lane / .lane-icon,不是 Figma 核实数据,见 METADATA */
-.offer-dashboard__private-lane {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  line-height: 18px;
-  letter-spacing: 0.4px;
-  color: #545454;
-}
-
-.offer-dashboard__private-lane-icon {
-  flex-shrink: 0;
-}
-
-.offer-dashboard__viewing-text {
-  flex: 1;
-  font-size: 14px;
-  line-height: 21px;
-  letter-spacing: 0.25px;
-  color: #212121;
-}
-
-.offer-dashboard__view-toggle {
-  display: flex;
-  align-items: center;
-}
-
-.offer-dashboard__view-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: #FFFFFF;
-  border: 1px solid #D1D3D6;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-/* 2026-08 按你的要求改成两端全圆角的 pill 形(之前是 4px 小圆角方形),
-   对照节点 7432:69595 的 segmented button(rounded-***-[111px]) */
-.offer-dashboard__view-toggle-btn:first-child {
-  border-radius: 999px 0 0 999px;
-}
-
-.offer-dashboard__view-toggle-btn:last-child {
-  border-left: none;
-  border-radius: 0 999px 999px 0;
-}
-
-.offer-dashboard__view-toggle-btn--active {
-  background: #F5F5F5;
-}
+/* 2026-09-02:这一条工具条(Viewing N results / Private Lane+Pagination
+   + table/tile 切换按钮)已经抽成独立组件 ResultsToolbar,不再是这个
+   文件自己的 markup/CSS——你指出 table view 和 card view 的这条工具条
+   应该是同一个组件的两个 view,不是分开各写一次。原来这里"三个元素
+   固定76px行高保持居中对齐"的推导过程等 CSS 相关说明,原样搬到了
+   fragments/ResultsToolbar/ResultsToolbar.vue 自己的 CSS 注释里,不在
+   这里重复。 */
 
 /* 2026-08 按你的要求(Dashboard 全屏时卡片视图也要跟着响应式):卡片间距
    永远固定 16px,不参与任何比例缩放;卡片宽度本身用 auto-fit+minmax

@@ -1,5 +1,67 @@
 # OfferTableRow — Notes
 
+## 2026-09-02(第二次)三处小调整:hover背景色 / CTA右对齐 / 列改名
+你看了上一条改动的实际效果后,给了三点修正:
+1. **hover 背景色 #F0F8FF**:对照 Figma node 1:21166 核实,这个节点里
+   hover 态那一整行(照片/dealer/vehicle/time/estimate/sent/received/
+   update 每个 cell)背景都是 `#F0F8FF`,不是只有 Update 列。之前只做了
+   Update 列内容切换,没有加这个背景色。直接在 `.offer-table-row:hover`
+   这一级设置背景,不用逐个 cell 重复写。
+2. **CTA 按钮组右对齐**:同一个 Figma 节点里,按钮组是
+   `right:16px` 贴着列右边缘的,之前的实现是普通 flex 顺排、贴左。改成
+   `.offer-table-row__ctas` 自己撑满整列宽度(`width:100%`)+
+   `justify-content:flex-end`,只影响 CTA 这一块,不影响它旁边
+   chips+日期(`.offer-table-row__update-default`)的对齐方式,两者互斥
+   显示、各自独立布局。
+3. **"ACV Estimate" 列改成 "Reserve Price"**:表头文案
+   (`OfferTableHeader.vue`)和这一列显示的数字(原来绑定
+   `acvEstimate`,改成绑定 `reservePrice`,这个 prop 本来就已经存在,是
+   上一条改动里为 InformationDialog 新加的)都改了。`acvEstimate` 这个
+   prop 本身**没有删除**——InformationDialog 弹窗里的 "ACV Estimate"
+   那一行还在用它,只是表格这一列不再显示。CSS class 名字暂时还叫
+   `--estimate`,是历史命名,不影响页面上显示的文字,以后如果要重命名
+   class 再一起处理。
+
+## 2026-09-02 新增 hover CTA + InformationDialog(对照 Figma node 1:21166)
+你要求 table view 的 hover CTA "完全对应" card(OfferCard)hover 的 CTA
+——点击后打开同一个 Information Dialog,因为 table/tile 是同一笔 deal 的
+两种展示方式,数据和交互都该一样。你给了 Figma node `1:21166`(fileKey
+`4z7FK34Fgit7Fi9UxZu0za`,"Offers - Negotiation" 文件)作为 CTA 具体样式
+的参照——`get_design_context` 核实这个节点真实渲染出来是一条 hover 态的
+表格行:Update 列的 StatusChip/日期被换成 "Counter"(outlined 小号
+pill)+ "✓ Accept $26,000"(filled 渐变 pill,checkmark 用字面的"✓"字符,
+和 `InformationDialog` 的 Accept 按钮同一个写法)+ 一条 1px 分割线 + 纯
+文字链接 "More Info"(颜色 `#0061A5`,复用本项目已核实过的链接色,不是
+Figma 原始 token 给的 `#004E7D`)。
+
+实现上:
+- 新增 `viewerRole`/`reservePrice`/`reportUrl`/`history` 4 个 prop——
+  后三个字段本来就已经在 `mock.js` 每一行上了(之前只喂给 `rowsAsCards`
+  转换成的 OfferCard props),这次补上声明才能真正传给这个组件里新增的
+  `InformationDialog`;`viewerRole` 由 `OfferDashboard.vue` 按当前
+  Buying/Selling tab 传进来(和 tile 视图的 OfferCard 拿的是同一个值,
+  见该文件的 notes.md)。
+- 新增的 `hoverButtons` computed 直接复用 `OfferCard.vue` 的
+  `hoverButtons` 状态表(buyer/seller × received/sent/declined,同一套
+  viewerRole+dealState 判断),只是多拆出一个 `infoLink` 字段——Figma 这
+  个参照帧里 "More Info" 是分割线右边单独的链接,不是第三个和
+  Counter/Accept 同等视觉权重的按钮,这一点和卡片版本(三个按钮堆成一排
+  竖排大按钮,没有分割线+链接结构)不一样,但背后对应的还是同一组动作,
+  不是新发明的交互。`declined` 这个组合两个按钮都不是"主操作",没有对应
+  的分割线+链接结构可参照,保持原来两个平级按钮的样子。
+- 点按钮组里任意一个(包括"More Info")都打开同一个
+  InformationDialog,不按点了哪个区分内容——延续 OfferCard 那边"先这样
+  做,之后会调整"的已知简化,不是这次新引入的。
+- CSS 上没有照抄 OfferCard 那套"绝对定位 + backdrop-filter 模糊"的
+  hover 机制——表格行只有 80px 高,Update 列背后本来就没有车辆信息挡着,
+  直接用 `display:none`/`flex` 切换"chips+日期"和"CTA按钮组"两块内容。
+- `component-playground.html` 的镜像里,`OfferTableRow` 这个
+  defineComponent 整块挪到了 `InformationDialog` 定义之后(原来在它
+  前面)——静态镜像文件里 `components: { InformationDialog:
+  InformationDialog }` 是在 `defineComponent()` 调用那一刻就读取右边这
+  个变量的值,如果还留在原来的位置会拿到 `undefined`,细节见那段代码
+  自己的注释。
+
 ## 2026-09-01(第二次调整)三行的数字整体往下移,离 reserve 更远
 你要求"个别 example 的 counter number 比之前更低一点",举了具体例子
 reserve $5,500 / Highest Bid $4,500 / Seller Counter $5,000。这正好是

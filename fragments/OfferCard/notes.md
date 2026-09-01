@@ -1,5 +1,13 @@
 # OfferCard 核实记录
 
+## 2026-09-02 按你的要求:统一图片区三个徽标的高度
+你截图指出图片左下角的 "Make Offer" 徽标和 "In Negotiation"/dealer name
+(lane badge)徽标高度不一样,要求以 Make Offer 的高度为基准统一。算了一下:
+Make Offer 是 18px 行高 + 上下 4px padding + 1px 描边×2 = 28px;
+In Negotiation / lane badge 都没有描边,只把上下 padding 从 2px 改成 5px
+(18+5+5=28)就能凑到同样的 28px,水平方向的 padding(6px/10px)没有动。
+不是重新核实的 Figma 数值,是你直接要求"以 Make Offer 为基准统一高度"。
+
 ## 2026-09-01 按 "Offer States Logic for CC.md" 的 Number rules 整批重新生成 mock.js 金额
 你截图指出 Information Dialog 金额区几个数字互相矛盾(卖家开价比买家已
 出的价还低,split 落在自己的区间之外),要求整批重新生成而不是逐个打
