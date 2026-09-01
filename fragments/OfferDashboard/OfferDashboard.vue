@@ -94,6 +94,15 @@
       receivedCount/sentCount:分别是统计 `rows` 里对应字段算出来的
       (declinedCount 目前没有对应字段可统计,固定给 0)。
 
+    【2026-09-01 行数从 12 变成 10】按 "Offer States Logic for CC.md" 的
+    Number rules 整批重新生成 OfferTableRow/mock.js 的金额时,删掉了两行
+    不存在的状态组合(rowWithMakeOffer/rowFiat500,原因见该文件自己的
+    notes.md),`rows` 数组和下面 buyingRows/sellingRows 的切分点已经同步
+    改成 10 行、5+5,`buyingVehicleCount`/`sellingVehicleCount` 这两个
+    prop 的范围/默认值也跟着从 1~6/默认6 改成 1~5/默认5。这条注释只记录
+    这一次的数量变化,上面 2026-08 那几条"12行"相关的描述本身已经是历史
+    记录,不再回去改。
+
     【2026-08 按你的要求:点 filter chip / Dealership 下拉要真的过滤
     table/tile 内容】之前 FilterChipGroup 的 chip 只会自己变色,不影响
     实际显示哪些行。现在:
@@ -364,11 +373,14 @@ const props = defineProps({
   isMultiDealer: { type: Boolean, default: true },
   // 2026-08 按你的要求:Buying/Selling 分开两个独立的数量控制,不再共用
   // 一个 vehicleCount——切 tab 时各自记住自己的数量,不会因为切换 tab
-  // 就互相覆盖。各自范围 1~6(Buying/Selling 现在各自只有 6 条数据),
-  // 用于演示"车辆数量变化时页面长什么样",不是真实分页,细节见下面
-  // rowsLimited 的注释
-  buyingVehicleCount: { type: Number, default: 6 },
-  sellingVehicleCount: { type: Number, default: 6 }
+  // 就互相覆盖。各自范围 1~5(2026-09-01 删掉两行 mock 之后,Buying/
+  // Selling 现在各自只有 5 条数据,原来是 6),用于演示"车辆数量变化时
+  // 页面长什么样",不是真实分页,细节见下面 rowsLimited 的注释
+  buyingVehicleCount: { type: Number, default: 5 },
+  sellingVehicleCount: { type: Number, default: 5 },
+  // 2026-09 按你的要求,Dashboard 页面自己也要有能切 OfferCard v1/v2 的
+  // control,不再把 'v2' 写死在 rowsAsCards 里
+  cardVersion: { type: String, default: 'v2' }
 })
 
 const dealershipDropdownOpen = ref(false)
@@ -570,18 +582,20 @@ function matchesFilters(row) {
 
 const topPagination = { showViewingText: false, hasPrevPage: false, hasNextPage: true }
 
-// 2026-08:扩充成 12 行 —— 前 3 行(rowWithNewAndReceived/rowWithMakeOffer/
-// rowWithNoStatusChip)是已核实的真实行数据,后 9 行是你给了 10 张新真实
-// 照片后新增的自编 mockup 演示数据,两者性质不同,细节见
-// OfferTableRow/notes.md 的"2026-08 第二批照片"章节
+// 2026-08:扩充成 12 行 —— 前 2 行(rowWithNewAndReceived/rowWithNoStatusChip)
+// 是已核实的真实行数据,其余是你给了 10 张新真实照片后新增的自编 mockup
+// 演示数据,两者性质不同,细节见 OfferTableRow/notes.md。
+// 2026-09-01:按 "Offer States Logic for CC.md" 的 Number rules 整批重新
+// 生成金额时,删掉了两行不存在的状态组合——rowWithMakeOffer(买家+Make
+// Offer+Received,这个组合本身不存在)和 rowFiat500(offerType:'none',
+// 每笔 deal 必须是 In Negotiation 或 Make Offer 之一,没有第三种合法
+// 类型)。行数因此从 12 变成 10,细节见 OfferTableRow/mock.js 文件头注释。
 const rows = [
   rowMocks.rowWithNewAndReceived,
-  rowMocks.rowWithMakeOffer,
   rowMocks.rowWithNoStatusChip,
   rowMocks.rowLexusES,
   rowMocks.rowHyundaiKona,
   rowMocks.rowJeepWrangler,
-  rowMocks.rowFiat500,
   rowMocks.rowToyotaMatrix,
   rowMocks.rowFordEscapeTitanium,
   rowMocks.rowChevyMalibu,
@@ -589,11 +603,14 @@ const rows = [
   rowMocks.rowFordEscapeSE
 ]
 
-// 2026-08 按你的要求"总共12个vehicle,buying默认显示6个selling6个":
-// 前 6 条归 Buying,后 6 条归 Selling,纯粹是数量上的对半切分,不对应
-// 任何 Figma 数据或真实业务规则。
-const buyingRows = rows.slice(0, 6)
-const sellingRows = rows.slice(6, 12)
+// 2026-08 按你的要求"总共12个vehicle,buying默认显示6个selling6个":前6条
+// 归Buying、后6条归Selling,纯粹是数量上的对半切分。2026-09-01 删掉两行
+// (一行原本在前6/Buying,一行原本在后6/Selling)之后,总数变成10,对半
+// 切分跟着变成 5+5——rowWithMakeOffer 原来在 Buying 里,rowFiat500 原来在
+// Selling 里,删掉后两边正好还是各少一个,所以还是干净的 5+5,不用重新
+// 决定谁归哪一边。
+const buyingRows = rows.slice(0, 5)
+const sellingRows = rows.slice(5, 10)
 
 // 2026-08 按你的要求:Buying/Selling 各自用自己的 vehicleCount(不再共用
 // 一个),按当前选中的 tab 挑对应那一个,夹在 [1, activeTabRows.length]
@@ -668,7 +685,27 @@ const rowsAsCards = computed(() => {
       isNew: row.statusNew,
       counterpartyAmount: counterparty,
       ownAmount: own,
-      ownTimestamp: row.updateDate
+      ownTimestamp: row.updateDate,
+      // 2026-09 按你的要求,tile 视图默认用 card 的 v2 内容规则(去掉
+      // mileage行/两行文案新规则,细节见 OfferCard/notes.md)。
+      // counterpartyTimestamp 是 v2 才用得到的新字段(对方最近一次动作
+      // 的时间),表格行数据里没有单独区分"我方/对方各自的时间戳"这么
+      // 细,只有一个笼统的 updateDate——和 ownTimestamp 借用的是同一个
+      // 字段,不是逐行核实过的真实业务数据,待你确认。
+      cardVersion: props.cardVersion,
+      counterpartyTimestamp: row.updateDate,
+      // 2026-09 修复真实bug:之前这里完全没有把这三个字段传给
+      // OfferCard(=没有传给它内部的 InformationDialog),导致从
+      // Dashboard 真实数据点开的对话框金额区/历史区一直落到 OfferCard
+      // 组件自己的默认占位值,和这一行真实的车辆/金额完全对不上——你
+      // 发截图指出的"info dialog上没有显示对应card上的内容"就是这个
+      // 原因。这三个字段现在直接来自 OfferTableRow/mock.js 里逐行补的
+      // 同名字段,细节和"这些字段本身是否满足'Offer States Logic for
+      // CC.md'的number rules"的核对记录见 OfferTableRow/notes.md。
+      reservePrice: row.reservePrice,
+      acvEstimate: row.acvEstimate,
+      reportUrl: row.reportUrl,
+      history: row.history
     }
   })
 })

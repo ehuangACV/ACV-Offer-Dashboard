@@ -194,6 +194,81 @@
        "· {gapAmount} apart",不会用在 sent 状态(规范:"不能在等待的
        状态下对一个还没实现的差额采取行动")。这个功能默认关闭,因为规范
        第7节把它列为待产品确认的问题,不是已经拍板的设计。
+
+    【2026-08 按你的要求:点任意 hover 按钮打开 Information Dialog】
+    你明确说"我知道这不合理,先这样做,之后会调整"——所以现在不区分点了
+    Accept/Decline/Counter/View Details/Manage Offer/Raise Your Offer/
+    Remove From List 里的哪一个,`hoverButtons` 数组里每个按钮的
+    `@click` 统一只做一件事:把内部的 `dialogOpen` ref 设成 true。
+    `<InformationDialog>` 用 `v-model="dialogOpen"` 挂在卡片模板最后,
+    组件内部用 `<Teleport to="body">` 渲染,不会被 `.offer-card` 自己的
+    `overflow:hidden` 裁掉。Dialog 需要卡片本身没有的几个字段
+    (`reservePrice`/`acvEstimate`/`reportUrl`/`history`——原来还有个
+    `openingBidAmount`/`floorAmount`/`ceilingAmount`,2026-09 发现是多余
+    的、用错位置的字段,已删掉,见下面2026-09条目),已经作为新 prop 加在
+    OfferCard 上,默认值给了合理的占位数字,细节和内容规则见
+    fragments/InformationDialog/notes.md,这里不重复。
+
+    【2026-09 按你的要求新增 card 内容 v2,不是 Figma 核实,是你直接给的
+    文字规则】新增 `cardVersion` prop('v1'/'v2',默认 'v1',不传就是原来
+    一直在用的行为,完全不影响任何现有页面/mock),为以后还会有更多版本
+    预留了字符串枚举而不是布尔值。v2 改了两处内容(没有动 hover 机制/
+    倒计时颜色规则/按钮组这些交互层面的东西,你也没有要求改这些):
+    1. 车辆信息区第二行从"{mileage} ・ VIN {vin}"改成"Auction ID
+       {auctionId} ・ VIN {vin}",同时不再单独渲染下面那行"Auction ID:
+       xxx"(本来就是同一个 auctionId,v1 分两行显示,v2 合并成一行,
+       原话"这样减少一行字")。`mileage` prop 在 v2 下还是存在(没删,
+       数据源可能还需要),只是卡片不再显示它。【2026-09 补充】刚开始
+       只放了裸数字("452161 ・ VIN 884523"),你指出"auction ID 要加到
+       ID number 前面上去"——现在改成"Auction ID {auctionId}"(照
+       VIN 那半边"VIN {vin}"不带冒号的格式,不是"Auction ID:
+       {auctionId}"那种带冒号的写法,和同一行内 VIN 那半边保持一致)。
+    2. 两行文案的规则彻底不一样,新增 `messageLine1V2`/`messageLine2V2`
+       两个 computed(v1 原来的逻辑原样保留在 `messageLine1V1`/
+       `messageLine2V1`,一个字没动),按 `cardVersion` 选择用哪一套:
+       - `sent`(轮到对方,你在等):line1 只说"Waiting on the
+         {对方}",不带时间——你原话"因为等待没有时间节点";line2 是
+         "你自己最后一个动作 + 时间"(这条和 v1 的措辞、结构完全一样,
+         你给的例子"Your counter $4,200 · Today, 09:10 AM"本来就和已有
+         实现一致,没有需要改的地方)。
+       - `received`(轮到你,对方刚发过来):line1 变成"对方刚做的动作 +
+         金额 + **那次动作的时间点**"(v1 原来 line1 不带时间,v2 新增,
+         需要新 prop `counterpartyTimestamp`);line2 从"你自己金额 + 你
+         自己的时间"改成"你自己金额 + **和对方差多少**"(新增
+         `gapBetween()` 函数,直接从 `counterpartyAmount`/`ownAmount`
+         两个已有金额算差值,不需要像 v1 的 `gapAmount` 那样另外单独传
+         一个字符串,不存在两边数字对不上的风险)。买家这一侧的措辞按你
+         截图给的例子"Your offer $3,800 · $700 apart"写死用"offer"这个
+         词(不是"counter")——卖家这一侧你没给对应例子,沿用它原来就在
+         用的"Your counter"/"Your reserve"措辞,只是结构上加了差额,
+         没有像买家那样改动词。
+       - `declined`/`expired`:你没提到要改,v2 原样复用 v1 的文案,一个
+         字没变。
+    3. 新增 prop `counterpartyTimestamp`(对方最近一次动作的时间点),
+       只有 v2 的 `received` 状态 line1 会用到,默认空字符串——不传就是
+       "对方 动作 金额"不带时间,不会渲染出多余的分隔符。
+    【2026-09 三处 v2 布局微调,你直接给的截图指示】
+    1. line1 的时间(v2 received 状态才有,比如"Seller countered
+       $4,500"后面的"Today, 08:45 AM")不再拼进文案字符串里跟着金额,
+       改成单独一个元素 `messageLine1Timestamp`,和 line1 文字放在同
+       一个 flex 行里两端对齐——文字贴左,时间永远贴最右边。sent/
+       declined/expired 这几个没有这个时间的状态,这个值是空字符串,
+       不会渲染出多余的行。
+    2. 状态chip(New/Received/Sent/Declined/Expired 那一排)不管这张
+       卡有没有倒计时都要贴在最右边——之前 `.offer-card__flex-row` 靠
+       `justify-content:space-between` 让倒计时贴左、chip贴右,但
+       declined/expired 这类没有倒计时的卡片这一行只剩chip一个孩子,
+       `space-between` 对单个孩子不生效,会退回默认贴左。给
+       `.offer-card__status-pills` 加了 `margin-left:auto`,不依赖
+       倒计时那个兄弟节点陪着,自己就会贴右。
+    3. 消息块最下面两行(line1所在行 + line2)之间补了2px的间距,之前
+       是紧贴的0间距。
+    【待你确认】倒计时"<1小时=红色"这条规则你在这条消息里也提了一遍,
+    组件里这条规则本来就已经实现(靠 `timeLeftUrgent` prop 决定颜色),
+    v1/v2 共用同一段倒计时markup,没有改动——如果你的意思是这个颜色应该
+    由卡片自己去解析 `timeLeft` 文本里到底有没有"h"来自动判断,而不是靠
+    外部传的 `timeLeftUrgent` 布尔值,请明确说一下,现在没有做这个改动
+    (担心猜错方向,搞出一个你没要求的新机制)。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
@@ -231,7 +306,7 @@
       <div class="offer-card__vehicle">
         <div class="offer-card__vehicle-title">{{ vehicleTitle }}</div>
         <div class="offer-card__vehicle-sub">
-          <span>{{ mileage }}</span>
+          <span>{{ cardVersion === 'v2' ? ('Auction ID: ' + auctionId) : mileage }}</span>
           <span>・</span>
           <span class="offer-card__vin">
             VIN {{ vin }}
@@ -242,7 +317,7 @@
             </button>
           </span>
         </div>
-        <div v-if="auctionId" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>
+        <div v-if="auctionId && cardVersion !== 'v2'" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>
       </div>
 
       <div v-if="hasCountdown || hasStateChip || messageLine1" class="offer-card__flex-section">
@@ -262,7 +337,10 @@
         <template v-if="messageLine1">
           <div class="offer-card__divider" />
           <div class="offer-card__message">
-            <div class="offer-card__message-primary">{{ messageLine1 }}</div>
+            <div class="offer-card__message-row">
+              <div class="offer-card__message-primary">{{ messageLine1 }}</div>
+              <div v-if="messageLine1Timestamp" class="offer-card__message-timestamp">{{ messageLine1Timestamp }}</div>
+            </div>
             <div v-if="messageLine2" class="offer-card__message-secondary">{{ messageLine2 }}</div>
           </div>
         </template>
@@ -281,14 +359,47 @@
         type="button"
         class="offer-card__hover-btn"
         :class="`offer-card__hover-btn--${btn.style}`"
+        @click="dialogOpen = true"
       >{{ btn.label }}</button>
     </div>
+
+    <!-- 2026-08 按你的要求:点卡片上任意一个 hover 按钮(不管是 Accept/
+         Decline/Counter/View Details/Manage Offer/Raise Your Offer/
+         Remove From List 哪一个)都打开这同一个 Information Dialog——
+         你明确说"我知道这不合理,先这样做,之后会调整",所以这里没有按
+         点了哪个按钮去区分打开不同内容,统一用 dialogOpen 这一个开关。
+         Dialog 内容(金额区/历史/输入面板/按钮)另外按 viewerRole+
+         offerType+dealState 算,和卡片是同一套模型,细节见
+         fragments/InformationDialog/notes.md。 -->
+    <InformationDialog
+      v-model="dialogOpen"
+      :photo-url="photoUrl"
+      :vehicle-title="vehicleTitle"
+      :vin="vin"
+      :mileage="mileage"
+      :auction-id="auctionId"
+      :offer-type="offerType"
+      :viewer-role="viewerRole"
+      :deal-state="dealState"
+      :is-new="isNew"
+      :counterparty-amount="counterpartyAmount"
+      :own-amount="ownAmount"
+      :reserve-price="reservePrice"
+      :acv-estimate="acvEstimate"
+      :report-url="reportUrl"
+      :time-left="timeLeft"
+      :time-left-urgent="timeLeftUrgent"
+      :history="history"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import StatusChip from '../StatusChip/StatusChip.vue'
+import InformationDialog from '../InformationDialog/InformationDialog.vue'
+
+const dialogOpen = ref(false)
 
 const props = defineProps({
   photoUrl: { type: String, default: '' },
@@ -331,7 +442,35 @@ const props = defineProps({
   // 默认关闭。打开后只在 dealState==='received' 时把 line2 的时间戳换成
   // "· {gapAmount} apart"
   showGap: { type: Boolean, default: false },
-  gapAmount: { type: String, default: '$700 apart' }
+  gapAmount: { type: String, default: '$700 apart' },
+  // 2026-08 按你的要求新增:点任意 hover 按钮都会打开 Information
+  // Dialog,这几个 prop 是卡片本身用不到、但 Dialog 需要的额外数据——
+  // 见 fragments/InformationDialog/notes.md。
+  // 【2026-09】原来这里还有一个 openingBidAmount,已经删掉——Dialog 的
+  // "Highest Bid"/"Buyer High Bid" 那个数字应该直接用 ownAmount/
+  // counterpartyAmount 算(和卡片上是同一个数字,"永远显示最新的数字,
+  // 不是开盘价"),之前多出来一个不相关的静态prop是一个真实bug,细节见
+  // fragments/InformationDialog/notes.md。
+  // 2026-09-01:默认值原来是 $26,000/$25,000,和上面 ownAmount/
+  // counterpartyAmount 的默认值($3,800/$4,500)不是同一条协商链路——
+  // 按 "Offer States Logic for CC.md" 的 Number rules 改成和这两个默认值
+  // 一致的 $4,800/$4,600,细节见 mock.js 文件头注释。
+  reservePrice: { type: String, default: '$4,800' },
+  acvEstimate: { type: String, default: '$4,600' },
+  reportUrl: { type: String, default: '#' },
+  history: { type: Array, default: () => [] },
+  // 2026-09 按你的要求新增 "card 版本" 概念——v1 是之前所有已经核实/验证过
+  // 的内容规则(原样不动),v2 是这次新给的规则(去掉mileage行,用
+  // auctionId顶替;message两行的逻辑也不同,见下面 messageLine1V2/
+  // messageLine2V2)。以后如果还有更多版本,往这个 'v1'/'v2'/... 的字符串
+  // 集合里加新值即可,不用再破坏性改已有版本。默认 'v1',不传就完全是老
+  // 行为——只有 OfferDashboard.vue 明确传 'v2'。
+  cardVersion: { type: String, default: 'v1' },
+  // 2026-09 v2 专用:对方最近一次动作的时间点(比如"卖家countered"是什么
+  // 时候发生的)。v1 没有这个字段的显示位置,只有v2 message line1 在
+  // dealState 是 received 时会用到。默认空字符串,不传就不在line1追加
+  // 时间。
+  counterpartyTimestamp: { type: String, default: '' }
 })
 
 const offerTypeLabel = computed(() =>
@@ -361,7 +500,9 @@ const stateChipLabel = computed(() => {
 // 表(buyer/seller)逐条抄的文案——不是套一个通用公式生成的,因为
 // declined/expired 这两个"关闭状态"在 buyer 侧 line2 用的是自己的金额,
 // seller 侧用的却是对方的金额,两边不对称,没法用一个公式覆盖。
-const messageLine1 = computed(() => {
+// 【2026-09】这是 v1 的文案逻辑,原样保留、完全没有改动——v2 的新规则在
+// 下面 messageLine1V2/messageLine2V2 里单独实现,两套逻辑互不影响。
+const messageLine1V1 = computed(() => {
   const s = props.dealState
   if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
   if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
@@ -375,7 +516,7 @@ const messageLine1 = computed(() => {
   return ''
 })
 
-const messageLine2 = computed(() => {
+const messageLine2V1 = computed(() => {
   const s = props.dealState
   if (s === 'declined' || s === 'expired') {
     // 关闭状态:buyer 侧显示自己的金额,seller 侧显示对方的金额——两边
@@ -403,6 +544,79 @@ const messageLine2 = computed(() => {
   }
   return ''
 })
+
+// 2026-09 按你的要求新增 v2 文案规则,原话:"Latest move first显示在卡
+// 底部的第一行,Waiting on the seller时间显示在第二行,因为等待没有时间
+// 节点。就显示买家最后一个行为在第二行。" + "如果收到counter没有counter
+// back,买家显示时间在第一行对应买家counter时间点...卖家则会显示waiting
+// on the buyer"。归纳成一条统一规则(buyer/seller对称):
+// - dealState 是 sent(轮到对方,你在等):line1 只说"Waiting on the
+//   {对方}",不带时间(等待本身没有时间点);line2 显示"你自己最后一个
+//   动作 + 它的时间点"——这条和 v1 的 sent 分支文案完全一样,没有变化,
+//   因为你给的例子("Your counter $4,200 · Today, 09:10 AM")本来就和
+//   已有实现一致。
+// - dealState 是 received(轮到你,对方刚动作完):line1 变成"对方刚做的
+//   动作 + 金额 + 那个动作的时间点"(v1 原来没有时间);line2 从"你自己
+//   金额 + 你自己的时间"改成"你自己金额 + 和对方差多少"(v1 的
+//   showGap/gapAmount 是可选、默认关闭的,v2 里这个差额规则默认开启,
+//   直接从 counterpartyAmount/ownAmount 算,不需要外部再传一个
+//   gapAmount)。买家这一侧的措辞按你截图给的例子写死成"Your offer"
+//   (不是"Your counter")——卖家这一侧没有对应例子,沿用它本来就在用的
+//   "Your counter"/"Your reserve"措辞,只是结构上加了差额。
+// - declined/expired 这两个关闭状态你没有提到要改,原样复用 v1 的文案。
+const messageLine1V2 = computed(() => {
+  const s = props.dealState
+  if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
+  if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
+  if (s === 'sent') return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer'
+  if (s === 'received') {
+    const who = isBuyer.value ? 'Seller' : 'Buyer'
+    const verb = isBuyer.value ? 'countered' : (isMakeOffer.value ? 'offered' : 'countered')
+    return `${who} ${verb} ${props.counterpartyAmount}`
+  }
+  return ''
+})
+
+// 2026-09 按你的要求:line1 的时间不再拼进文案字符串里挤在金额后面,改成
+// 单独一个元素,和 line1 文字同一行、靠最右边对齐(截图里"Seller
+// countered $4,500"和"Today, 08:45 AM"分别贴在这一行的左右两端)。只有
+// v2 的 received 状态 line1 才有这个时间(sent 状态的"Waiting on the
+// seller"本身没有时间点,declined/expired 也没有,v1 从来没有过这个时间)
+const messageLine1Timestamp = computed(() => {
+  if (props.cardVersion !== 'v2') return ''
+  if (props.dealState !== 'received') return ''
+  return props.counterpartyTimestamp || ''
+})
+
+// 差额只在双方都有具体金额时才算得出来(和 InformationDialog 的
+// splitAmount 计算方式一致,同样的"字符串转数字"写法,没有再造一个新规则)
+function gapBetween(a, b) {
+  const na = Number(String(a).replace(/[^0-9.]/g, ''))
+  const nb = Number(String(b).replace(/[^0-9.]/g, ''))
+  if (!na || !nb) return ''
+  return '$' + Math.abs(na - nb).toLocaleString('en-US')
+}
+
+const messageLine2V2 = computed(() => {
+  const s = props.dealState
+  if (s === 'declined' || s === 'expired') {
+    return isBuyer.value ? `Your offer ${props.ownAmount}` : `Buyer offered ${props.counterpartyAmount}`
+  }
+  if (s === 'sent') {
+    const verb = isMakeOffer.value ? 'offer' : 'counter'
+    return `Your ${verb} ${props.ownAmount} · ${props.ownTimestamp}`
+  }
+  if (s === 'received') {
+    if (!isBuyer.value && isMakeOffer.value) return `Your reserve ${props.ownAmount}`
+    const ownVerb = isBuyer.value ? 'offer' : 'counter'
+    const gap = gapBetween(props.counterpartyAmount, props.ownAmount)
+    return gap ? `Your ${ownVerb} ${props.ownAmount} · ${gap} apart` : `Your ${ownVerb} ${props.ownAmount}`
+  }
+  return ''
+})
+
+const messageLine1 = computed(() => (props.cardVersion === 'v2' ? messageLine1V2.value : messageLine1V1.value))
+const messageLine2 = computed(() => (props.cardVersion === 'v2' ? messageLine2V2.value : messageLine2V1.value))
 
 // 2026-08 按规范第4节两张表(buyer/seller)查出来的 hover 按钮组——
 // label + style('filled'/'outlined'/'grey-outline'),数组长度决定
@@ -694,7 +908,7 @@ function copyVin() {
 .offer-card__flex-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .offer-card__flex-row {
@@ -724,10 +938,16 @@ function copyVin() {
   color: #55575C;
 }
 
+/* 2026-09 按你的要求:不管有没有倒计时(比如 declined/expired 没有倒计时,
+   .offer-card__flex-row 里只剩这一个孩子),这些状态chip都要贴在最右边——
+   justify-content:space-between 只在有两个孩子时才会把单独一个推到最
+   右边,只有一个孩子时会退回默认的靠左。加 margin-left:auto 让它自己
+   会占满并靠右,不依赖是否有倒计时那个兄弟节点陪着。 */
 .offer-card__status-pills {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-left: auto;
 }
 
 .offer-card__divider {
@@ -735,9 +955,22 @@ function copyVin() {
   background: #EBEBEB;
 }
 
+/* 2026-09 按你的要求:最下面第一行(message-row)和第二行(message-
+   secondary)之间留 2px 空隙,之前是紧贴着的0间距 */
 .offer-card__message {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+}
+
+/* 2026-09 按你的要求新增:line1 的时间(v2 received 状态才有)不再拼进
+   文案字符串里,改成单独一个元素,和 line1 文字同一行两端对齐——如果
+   这一行有时间,时间永远贴在最右边 */
+.offer-card__message-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .offer-card__message-primary {
@@ -746,6 +979,15 @@ function copyVin() {
   line-height: 20px;
   letter-spacing: 0.1px;
   color: #0E0E0F;
+}
+
+.offer-card__message-timestamp {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  color: #55575C;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .offer-card__message-secondary {

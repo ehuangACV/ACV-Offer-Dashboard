@@ -111,6 +111,9 @@
     Mock 数据里补了 `rowChevyMalibu`(New+Received+Sent 三个同时出现,
     演示 New 和其他状态共存)和 `rowFiat500`(单独 Declined)两个例子,
     让 Sent/Declined 至少各出现一次,细节见 mock.js 里的注释。
+    【2026-09-01 更正】`rowFiat500` 已经删掉(`offerType:'none'` 不是
+    合法类型,见 mock.js 文件头注释),现在演示 Declined 状态的是
+    `rowLexusES`(`statusDeclined:true`,细节见 mock.js)。
 
     【2026-08 你指出:Update 列的 New chip 不应该有星星图标】你之前发过
     截图指出这个位置的 New chip 是没有图标的,一直没有生效(之前调
@@ -198,10 +201,16 @@ const props = defineProps({
   vehicleTitle: { type: String, default: '2018 Ford Somemodel' },
   mileage: { type: String, default: '250,000 miles' },
   vin: { type: String, default: '192211' },
-  timeRemaining: { type: String, default: '20h 45m' },
+  // 2026-09-01:默认值原来是 Figma 核实截图当时的原始数字($26,000/
+  // $7,000/20h 45m),按 "Offer States Logic for CC.md" 的 Number rules
+  // 重新生成 mock.js 之后跟着同步,不再是最初核实截图的字面值——上面
+  // METADATA/source_of_truth 记录的仍然是当时 Figma 截图的原始数字,这里
+  // 只是组件自己的 prop 默认值,两者不是同一件事,细节见 mock.js 文件头
+  // 注释。
+  timeRemaining: { type: String, default: '3h 15m' },
   acvEstimate: { type: String, default: '$25,000' },
   sentAmount: { type: String, default: '$26,000' },
-  receivedAmount: { type: String, default: '$7,000' },
+  receivedAmount: { type: String, default: '$26,800' },
   statusNew: { type: Boolean, default: true },
   statusReceived: { type: Boolean, default: true },
   // 2026-08 按你的要求新增,见 METADATA 里记录的业务逻辑说明

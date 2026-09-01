@@ -36,6 +36,11 @@
 照抄那个具体的设计系统。
 
 ## 待你确认
+0. 【2026-09 新增】`OfferCard` 加了 `cardVersion`('v1'/'v2')prop 之后,
+   这个总览页 10 张卡片**没有**跟着传这个值,还是走组件默认的 'v1'——
+   不确定你是否想要这个总览页也能像 `OfferDashboard` 一样切到 v2,或者
+   干脆也加一个 Buyer/Seller 那样的顶部切换按钮。细节见
+   [OfferCard/notes.md](../OfferCard/notes.md)。
 1. 5 种状态的排列顺序按"进行中→已结束"(Received→Sent→Declined→
    Expired,Make Offer 类型的那个状态插在对应位置)排的,不是规范文档
    规定的顺序(规范只列了表格,没规定展示顺序),如果你想要别的顺序请

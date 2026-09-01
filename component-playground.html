@@ -77,9 +77,13 @@
   .pg-controls__inner { width: 268px; }
   .pg-controls--collapsed { width: 0; padding-left: 0; padding-right: 0; border-color: transparent; }
   .pg-controls__title { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #545454; text-transform: uppercase; letter-spacing: .3px; }
-  .pg-control-field { margin-bottom: 12px; }
-  .pg-control-field label { display: block; font-size: 12px; color: #545454; margin-bottom: 4px; }
-  .pg-control-field select, .pg-control-field input[type=text], .pg-control-field input[type=number] { width: 100%; padding: 6px 8px; border: 1px solid #DCDFE8; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+  .pg-control-field { margin-bottom: 16px; }
+  /* 2026-09 按你给的截图重做:label 从"小灰字"改成"深色粗体小标题"
+     (对应截图里"Viewport"这种section标题的分量),不再是不起眼的
+     附属说明文字 */
+  .pg-control-field label { display: block; font-size: 14px; font-weight: 600; color: #1F2430; margin-bottom: 8px; }
+  .pg-control-field select, .pg-control-field input[type=text], .pg-control-field input[type=number] { width: 100%; padding: 9px 12px; border: 1px solid #D8DAE0; border-radius: 8px; font-size: 13px; color: #1F2430; box-sizing: border-box; transition: border-color .15s ease, box-shadow .15s ease; }
+  .pg-control-field select:focus, .pg-control-field input[type=text]:focus, .pg-control-field input[type=number]:focus { outline: none; border-color: #6C7BFF; box-shadow: 0 0 0 3px rgba(108,123,255,.15); }
   /* 布尔控件画成 iOS 风格的开关,而不是普通 checkbox */
   .pg-control-field input[type=checkbox] {
     appearance: none;
@@ -108,9 +112,21 @@
   }
   .pg-control-field input[type=checkbox]:checked { background: #F26522; }
   .pg-control-field input[type=checkbox]:checked::before { transform: translateX(16px); }
-  .pg-control-button { width: 100%; padding: 8px 12px; border: 1px solid #F26522; border-radius: 6px; background: #fff; color: #F26522; font-size: 13px; font-weight: 500; cursor: pointer; }
-  .pg-control-button:hover { background: #FEF3EC; }
-  .pg-control-button:active { background: #FEE4D3; }
+  /* 2026-09 按你给的截图重做 reset 这颗按钮:浅灰底、深色粗体字、居中,
+     不再是描边橙色小按钮 */
+  .pg-control-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; border: 1px solid #E4E6EC; border-radius: 10px; background: #F3F4F6; color: #1F2430; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .15s ease, border-color .15s ease; }
+  .pg-control-button::before { content: '↺'; font-size: 15px; font-weight: 400; }
+  .pg-control-button:hover { background: #E9EBEF; border-color: #D8DAE0; }
+  .pg-control-button:active { background: #DEE1E7; }
+  /* 2026-09 新增分段按钮控件(截图里 Viewport 那一排 Desktop/Tablet/
+     Mobile 的样式)——一排等宽/自适应的圆角按钮,选中的一个填蓝色实底,
+     其余描边灰色。用于 cardVersion 这种"只有几个互斥选项"的控件,
+     取代原来不起眼的 <select> 下拉。 */
+  .pg-segmented { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pg-segmented__btn { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1 1 auto; padding: 10px 14px; border: 1px solid #D8DAE0; border-radius: 8px; background: #FFFFFF; color: #1F2430; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+  .pg-segmented__btn:hover { background: #F3F4F6; }
+  .pg-segmented__btn--active { background: #2F5BFF; border-color: #2F5BFF; color: #FFFFFF; }
+  .pg-segmented__btn--active:hover { background: #2450E6; }
   .pg-control-range { display: flex; align-items: center; gap: 8px; }
   .pg-control-range input[type=range] { flex: 1; min-width: 0; }
   .pg-control-range__value { font-size: 12px; color: #545454; white-space: nowrap; min-width: 44px; text-align: right; }
@@ -448,17 +464,86 @@
   .offer-card__vin { display: inline-flex; align-items: center; gap: 4px; }
   .offer-card__copy-btn { display: inline-flex; align-items: center; border: none; background: none; padding: 0; cursor: pointer; }
   .offer-card__auction-id { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
-  .offer-card__flex-section { display: flex; flex-direction: column; gap: 8px; }
+  .offer-card__flex-section { display: flex; flex-direction: column; gap: 12px; }
   .offer-card__flex-row { display: flex; align-items: center; justify-content: space-between; }
   .offer-card__time-left { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #CC433A; }
   /* 2026-08 你指出:倒计时字体不管紧急不紧急都保持14px medium,只换
      颜色(<1小时红色#CC433A,>=1小时灰色#55575C) */
   .offer-card__time-left--grey { color: #55575C; }
-  .offer-card__status-pills { display: flex; align-items: center; gap: 6px; }
+  /* 2026-09 margin-left:auto,不管有没有倒计时这个兄弟节点陪着,状态chip都贴最右边 */
+  .offer-card__status-pills { display: flex; align-items: center; gap: 6px; margin-left: auto; }
   .offer-card__divider { height: 1px; background: #EBEBEB; }
-  .offer-card__message { display: flex; flex-direction: column; }
+  .offer-card__message { display: flex; flex-direction: column; gap: 2px; }
+  .offer-card__message-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .offer-card__message-primary { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .offer-card__message-timestamp { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; color: #55575C; white-space: nowrap; flex-shrink: 0; }
   .offer-card__message-secondary { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
+
+  /* -- InformationDialog(见 fragments/InformationDialog/notes.md ——
+     2026-09 整体按 "Information Dialog Template.html" + "Offer States
+     Logic for CC.md" 重写,不再以 Figma 为准) -- */
+  .info-dialog-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.25); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 40px 16px; box-sizing: border-box; z-index: 1000; }
+  .info-dialog-inline-shell { display: flex; justify-content: center; padding: 24px 0; }
+  .info-dialog { display: flex; flex-direction: column; gap: 14px; width: 520px; flex-shrink: 0; padding: 20px 22px 18px; border-radius: 12px; background: #FFFFFF; box-shadow: 0 0 0 1px #E8E9EB, 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12), 0 5px 5px rgba(0, 0, 0, 0.20); font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  .info-dialog__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .info-dialog__title { font-size: 20px; font-weight: 500; line-height: 28px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__close { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: none; background: none; color: #0E0E0F; cursor: pointer; }
+  .info-dialog__vehicle { display: flex; gap: 16px; padding: 14px; border-radius: 4px; background: #F7F7F8; }
+  .info-dialog__vehicle-photo { position: relative; width: 116px; height: 84px; flex: none; border-radius: 3px; overflow: hidden; background: #E6E9EF; }
+  .info-dialog__vehicle-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .info-dialog__vehicle-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .info-dialog__vehicle-title { font-size: 15px; font-weight: 500; line-height: 22px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__vehicle-line { font-size: 13px; line-height: 19px; letter-spacing: 0.1px; color: #55575C; }
+  .info-dialog__money { display: flex; align-items: flex-start; gap: 16px; padding: 14px 16px; border-radius: 4px; background: #F7F7F8; }
+  .info-dialog__money-figure { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .info-dialog__money-label { font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #55575C; white-space: nowrap; }
+  .info-dialog__money-value { display: flex; align-items: baseline; gap: 8px; font-size: 15px; font-weight: 500; line-height: 22px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__money-divider { width: 1px; align-self: stretch; background: #DCDFE8; }
+  .info-dialog__report-link { font-size: 12px; font-weight: 400; letter-spacing: 0.4px; white-space: nowrap; color: #0061A5; text-decoration: none; }
+  .info-dialog__status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  /* 2026-09 按模板要求"照抄几何,不要重新设计样式",chip 改回手写 markup,不再引用 StatusChip 组件 */
+  .info-dialog__chips { display: flex; align-items: center; gap: 8px; }
+  .info-dialog__chip { display: flex; align-items: center; height: 22px; padding: 4px 8px; border-radius: 4px; box-sizing: border-box; font-size: 12px; line-height: 14px; letter-spacing: 0.4px; white-space: nowrap; }
+  .info-dialog__chip--new { background: #F4FFF6; color: #006C4C; }
+  .info-dialog__chip--received { background: #F0F8FF; color: #0061A5; }
+  .info-dialog__chip--sent { background: #E0E0E0; color: #212121; }
+  .info-dialog__chip--declined { background: #FFEFBF; color: #402D00; }
+  .info-dialog__chip--expired { background: #E0E0E0; color: #55575C; }
+  .info-dialog__time-remaining { display: flex; align-items: baseline; gap: 8px; font-size: 13px; letter-spacing: 0.1px; color: #55575C; white-space: nowrap; }
+  .info-dialog__time-remaining-value { font-size: 14px; font-weight: 500; color: #55575C; }
+  .info-dialog__time-remaining-value--urgent { color: #CC433A; }
+  .info-dialog__divider { height: 1px; background: #EBEBEB; }
+  .info-dialog__history-header { font-size: 13px; font-weight: 500; line-height: 18px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__bubbles { display: flex; flex-direction: column; gap: 12px; }
+  .info-dialog__bubble-row { display: flex; flex-direction: column; gap: 4px; }
+  .info-dialog__bubble-row--own { align-items: flex-end; }
+  .info-dialog__bubble-row--other { align-items: flex-start; }
+  .info-dialog__bubble { max-width: 74%; padding: 10px 14px; border-radius: 4px; font-size: 13px; font-weight: 500; line-height: 18px; letter-spacing: 0.1px; }
+  .info-dialog__bubble--own { background: #0061A5; color: #FFFFFF; }
+  .info-dialog__bubble--other { background: #F0F1F3; color: #0E0E0F; }
+  .info-dialog__bubble--prose { font-weight: 400; }
+  .info-dialog__bubble-time { font-size: 11px; line-height: 16px; letter-spacing: 0.4px; color: #75747A; }
+  .info-dialog__bubble-actions { display: flex; gap: 10px; }
+  .info-dialog__btn { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: none; border-radius: 100px; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
+  .info-dialog__btn--filled { background: linear-gradient(99.496deg, #F26522 8.67%, #FC4243 91.33%); color: #FFFFFF; }
+  .info-dialog__btn--grey-outline { border: 1px solid #D1D3D6; background: #FFFFFF; color: #55575C; }
+  .info-dialog__action-block { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .info-dialog__input-panel { display: flex; flex-direction: column; gap: 10px; width: 74%; box-shadow: inset 0 0 0 1px #E8E9EB; border-radius: 4px; box-sizing: border-box; }
+  .info-dialog__input-panel-title, .info-dialog__accept-confirm-text { display: block; padding: 12px 14px 0; font-size: 13px; font-weight: 500; line-height: 18px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__input-field { display: flex; align-items: center; gap: 10px; margin: 0 14px; padding: 10px 12px; background: #F7F7F8; border-bottom: 1px solid #8D9199; box-sizing: border-box; }
+  .info-dialog__input-dollar { font-size: 14px; color: #55575C; }
+  .info-dialog__input-native { flex: 1; border: none; background: none; outline: none; font-size: 14px; font-family: 'Roboto', sans-serif; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__input-native::placeholder { color: #75747A; }
+  .info-dialog__input-helper { display: block; padding: 0 14px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #55575C; }
+  .info-dialog__input-or { display: flex; align-items: center; gap: 12px; margin: 0 14px 14px; font-size: 12px; letter-spacing: 0.4px; color: #55575C; }
+  .info-dialog__input-or span { width: 1px; flex: 1; height: 1px; background: #EBEBEB; }
+  .info-dialog__split { display: flex; align-items: center; gap: 10px; margin: 0 14px 14px; font-size: 13px; letter-spacing: 0.1px; color: #0E0E0F; cursor: pointer; }
+  .info-dialog__split input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: #0061A5; }
+  .info-dialog__split strong { font-weight: 500; color: #0061A5; }
+  .info-dialog__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
+  .info-dialog__close-link { padding: 0; border: none; background: none; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #0061A5; cursor: pointer; }
+  .info-dialog__commit-btn { display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 20px; border: none; border-radius: 100px; background: linear-gradient(99.496deg, #F26522 8.67%, #FC4243 91.33%); font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #FFFFFF; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
+  .info-dialog__commit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* -- OfferCardGallery (QA/文档用总览页,不是 Figma 来源) -- */
   .offer-card-gallery { display: flex; flex-direction: column; gap: 20px; font-family: 'Roboto', sans-serif; }
@@ -1026,10 +1111,10 @@
       vehicleTitle: { type: String, default: '2018 Ford Somemodel' },
       mileage: { type: String, default: '250,000 miles' },
       vin: { type: String, default: '192211' },
-      timeRemaining: { type: String, default: '20h 45m' },
+      timeRemaining: { type: String, default: '3h 15m' },
       acvEstimate: { type: String, default: '$25,000' },
       sentAmount: { type: String, default: '$26,000' },
-      receivedAmount: { type: String, default: '$7,000' },
+      receivedAmount: { type: String, default: '$26,800' },
       statusNew: { type: Boolean, default: true },
       statusReceived: { type: Boolean, default: true },
       statusSent: { type: Boolean, default: false },
@@ -1138,9 +1223,228 @@
   });
 
   // ---------- OfferCard (order 40, 卡片视图) ----------
+  // ---------- InformationDialog (order 42, 见 fragments/InformationDialog/notes.md) ----------
+  // 2026-09 按你给的 "Information Dialog Template.html" + "Offer States
+  // Logic for CC.md" 整个重写(不再以 Figma 为准),细节和取舍见
+  // fragments/InformationDialog/InformationDialog.vue 自己的 METADATA,
+  // 这里只做逐字镜像。
+  var InformationDialog = defineComponent({
+    name: 'InformationDialog',
+    props: {
+      modelValue: { type: Boolean, default: false },
+      photoUrl: { type: String, default: '' },
+      vehicleTitle: { type: String, default: 'Year Make Model' },
+      vin: { type: String, default: '192211' },
+      mileage: { type: String, default: '250,000 miles' },
+      auctionId: { type: String, default: '452161' },
+      offerType: { type: String, default: 'in-negotiation' },
+      viewerRole: { type: String, default: 'buyer' },
+      dealState: { type: String, default: 'received' },
+      isNew: { type: Boolean, default: false },
+      counterpartyAmount: { type: String, default: '$4,500' },
+      ownAmount: { type: String, default: '$3,800' },
+      reservePrice: { type: String, default: '$4,800' },
+      acvEstimate: { type: String, default: '$4,600' },
+      reportUrl: { type: String, default: '#' },
+      timeLeft: { type: String, default: '45m Left' },
+      timeLeftUrgent: { type: Boolean, default: false },
+      history: { type: Array, default: function () { return []; } },
+      // 2026-09 Playground 专用:inline=true 时不用 teleport/黑背板,原地
+      // 渲染,方便单独调这个组件时还能点到 Controls 面板。真实用法
+      // (OfferCard 里点 hover 按钮打开)不传这个 prop,默认 false 不受影响
+      inline: { type: Boolean, default: false }
+    },
+    emits: ['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer'],
+    template:
+      '<teleport to="body" :disabled="inline">' +
+      '<div v-if="modelValue" :class="inline ? \'info-dialog-inline-shell\' : \'info-dialog-overlay\'" @click.self="handleOverlayClick">' +
+      '<div class="info-dialog" role="dialog" aria-label="Information">' +
+      '<div class="info-dialog__header"><span class="info-dialog__title">Information</span>' +
+      '<button type="button" class="info-dialog__close" aria-label="Close" @click="handleClose">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" /></svg>' +
+      '</button></div>' +
+      '<div class="info-dialog__vehicle">' +
+      '<div class="info-dialog__vehicle-photo"><img v-if="photoUrl" :src="photoUrl" alt=""></div>' +
+      '<div class="info-dialog__vehicle-text">' +
+      '<span class="info-dialog__vehicle-title">{{ vehicleTitle }}</span>' +
+      '<span class="info-dialog__vehicle-line">VIN: {{ vin }}</span>' +
+      '<span class="info-dialog__vehicle-line">Odometer: {{ mileage }}</span>' +
+      '<span class="info-dialog__vehicle-line">Auction ID: {{ auctionId }}</span>' +
+      '</div></div>' +
+      '<div class="info-dialog__money">' +
+      '<div v-if="isMakeOffer" class="info-dialog__money-figure">' +
+      '<span class="info-dialog__money-label">Buyer Offer</span>' +
+      '<span class="info-dialog__money-value">{{ buyerAmount }}</span></div>' +
+      '<template v-else>' +
+      '<div class="info-dialog__money-figure">' +
+      '<span class="info-dialog__money-label">{{ isBuyer ? \'Highest Bid\' : \'Buyer High Bid\' }}</span>' +
+      '<span class="info-dialog__money-value">{{ buyerAmount }}</span></div>' +
+      '<div class="info-dialog__money-figure">' +
+      '<span class="info-dialog__money-label">Seller Counter</span>' +
+      '<span class="info-dialog__money-value">{{ sellerAmount }}</span></div>' +
+      '</template>' +
+      '<span class="info-dialog__money-divider"></span>' +
+      '<div class="info-dialog__money-figure">' +
+      '<span class="info-dialog__money-label">Reserve Price</span>' +
+      '<span class="info-dialog__money-value">{{ reservePrice }}</span></div>' +
+      '<div class="info-dialog__money-figure">' +
+      '<span class="info-dialog__money-label">ACV Estimate</span>' +
+      '<span class="info-dialog__money-value">{{ acvEstimate }} ' +
+      '<a :href="reportUrl" target="_blank" rel="noopener" class="info-dialog__report-link">View Report</a>' +
+      '</span></div>' +
+      '</div>' +
+      '<div class="info-dialog__status-row">' +
+      '<span class="info-dialog__chips">' +
+      '<span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new">New</span>' +
+      '<span v-if="hasStateChip" class="info-dialog__chip" :class="\'info-dialog__chip--\' + dealState">{{ stateChipLabel }}</span>' +
+      '</span>' +
+      '<span v-if="hasCountdown" class="info-dialog__time-remaining">Time Remaining ' +
+      '<span class="info-dialog__time-remaining-value" :class="{ \'info-dialog__time-remaining-value--urgent\': timeLeftUrgent }">{{ timeRemainingDisplay }}</span></span>' +
+      '</div>' +
+      '<div class="info-dialog__divider"></div>' +
+      '<span class="info-dialog__history-header">{{ sectionHeader }}</span>' +
+      '<div class="info-dialog__bubbles">' +
+      '<div v-for="(msg, i) in history" :key="i" class="info-dialog__bubble-row" :class="msg.speaker === viewerRole ? \'info-dialog__bubble-row--own\' : \'info-dialog__bubble-row--other\'">' +
+      '<template v-if="msg.kind === \'declined\'">' +
+      '<span class="info-dialog__bubble info-dialog__bubble--other info-dialog__bubble--prose">{{ declineProseText }}</span>' +
+      '<span class="info-dialog__bubble-time">{{ msg.timestamp }}</span>' +
+      '</template>' +
+      '<template v-else>' +
+      '<span class="info-dialog__bubble" :class="msg.speaker === viewerRole ? \'info-dialog__bubble--own\' : \'info-dialog__bubble--other\'">{{ bubbleLabels[msg.kind] }}: {{ msg.amount }}</span>' +
+      '<span class="info-dialog__bubble-time">{{ msg.timestamp }}</span>' +
+      '<div v-if="i === lastCounterpartyIndex && !isClosed" class="info-dialog__bubble-actions">' +
+      '<template v-if="!confirmingAccept">' +
+      '<button v-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit(\'decline\')">Decline</button>' +
+      '<button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">✓ Accept {{ counterpartyAmount }}</button>' +
+      '</template>' +
+      '<button v-else-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit(\'decline\')">Decline</button>' +
+      '</div>' +
+      '</template>' +
+      '</div>' +
+      '</div>' +
+      '<div v-if="confirmingAccept" class="info-dialog__action-block">' +
+      '<div class="info-dialog__input-panel">' +
+      '<span class="info-dialog__accept-confirm-text">Accept {{ counterpartyAmount }} for the {{ vehicleTitle }}?</span>' +
+      '<label class="info-dialog__split"><input type="checkbox" v-model="acceptChecked"><span>Accept Offer</span></label>' +
+      '</div></div>' +
+      '<div v-else-if="inputPanel === \'counter\' || inputPanel === \'offer\'" class="info-dialog__action-block">' +
+      '<div class="info-dialog__input-panel">' +
+      '<span class="info-dialog__input-panel-title">{{ inputPanel === \'counter\' ? \'Counter offer\' : \'New offer\' }}</span>' +
+      '<div class="info-dialog__input-field"><span class="info-dialog__input-dollar">$</span>' +
+      '<input v-model="enteredAmount" type="text" class="info-dialog__input-native" :placeholder="inputPanel === \'counter\' ? \'Enter counter\' : \'Enter offer\'"></div>' +
+      '<span class="info-dialog__input-helper">{{ inputPanel === \'counter\' ? (\'Between \' + buyerAmount + \' and \' + sellerAmount) : (\'Greater than \' + ownAmount) }}</span>' +
+      '<template v-if="inputPanel === \'counter\' && showSplitDifference">' +
+      '<div class="info-dialog__input-or"><span></span> or <span></span></div>' +
+      '<label class="info-dialog__split"><input type="checkbox" v-model="useSplit"><span>Split The Difference: <strong>{{ splitAmount }}</strong></span></label>' +
+      '</template>' +
+      '</div></div>' +
+      '<div class="info-dialog__footer">' +
+      '<button type="button" class="info-dialog__close-link" @click="handleClose">Close</button>' +
+      '<button v-if="footerButton" type="button" class="info-dialog__commit-btn" :disabled="!footerButtonEnabled" @click="handleFooterCommit">{{ footerButton }}</button>' +
+      '</div>' +
+      '</div></div>' +
+      '</teleport>',
+    setup: function (props, ctx) {
+      var emit = ctx.emit;
+      var isBuyer = computed(function () { return props.viewerRole === 'buyer'; });
+      var isMakeOffer = computed(function () { return props.offerType === 'make-offer'; });
+      var isClosed = computed(function () { return props.dealState === 'declined' || props.dealState === 'expired'; });
+      var hasCountdown = computed(function () { return !!props.timeLeft && !isClosed.value; });
+      var timeRemainingDisplay = computed(function () { return props.timeLeft.replace(/\s*Left\s*$/i, ''); });
+      var hasStateChip = computed(function () { return !!props.dealState; });
+      var showNewChip = computed(function () { return props.isNew && (props.dealState === 'received' || props.dealState === 'declined'); });
+      var stateChipLabel = computed(function () {
+        return { received: 'Received', sent: 'Sent', declined: 'Declined', expired: 'Expired' }[props.dealState] || '';
+      });
+      var buyerAmount = computed(function () { return isBuyer.value ? props.ownAmount : props.counterpartyAmount; });
+      var sellerAmount = computed(function () { return !isBuyer.value ? props.ownAmount : props.counterpartyAmount; });
+      var sectionHeader = computed(function () {
+        if (isClosed.value) return 'Negotiation History';
+        var hasCounter = props.history.some(function (m) { return m.kind === 'counter'; });
+        return hasCounter ? 'Negotiation History' : 'Pending Offer';
+      });
+      var bubbleLabels = { bid: 'Highest Bid', counter: 'Counter', offer: 'Offer' };
+      var declineProseText = computed(function () { return isBuyer.value ? 'Your offer was declined by the seller.' : 'You declined the offer.'; });
+      var lastCounterpartyIndex = computed(function () {
+        for (var i = props.history.length - 1; i >= 0; i--) {
+          if (props.history[i].speaker !== props.viewerRole) return i;
+        }
+        return -1;
+      });
+      // "Offer States Logic for CC.md": buyer 永远不能 decline
+      var canDecline = computed(function () { return !isBuyer.value && props.dealState === 'received'; });
+      var canAccept = computed(function () { return props.dealState === 'received'; });
+      var confirmingAccept = ref(false);
+      var acceptChecked = ref(false);
+      var enteredAmount = ref('');
+      var useSplit = ref(false);
+      function resetTransientState() {
+        confirmingAccept.value = false;
+        acceptChecked.value = false;
+        enteredAmount.value = '';
+        useSplit.value = false;
+      }
+      watch(function () { return props.modelValue; }, function (open) { if (open) resetTransientState(); });
+      // 2026-09 修复:Playground 切换 mock 时 modelValue 一直是 true,上面
+      // 那个 watch 不会触发,上一个场景的确认面板状态会原样带到下一个场景
+      watch(function () { return [props.dealState, props.counterpartyAmount, props.ownAmount, props.viewerRole, props.offerType]; }, resetTransientState);
+      var inputPanel = computed(function () {
+        if (isClosed.value || confirmingAccept.value) return null;
+        if (props.dealState !== 'received' && props.dealState !== 'sent') return null;
+        if (props.dealState === 'received') return isMakeOffer.value ? null : 'counter';
+        if (isMakeOffer.value && isBuyer.value) return 'offer';
+        return null;
+      });
+      // "Offer States Logic for CC.md" Split The Difference:三个条件都要满足
+      var showSplitDifference = computed(function () {
+        return !isMakeOffer.value && props.dealState === 'received' && !!props.counterpartyAmount && !!props.ownAmount;
+      });
+      function midpointAmount(a, b) {
+        var na = Number(String(a).replace(/[^0-9.]/g, ''));
+        var nb = Number(String(b).replace(/[^0-9.]/g, ''));
+        if (!na || !nb) return '$0';
+        return '$' + Math.round((na + nb) / 2).toLocaleString('en-US');
+      }
+      var splitAmount = computed(function () { return midpointAmount(buyerAmount.value, sellerAmount.value); });
+      var footerButtonEnabled = computed(function () {
+        if (confirmingAccept.value) return acceptChecked.value;
+        if (inputPanel.value === 'counter') return useSplit.value || !!enteredAmount.value;
+        if (inputPanel.value === 'offer') return !!enteredAmount.value;
+        return false;
+      });
+      var footerButton = computed(function () {
+        if (confirmingAccept.value) return 'Accept ' + props.counterpartyAmount;
+        if (inputPanel.value === 'counter') return 'Send Counter';
+        if (inputPanel.value === 'offer') return 'Send Offer';
+        return '';
+      });
+      function handleClose() { emit('update:modelValue', false); emit('close'); }
+      function handleOverlayClick() { if (!props.inline) handleClose(); }
+      function handleFooterCommit() {
+        if (!footerButtonEnabled.value) return;
+        if (confirmingAccept.value) { emit('accept'); return; }
+        if (inputPanel.value === 'counter') { emit('send-counter', useSplit.value ? splitAmount.value : enteredAmount.value); return; }
+        if (inputPanel.value === 'offer') { emit('send-offer', enteredAmount.value); }
+      }
+      var refs = toRefs(props);
+      return Object.assign({}, refs, {
+        isBuyer: isBuyer, isMakeOffer: isMakeOffer, isClosed: isClosed, hasCountdown: hasCountdown,
+        timeRemainingDisplay: timeRemainingDisplay,
+        hasStateChip: hasStateChip, showNewChip: showNewChip, stateChipLabel: stateChipLabel,
+        buyerAmount: buyerAmount, sellerAmount: sellerAmount, sectionHeader: sectionHeader,
+        bubbleLabels: bubbleLabels, declineProseText: declineProseText, lastCounterpartyIndex: lastCounterpartyIndex,
+        canDecline: canDecline, canAccept: canAccept, confirmingAccept: confirmingAccept,
+        acceptChecked: acceptChecked, enteredAmount: enteredAmount, useSplit: useSplit,
+        inputPanel: inputPanel, showSplitDifference: showSplitDifference, splitAmount: splitAmount,
+        footerButtonEnabled: footerButtonEnabled, footerButton: footerButton,
+        handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleFooterCommit: handleFooterCommit
+      });
+    }
+  });
+
   var OfferCard = defineComponent({
     name: 'OfferCard',
-    components: { StatusChip: StatusChip },
+    components: { StatusChip: StatusChip, InformationDialog: InformationDialog },
     props: {
       photoUrl: { type: String, default: '' },
       offerType: { type: String, default: 'in-negotiation' },
@@ -1159,7 +1463,16 @@
       ownTimestamp: { type: String, default: 'Today, 08:45 AM' },
       expiredAt: { type: String, default: '' },
       showGap: { type: Boolean, default: false },
-      gapAmount: { type: String, default: '$700 apart' }
+      gapAmount: { type: String, default: '$700 apart' },
+      reservePrice: { type: String, default: '$4,800' },
+      acvEstimate: { type: String, default: '$4,600' },
+      reportUrl: { type: String, default: '#' },
+      history: { type: Array, default: function () { return []; } },
+      // 2026-09 按你的要求新增 "card 版本",v1 是原有行为,v2 是新给的
+      // 规则(去掉mileage行用auctionId顶替+两行文案新规则),细节见
+      // fragments/OfferCard/notes.md
+      cardVersion: { type: String, default: 'v1' },
+      counterpartyTimestamp: { type: String, default: '' }
     },
     template:
       '<div class="offer-card" :class="{ \'offer-card--v1\': hoverButtons.length > 0, \'offer-card--v1-btn-1\': hoverButtons.length === 1, \'offer-card--v1-btn-2\': hoverButtons.length === 2, \'offer-card--v1-btn-3\': hoverButtons.length === 3 }">' +
@@ -1171,12 +1484,12 @@
       '<div class="offer-card__info">' +
       '<div class="offer-card__vehicle">' +
       '<div class="offer-card__vehicle-title">{{ vehicleTitle }}</div>' +
-      '<div class="offer-card__vehicle-sub"><span>{{ mileage }}</span><span>・</span>' +
+      '<div class="offer-card__vehicle-sub"><span>{{ cardVersion === \'v2\' ? (\'Auction ID: \' + auctionId) : mileage }}</span><span>・</span>' +
       '<span class="offer-card__vin">VIN {{ vin }}' +
       '<button type="button" class="offer-card__copy-btn" aria-label="Copy VIN" @click="copyVin">' +
       '<svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M3.52941 9.6C3.20588 9.6 2.92902 9.4826 2.69882 9.2478C2.46824 9.0126 2.35294 8.73 2.35294 8.4V1.2C2.35294 0.87 2.46824 0.5874 2.69882 0.3522C2.92902 0.1174 3.20588 0 3.52941 0H8.82353C9.14706 0 9.42412 0.1174 9.65471 0.3522C9.8849 0.5874 10 0.87 10 1.2V8.4C10 8.73 9.8849 9.0126 9.65471 9.2478C9.42412 9.4826 9.14706 9.6 8.82353 9.6H3.52941ZM1.17647 12C0.852941 12 0.575882 11.8826 0.345294 11.6478C0.115098 11.4126 0 11.13 0 10.8V3C0 2.83 0.0564707 2.6874 0.169412 2.5722C0.281961 2.4574 0.421569 2.4 0.588235 2.4C0.754902 2.4 0.894706 2.4574 1.00765 2.5722C1.1202 2.6874 1.17647 2.83 1.17647 3V10.8H7.05882C7.22549 10.8 7.36529 10.8576 7.47824 10.9728C7.59078 11.0876 7.64706 11.23 7.64706 11.4C7.64706 11.57 7.59078 11.7124 7.47824 11.8272C7.36529 11.9424 7.22549 12 7.05882 12H1.17647Z" fill="#55575C"/></svg>' +
       '</button></span></div>' +
-      '<div v-if="auctionId" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>' +
+      '<div v-if="auctionId && cardVersion !== \'v2\'" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>' +
       '</div>' +
       '<div v-if="hasCountdown || hasStateChip || messageLine1" class="offer-card__flex-section">' +
       '<div v-if="hasCountdown || hasStateChip" class="offer-card__flex-row">' +
@@ -1190,15 +1503,21 @@
       '<template v-if="messageLine1">' +
       '<div class="offer-card__divider"></div>' +
       '<div class="offer-card__message">' +
+      '<div class="offer-card__message-row">' +
       '<div class="offer-card__message-primary">{{ messageLine1 }}</div>' +
+      '<div v-if="messageLine1Timestamp" class="offer-card__message-timestamp">{{ messageLine1Timestamp }}</div>' +
+      '</div>' +
       '<div v-if="messageLine2" class="offer-card__message-secondary">{{ messageLine2 }}</div>' +
       '</div></template>' +
       '</div>' +
       '</div>' +
       '<div v-if="hoverButtons.length" class="offer-card__hover-buttons">' +
-      '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style">{{ btn.label }}</button>' +
-      '</div></div>',
+      '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="dialogOpen = true">{{ btn.label }}</button>' +
+      '</div>' +
+      '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" />' +
+      '</div>',
     setup: function (props) {
+      var dialogOpen = ref(false);
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
       });
@@ -1214,7 +1533,7 @@
         var labels = { received: 'Received', sent: 'Sent', declined: 'Declined', expired: 'Expired' };
         return labels[props.dealState] || '';
       });
-      var messageLine1 = computed(function () {
+      var messageLine1V1 = computed(function () {
         var s = props.dealState;
         if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer';
         if (s === 'expired') return 'Time ran out' + (props.expiredAt ? ' · ' + props.expiredAt : '');
@@ -1227,7 +1546,7 @@
         }
         return '';
       });
-      var messageLine2 = computed(function () {
+      var messageLine2V1 = computed(function () {
         var s = props.dealState;
         if (s === 'declined' || s === 'expired') {
           return isBuyer.value ? ('Your offer ' + props.ownAmount) : ('Buyer offered ' + props.counterpartyAmount);
@@ -1251,6 +1570,50 @@
         }
         return '';
       });
+      // 2026-09 v2 新规则,细节见 fragments/OfferCard/notes.md
+      var messageLine1V2 = computed(function () {
+        var s = props.dealState;
+        if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer';
+        if (s === 'expired') return 'Time ran out' + (props.expiredAt ? ' · ' + props.expiredAt : '');
+        if (s === 'sent') return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer';
+        if (s === 'received') {
+          var who = isBuyer.value ? 'Seller' : 'Buyer';
+          var verb1 = isBuyer.value ? 'countered' : (isMakeOffer.value ? 'offered' : 'countered');
+          return who + ' ' + verb1 + ' ' + props.counterpartyAmount;
+        }
+        return '';
+      });
+      // 2026-09 line1 的时间不再拼进文案字符串,单独一个元素贴最右边
+      var messageLine1Timestamp = computed(function () {
+        if (props.cardVersion !== 'v2') return '';
+        if (props.dealState !== 'received') return '';
+        return props.counterpartyTimestamp || '';
+      });
+      function gapBetween(a, b) {
+        var na = Number(String(a).replace(/[^0-9.]/g, ''));
+        var nb = Number(String(b).replace(/[^0-9.]/g, ''));
+        if (!na || !nb) return '';
+        return '$' + Math.abs(na - nb).toLocaleString('en-US');
+      }
+      var messageLine2V2 = computed(function () {
+        var s = props.dealState;
+        if (s === 'declined' || s === 'expired') {
+          return isBuyer.value ? ('Your offer ' + props.ownAmount) : ('Buyer offered ' + props.counterpartyAmount);
+        }
+        if (s === 'sent') {
+          var verb2 = isMakeOffer.value ? 'offer' : 'counter';
+          return 'Your ' + verb2 + ' ' + props.ownAmount + ' · ' + props.ownTimestamp;
+        }
+        if (s === 'received') {
+          if (!isBuyer.value && isMakeOffer.value) return 'Your reserve ' + props.ownAmount;
+          var ownVerb = isBuyer.value ? 'offer' : 'counter';
+          var gap = gapBetween(props.counterpartyAmount, props.ownAmount);
+          return gap ? ('Your ' + ownVerb + ' ' + props.ownAmount + ' · ' + gap + ' apart') : ('Your ' + ownVerb + ' ' + props.ownAmount);
+        }
+        return '';
+      });
+      var messageLine1 = computed(function () { return props.cardVersion === 'v2' ? messageLine1V2.value : messageLine1V1.value; });
+      var messageLine2 = computed(function () { return props.cardVersion === 'v2' ? messageLine2V2.value : messageLine2V1.value; });
       var hoverButtons = computed(function () {
         var s = props.dealState;
         if (s === 'declined' || s === 'expired') {
@@ -1283,8 +1646,10 @@
       }
       var refs = toRefs(props);
       return Object.assign({}, refs, {
+        dialogOpen: dialogOpen,
         offerTypeLabel: offerTypeLabel, hasCountdown: hasCountdown, hasStateChip: hasStateChip,
         showNewChip: showNewChip, stateChipLabel: stateChipLabel, messageLine1: messageLine1,
+        messageLine1Timestamp: messageLine1Timestamp,
         messageLine2: messageLine2, hoverButtons: hoverButtons, copyVin: copyVin
       });
     }
@@ -1307,19 +1672,23 @@
       '</div></div></div>',
     setup: function () {
       var role = ref('buyer');
+      // 2026-09-01:这个 gallery 页面的真实 .vue 文件直接 import
+      // fragments/OfferCard/mock.js 里的 10 个 mock,这个静态镜像页面
+      // 没有真正的 import,只能手动内联同一份数值——按同一份 Number rules
+      // 重新生成同步过,细节见 OfferCard/mock.js 文件头注释。
       var buyerItems = [
-        { label: 'In Negotiation · Received — 卖家刚还价,等你决定', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Today, 08:45 AM' } },
-        { label: 'In Negotiation · Sent — 你刚还价,等卖家回复', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,200', ownTimestamp: 'Today, 09:10 AM' } },
-        { label: 'Make Offer · Sent — 你刚发offer,等卖家回复', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$22,000', ownTimestamp: 'Today, 10:49 AM' } },
-        { label: 'Declined — 卖家拒绝了你的offer,已结束', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$20,000' } },
-        { label: 'Expired — 超时没人处理,已结束', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,200', expiredAt: '' } }
+        { label: 'In Negotiation · Received — 卖家刚还价,等你决定', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM' } },
+        { label: 'In Negotiation · Sent — 你刚还价,等卖家回复', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM' } },
+        { label: 'Make Offer · Sent — 你刚发offer,等卖家回复', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM' } },
+        { label: 'Declined — 卖家拒绝了你的offer,已结束', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000' } },
+        { label: 'Expired — 超时没人处理,已结束', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '' } }
       ];
       var sellerItems = [
-        { label: 'In Negotiation · Received — 买家刚还价,等你决定', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: true, counterpartyAmount: '$4,200', ownAmount: '$4,500', ownTimestamp: 'Today, 08:29 AM' } },
-        { label: 'In Negotiation · Sent — 你刚还价,等买家回复', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '3h 20m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$30,000', ownTimestamp: 'Yesterday, 11:39 PM' } },
-        { label: 'Make Offer · Received — 买家刚发offer,等你决定', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$30,000', ownAmount: '$32,000' } },
-        { label: 'Declined — 你拒绝了买家的offer,已结束', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$26,500' } },
-        { label: 'Expired — 超时没人处理,已结束', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$26,500', expiredAt: '' } }
+        { label: 'In Negotiation · Received — 买家刚还价,等你决定', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM' } },
+        { label: 'In Negotiation · Sent — 你刚还价,等买家回复', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM' } },
+        { label: 'Make Offer · Received — 买家刚发offer,等你决定', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000' } },
+        { label: 'Declined — 你拒绝了买家的offer,已结束', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200' } },
+        { label: 'Expired — 超时没人处理,已结束', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '' } }
       ];
       var activeItems = computed(function () { return role.value === 'buyer' ? buyerItems : sellerItems; });
       return { role: role, activeItems: activeItems };
@@ -1327,89 +1696,135 @@
   });
 
   // ---------- OfferDashboard (order 90, 页面组装) ----------
+  // 2026-09-01:按 "Offer States Logic for CC.md" 的 Number rules 整批
+  // 重新生成了金额,并删掉了两行不存在的状态组合(rowWithMakeOffer/
+  // rowFiat500),细节和每一行的理由见 fragments/OfferTableRow/mock.js
+  // 文件头注释,这里只保持镜像同步。
   var rowMocks = {
-    // 已核实的真实行数据(3 个)
+    // 已核实的真实行数据(dealerName/auctionId/offerType/StatusChip;
+    // 金额按上面说明重新生成过,不再是最初核实截图时的数字)
     rowWithNewAndReceived: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '264578', offerType: 'in-negotiation',
-      vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '20h 45m',
-      acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$7,000',
-      statusNew: true, statusReceived: true, updateDate: 'Today'
-    },
-    rowWithMakeOffer: {
-      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', auctionId: '876143', offerType: 'make-offer',
-      vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', timeRemaining: '20h 45m',
-      acvEstimate: '$5,000', sentAmount: '--', receivedAmount: '$4,000',
-      statusNew: false, statusReceived: true, updateDate: 'Today'
+      vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '3h 15m',
+      acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$26,800',
+      statusNew: true, statusReceived: true, updateDate: 'Today',
+      reservePrice: '$27,000', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'bid', amount: '$26,000', timestamp: 'Yesterday, 03:00 PM' },
+        { speaker: 'seller', kind: 'counter', amount: '$26,800', timestamp: 'Today, 09:00 AM' }
+      ]
     },
     rowWithNoStatusChip: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/lexus-rx300.jpg', dealerName: 'Asbury Automotive Group', auctionId: '876413', offerType: 'in-negotiation',
-      vehicleTitle: '2001 Lexus RX300', mileage: '168,900 miles', vin: '552091', timeRemaining: '20h 45m',
-      acvEstimate: '$5,000', sentAmount: '--', receivedAmount: '$4,000',
-      statusNew: false, statusReceived: false, updateDate: 'Today'
+      vehicleTitle: '2001 Lexus RX300', mileage: '168,900 miles', vin: '552091', timeRemaining: '3h 40m',
+      // 2026-09-01 第二次调整(你要求个别例子的数字比之前更低一点,离
+      // reserve更远):买家 $5,000→$4,500,卖家 $5,300→$5,000,reserve
+      // 不变——这就是你给的原话例子(reserve $5,500 / Highest Bid $4,500
+      // / Seller Counter $5,000)。
+      acvEstimate: '$4,700', sentAmount: '$4,500', receivedAmount: '$5,000',
+      statusNew: false, statusReceived: false, updateDate: 'Today',
+      reservePrice: '$5,500', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'bid', amount: '$4,500', timestamp: 'Yesterday, 10:00 AM' },
+        { speaker: 'seller', kind: 'counter', amount: '$5,000', timestamp: 'Today, 08:00 AM' }
+      ]
     },
-    // 下面 9 个是 2026-08 第二批照片新增的自编 mockup 演示数据,不是
-    // Figma 核实数据(细节见 fragments/OfferTableRow/notes.md)
+    // 下面全部是自编的 mockup 演示数据,不是 Figma 核实数据(细节见
+    // fragments/OfferTableRow/notes.md)
     rowLexusES: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/lexus-es350-fsport.jpg', dealerName: 'Apple Chevrolet', auctionId: '730214', offerType: 'make-offer',
       vehicleTitle: '2022 Lexus ES 350 F Sport', mileage: '14,120 miles', vin: '730214', timeRemaining: '6h 10m',
-      acvEstimate: '$32,000', sentAmount: '$33,500', receivedAmount: '$9,500',
-      statusNew: true, statusReceived: false, updateDate: 'Today'
+      acvEstimate: '$32,000', sentAmount: '$32,500', receivedAmount: '$9,500',
+      // 2026-09 按你的要求给 Buying tab 补状态多样性(见 OfferTableRow/notes.md)
+      statusNew: true, statusReceived: false, statusDeclined: true, updateDate: 'Today',
+      reservePrice: '$34,000', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'offer', amount: '$32,500', timestamp: 'Mon, Aug 24, 11:00 AM' },
+        { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 04:00 PM' }
+      ]
     },
     rowHyundaiKona: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/hyundai-kona.jpg', dealerName: 'Classic Honda', auctionId: '118845', offerType: 'in-negotiation',
       vehicleTitle: '2022 Hyundai Kona', mileage: '9,870 miles', vin: '118845', timeRemaining: '3h 55m',
-      acvEstimate: '$19,500', sentAmount: '--', receivedAmount: '$2,000',
-      statusNew: true, statusReceived: true, updateDate: 'Today'
+      acvEstimate: '$19,600', sentAmount: '$19,200', receivedAmount: '$19,800',
+      statusNew: true, statusReceived: true, updateDate: 'Today',
+      reservePrice: '$20,000', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'bid', amount: '$19,200', timestamp: 'Yesterday, 09:00 AM' },
+        { speaker: 'seller', kind: 'counter', amount: '$19,800', timestamp: 'Today, 07:00 AM' }
+      ]
     },
     rowJeepWrangler: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/jeep-wrangler-unlimited.jpg', dealerName: 'DriveTime A', auctionId: '902377', offerType: 'make-offer',
-      vehicleTitle: '2021 Jeep Wrangler Unlimited', mileage: '41,300 miles', vin: '902377', timeRemaining: '1d 4h',
-      acvEstimate: '$28,000', sentAmount: '$29,000', receivedAmount: '--',
-      statusNew: false, statusReceived: true, updateDate: 'Today'
-    },
-    rowFiat500: {
-      isMultiDealer: true, photoUrl: 'assets/vehicle-photos/fiat-500-sport.jpg', dealerName: 'DriveTime Mall', auctionId: '264190', offerType: 'none',
-      vehicleTitle: '2015 Fiat 500 Sport', mileage: '76,540 miles', vin: '264190', timeRemaining: '12h 30m',
-      acvEstimate: '$6,200', sentAmount: '--', receivedAmount: '--',
-      // 2026-08 按你的要求:单独演示 Declined 状态,不对应真实业务记录
-      statusNew: false, statusReceived: false, statusSent: false, statusDeclined: true, updateDate: 'Today'
+      vehicleTitle: '2021 Jeep Wrangler Unlimited', mileage: '41,300 miles', vin: '902377', timeRemaining: '19h 30m',
+      acvEstimate: '$28,000', sentAmount: '$28,300', receivedAmount: '--',
+      // 2026-09 修正+补状态多样性:receivedAmount 是'--'(对方还没回复),
+      // 标 statusReceived 和数据矛盾,改成 statusSent(见 OfferTableRow/notes.md)
+      statusNew: false, statusReceived: false, statusSent: true, updateDate: 'Today',
+      reservePrice: '$29,500', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'offer', amount: '$28,300', timestamp: 'Today, 11:00 AM' }
+      ]
     },
     rowToyotaMatrix: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/toyota-matrix.jpg', dealerName: 'DriveTime Denver', auctionId: '348852', offerType: 'in-negotiation',
       vehicleTitle: '2010 Toyota Matrix', mileage: '121,760 miles', vin: '348852', timeRemaining: '4h 50m',
-      acvEstimate: '$4,800', sentAmount: '$5,100', receivedAmount: '$1,200',
-      statusNew: true, statusReceived: false, updateDate: 'Today'
+      acvEstimate: '$4,800', sentAmount: '$5,200', receivedAmount: '$5,000',
+      statusNew: true, statusReceived: false, updateDate: 'Today',
+      reservePrice: '$5,400', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'bid', amount: '$4,800', timestamp: 'Yesterday, 08:00 AM' },
+        { speaker: 'seller', kind: 'counter', amount: '$5,200', timestamp: 'Today, 06:30 AM' },
+        { speaker: 'buyer', kind: 'counter', amount: '$5,000', timestamp: 'Today, 07:00 AM' }
+      ]
     },
     rowFordEscapeTitanium: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/ford-escape-titanium-red.jpg', dealerName: 'Baxter Auto Mall', auctionId: '615729', offerType: 'make-offer',
       vehicleTitle: '2014 Ford Escape Titanium', mileage: '88,410 miles', vin: '615729', timeRemaining: '9h 15m',
-      acvEstimate: '$11,000', sentAmount: '--', receivedAmount: '$3,400',
-      statusNew: false, statusReceived: true, updateDate: 'Today'
+      acvEstimate: '$11,000', sentAmount: '--', receivedAmount: '$10,200',
+      statusNew: false, statusReceived: true, updateDate: 'Today',
+      reservePrice: '$11,000', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'offer', amount: '$10,200', timestamp: 'Today, 06:00 AM' }
+      ]
     },
     rowChevyMalibu: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/chevrolet-malibu-rs.jpg', dealerName: 'CarMax Boston', auctionId: '471306', offerType: 'in-negotiation',
       vehicleTitle: '2020 Chevrolet Malibu RS', mileage: '45,980 miles', vin: '471306', timeRemaining: '5h 40m',
-      acvEstimate: '$16,300', sentAmount: '$17,000', receivedAmount: '$5,000',
+      // 2026-09-01 第二次调整(你要求个别例子的数字比之前更低一点):卖家
+      // $17,000→$15,500,买家 $16,000→$14,500,reserve不变,gap还是
+      // $1,000但整体离reserve更远。
+      acvEstimate: '$15,200', sentAmount: '$15,500', receivedAmount: '$14,500',
       // 2026-08 按你的要求:单独演示 New/Received/Sent 三个状态同时出现
-      statusNew: true, statusReceived: true, statusSent: true, statusDeclined: false, updateDate: 'Today'
+      statusNew: true, statusReceived: true, statusSent: true, statusDeclined: false, updateDate: 'Today',
+      reservePrice: '$18,000', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'bid', amount: '$14,500', timestamp: 'Yesterday, 02:00 PM' },
+        { speaker: 'seller', kind: 'counter', amount: '$15,500', timestamp: 'Today, 08:00 AM' }
+      ]
     },
     rowDodgeCharger: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/dodge-charger-sxt.jpg', dealerName: 'Asbury Automotive Group', auctionId: '837465', offerType: 'make-offer',
       vehicleTitle: '2016 Dodge Charger SXT', mileage: '96,200 miles', vin: '837465', timeRemaining: '18h 5m',
-      acvEstimate: '$12,500', sentAmount: '--', receivedAmount: '$2,900',
-      statusNew: false, statusReceived: false, updateDate: 'Today'
+      acvEstimate: '$12,500', sentAmount: '--', receivedAmount: '$11,400',
+      statusNew: false, statusReceived: false, updateDate: 'Today',
+      reservePrice: '$12,500', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'offer', amount: '$11,400', timestamp: 'Today, 05:00 AM' }
+      ]
     },
     rowFordEscapeSE: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/ford-escape-se-blue.jpg', dealerName: 'Classic Honda', auctionId: '259017', offerType: 'in-negotiation',
       vehicleTitle: '2014 Ford Escape SE', mileage: '103,650 miles', vin: '259017', timeRemaining: '2h 15m',
-      acvEstimate: '$8,700', sentAmount: '$9,000', receivedAmount: '--',
-      statusNew: true, statusReceived: false, updateDate: 'Today'
+      // 2026-09-01 第二次调整(你要求个别例子的数字比之前更低一点):卖家
+      // $9,000→$8,700,买家 $8,700→$8,000,reserve不变。
+      acvEstimate: '$8,300', sentAmount: '$8,700', receivedAmount: '$8,000',
+      // 2026-09 修正(同 rowJeepWrangler 的道理):receivedAmount 之前是
+      // '--',statusReceived/statusSent 都是false会落到默认'received',
+      // 和"卖家已经报价、还没等到买家回复"这个数据矛盾,改成statusSent
+      statusNew: true, statusReceived: false, statusSent: true, updateDate: 'Today',
+      reservePrice: '$9,500', reportUrl: '#', history: [
+        { speaker: 'buyer', kind: 'bid', amount: '$8,000', timestamp: 'Yesterday, 03:00 PM' },
+        { speaker: 'seller', kind: 'counter', amount: '$8,700', timestamp: 'Today, 08:00 AM' }
+      ]
     },
-    // 单经销商演示专用,不算在 12 行 mockup 列表里
+    // 单经销商演示专用,不算在 mockup 列表里;和 rowWithNewAndReceived 是
+    // 同一辆车/同一笔单子,金额同步过
     rowSingleDealer: {
       isMultiDealer: false, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '264578', offerType: 'in-negotiation',
-      vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '20h 45m',
-      acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$7,000',
+      vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '3h 15m',
+      acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$26,800',
       statusNew: true, statusReceived: true, updateDate: 'Today'
     }
   };
@@ -1428,8 +1843,11 @@
     },
     props: {
       isMultiDealer: { type: Boolean, default: true },
-      buyingVehicleCount: { type: Number, default: 6 },
-      sellingVehicleCount: { type: Number, default: 6 }
+      buyingVehicleCount: { type: Number, default: 5 },
+      sellingVehicleCount: { type: Number, default: 5 },
+      // 2026-09 按你的要求,Dashboard 页面自己也要有能切 OfferCard v1/v2
+      // 的 control,不再把 'v2' 写死在 rowsAsCards 里
+      cardVersion: { type: String, default: 'v2' }
     },
     template:
       '<div class="offer-dashboard">' +
@@ -1530,20 +1948,22 @@
         window.removeEventListener('scroll', handleRepositionOnScroll, { capture: true });
         window.removeEventListener('resize', handleRepositionOnScroll);
       });
-      // 2026-08:扩充成 12 行 —— 前 3 个是已核实的真实行数据,后 9 个是
-      // 你给了 10 张新真实照片后新增的自编 mockup 演示数据,细节见
-      // fragments/OfferTableRow/notes.md 的"2026-08 第二批照片"章节
+      // 2026-09-01:删掉了两行不存在的状态组合(rowWithMakeOffer/
+      // rowFiat500),行数从 12 变成 10,细节见 fragments/OfferTableRow/
+      // mock.js 文件头注释。前 2 个是已核实的真实行数据,其余是自编的
+      // mockup 演示数据。
       var rows = [
-        rowMocks.rowWithNewAndReceived, rowMocks.rowWithMakeOffer, rowMocks.rowWithNoStatusChip,
-        rowMocks.rowLexusES, rowMocks.rowHyundaiKona, rowMocks.rowJeepWrangler, rowMocks.rowFiat500,
+        rowMocks.rowWithNewAndReceived, rowMocks.rowWithNoStatusChip,
+        rowMocks.rowLexusES, rowMocks.rowHyundaiKona, rowMocks.rowJeepWrangler,
         rowMocks.rowToyotaMatrix, rowMocks.rowFordEscapeTitanium, rowMocks.rowChevyMalibu,
         rowMocks.rowDodgeCharger, rowMocks.rowFordEscapeSE
       ];
       // 2026-08 按你的要求"总共12个vehicle,buying默认显示6个selling6个":
-      // 前6条归Buying/后6条归Selling,纯粹是数量对半切分,不对应任何
-      // Figma数据或真实业务规则
-      var buyingRows = rows.slice(0, 6);
-      var sellingRows = rows.slice(6, 12);
+      // 前6条归Buying/后6条归Selling,纯粹是数量对半切分。2026-09-01
+      // 删掉两行(一行原本在Buying、一行原本在Selling)之后总数变成10,
+      // 两边还是各少一个,仍然是干净的5+5。
+      var buyingRows = rows.slice(0, 5);
+      var sellingRows = rows.slice(5, 10);
       var activeMainTab = ref('buying');
       function handleTabSelect(tab) { activeMainTab.value = tab; }
       var activeTabRows = computed(function () {
@@ -1666,7 +2086,17 @@
             isNew: row.statusNew,
             counterpartyAmount: counterparty,
             ownAmount: own,
-            ownTimestamp: row.updateDate
+            ownTimestamp: row.updateDate,
+            cardVersion: props.cardVersion,
+            counterpartyTimestamp: row.updateDate,
+            // 2026-09 修复真实bug:之前没有把这三个字段传给OfferCard(=没
+            // 传给它内部的InformationDialog),导致从Dashboard真实数据
+            // 打开的对话框金额区/历史区一直落到默认占位值,见
+            // fragments/OfferDashboard/notes.md
+            reservePrice: row.reservePrice,
+            acvEstimate: row.acvEstimate,
+            reportUrl: row.reportUrl,
+            history: row.history
           };
         });
       });
@@ -1717,7 +2147,8 @@
     ]},
     { title: '卡片视图 (Card View)', items: [
       { key: 'OfferCard', order: 40, name: 'Offer Card' },
-      { key: 'OfferCardGallery', order: 41, name: 'Offer Card — All States' }
+      { key: 'OfferCardGallery', order: 41, name: 'Offer Card — All States' },
+      { key: 'InformationDialog', order: 42, name: 'Information Dialog' }
     ]},
     { title: '页面组装 (Page Assembly)', items: [
       { key: 'OfferDashboard', order: 90, name: 'Offer Dashboard（整页组装）' }
@@ -1840,10 +2271,10 @@
         vehicleTitle: { type: 'text', label: 'Vehicle title', default: '2018 Ford Somemodel' },
         mileage: { type: 'text', label: 'Mileage', default: '250,000 miles' },
         vin: { type: 'text', label: 'VIN', default: '192211' },
-        timeRemaining: { type: 'text', label: 'Time remaining', default: '20h 45m' },
+        timeRemaining: { type: 'text', label: 'Time remaining', default: '3h 15m' },
         acvEstimate: { type: 'text', label: 'ACV Estimate', default: '$25,000' },
         sentAmount: { type: 'text', label: 'Sent amount, can be "--"', default: '$26,000' },
-        receivedAmount: { type: 'text', label: 'Received amount, can be "--"', default: '$7,000' },
+        receivedAmount: { type: 'text', label: 'Received amount, can be "--"', default: '$26,800' },
         statusNew: { type: 'boolean', label: 'Show New in Update column', default: true },
         statusReceived: { type: 'boolean', label: 'Show Received in Update column', default: true },
         updateDate: { type: 'text', label: 'Update column date', default: 'Today' }
@@ -1889,6 +2320,10 @@
     OfferCard: {
       name: 'Offer Card', group: '卡片视图 (Card View)', order: 40, def: OfferCard,
       controls: {
+        cardVersion: { type: 'segmented', label: 'Card version (cardVersion)', options: [
+          { value: 'v1', label: 'V1 — mileage line, optional gap', shortLabel: 'V1' },
+          { value: 'v2', label: 'V2 — auction ID line, latest-move timestamp + gap', shortLabel: 'V2' }
+        ], default: 'v1' },
         photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl, empty = gray placeholder)', default: '' },
         offerType: { type: 'select', label: 'Deal type (offerType) — fixed for the deal, not a status', options: [
           { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }
@@ -1914,20 +2349,62 @@
         ownAmount: { type: 'text', label: 'Your own amount — offer/counter/reserve (ownAmount)', default: '$3,800' },
         ownTimestamp: { type: 'text', label: 'Your amount timestamp (ownTimestamp)', default: 'Today, 08:45 AM' },
         expiredAt: { type: 'text', label: 'Expired-at time, optional (expiredAt, empty = omit)', default: '' },
-        showGap: { type: 'boolean', label: '[Open question] Show gap instead of timestamp (showGap, Received only)', default: false },
-        gapAmount: { type: 'text', label: 'Gap amount text (gapAmount)', default: '$700 apart' }
+        showGap: { type: 'boolean', label: '[v1 only, open question] Show gap instead of timestamp (showGap, Received only)', default: false },
+        gapAmount: { type: 'text', label: '[v1 only] Gap amount text (gapAmount)', default: '$700 apart' },
+        reservePrice: { type: 'text', label: 'Reserve price, for the dialog (reservePrice)', default: '$4,800' },
+        acvEstimate: { type: 'text', label: 'ACV estimate, for the dialog (acvEstimate)', default: '$4,600' },
+        reportUrl: { type: 'text', label: '"View Report" link, for the dialog (reportUrl)', default: '#' },
+        counterpartyTimestamp: { type: 'text', label: '[v2 only] Counterparty\'s latest move timestamp (counterpartyTimestamp)', default: '' }
       },
       mocks: {
-        buyerReceivedExample: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Today, 08:45 AM' },
-        buyerSentNegotiationExample: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,200', ownTimestamp: 'Today, 09:10 AM' },
-        buyerSentMakeOfferExample: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$22,000', ownTimestamp: 'Today, 10:49 AM' },
-        buyerDeclinedExample: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$20,000' },
-        buyerExpiredExample: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,200', expiredAt: '' },
-        sellerReceivedNegotiationExample: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: true, counterpartyAmount: '$4,200', ownAmount: '$4,500', ownTimestamp: 'Today, 08:29 AM' },
-        sellerSentExample: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '3h 20m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$30,000', ownTimestamp: 'Yesterday, 11:39 PM' },
-        sellerReceivedMakeOfferExample: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$30,000', ownAmount: '$32,000' },
-        sellerDeclinedExample: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$26,500' },
-        sellerExpiredExample: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$26,500', expiredAt: '' }
+        // 2026-09-01:按 "Offer States Logic for CC.md" 的 Number rules
+        // 整批重新生成(Ford Focus RS 5 个例子是同一段协商的连续快照,链路
+        // $3,800→$4,500→$4,100→$4,300,reserve 全程 $4,800;BMW X5 5 个
+        // 例子统一 reserve $28,000/acvEstimate $27,500),细节见
+        // fragments/OfferCard/mock.js 文件头注释,这里保持镜像同步。
+        buyerReceivedExample: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM', counterpartyTimestamp: 'Yesterday, 06:30 PM', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Yesterday, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Yesterday, 06:30 PM' }
+        ] },
+        buyerSentNegotiationExample: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM', counterpartyAmount: '$4,500', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Yesterday, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Yesterday, 06:30 PM' },
+          { speaker: 'buyer', kind: 'counter', amount: '$4,100', timestamp: 'Today, 08:12 AM' }
+        ] },
+        buyerSentMakeOfferExample: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$26,500', timestamp: 'Today, 10:49 AM' }
+        ] },
+        buyerDeclinedExample: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$25,000', timestamp: 'Mon, Aug 24, 09:15 AM' },
+          { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 03:40 PM' }
+        ] },
+        buyerExpiredExample: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '', counterpartyAmount: '$4,300', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Mon, Aug 24, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Mon, Aug 24, 06:30 PM' },
+          { speaker: 'buyer', kind: 'counter', amount: '$4,100', timestamp: 'Tue, Aug 25, 09:10 AM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,300', timestamp: 'Tue, Aug 25, 09:45 AM' }
+        ] },
+        sellerReceivedNegotiationExample: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM', counterpartyTimestamp: 'Today, 08:12 AM', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Yesterday, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Yesterday, 06:30 PM' },
+          { speaker: 'buyer', kind: 'counter', amount: '$4,100', timestamp: 'Today, 08:12 AM' }
+        ] },
+        sellerSentExample: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM', counterpartyAmount: '$4,100', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Yesterday, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Yesterday, 06:30 PM' },
+          { speaker: 'buyer', kind: 'counter', amount: '$4,100', timestamp: 'Today, 08:12 AM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,300', timestamp: 'Today, 08:45 AM' }
+        ] },
+        sellerReceivedMakeOfferExample: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000', counterpartyTimestamp: 'Today, 12:15 PM', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$27,000', timestamp: 'Today, 12:15 PM' }
+        ] },
+        sellerDeclinedExample: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$24,200', timestamp: 'Mon, Aug 24, 10:05 AM' },
+          { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 02:50 PM' }
+        ] },
+        sellerExpiredExample: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$25,800', timestamp: 'Mon, Aug 17, 10:05 AM' }
+        ] }
       },
       notes: '这是 tile version（Figma node 7432:68669）里的卡片，对应 ACV 通用 Auction Card 结构（acv-auction-cards 技能）：图片区（带经销商/lane徽标 + 状态徽标叠加）+ Vehicle Detail区（标题/里程・VIN/Auction ID，字段顺序按技能要求保留）+ Flexible区（倒计时+New/Received StatusChip+分隔线+一句话消息）。之后会有不同scenario复用这个组件传不同数据，所以除了标题/里程/VIN/Auction ID之外的字段都做成可选（不传/传空字符串就不渲染）。\n\n已核实（节点7432:69394，hidden=false）：卡片容器白底边框#E8E9EB圆角12px；图片区高210px；图片左下角状态徽标——In Negotiation背景#1C1D1F白字圆角8px无边框（注意和表格版OfferTypeBadge不一样，表格版是圆角3px带白色描边，这里是两套独立核实的数值，没有强行合并）；Make Offer（核实自7441:5248/5254）外层描边1px#8D9199圆角3px内层白底，和表格版完全一致；经销商/lane徽标背景rgba(0,0,0,.4)+blur(.75px)白字圆角8px。\n\nVehicle Detail区：标题16px/24 Medium色#0E0E0F；里程・VIN+复制图标（真实下载的SVG，点击复制VIN到剪贴板）14px/21色#55575C；Auction ID同色号。Flexible区：Clock图标(真实下载)+倒计时文字14px/20 Medium色#CC433A；New/Received直接复用已核实的StatusChip颜色；分隔线#EBEBEB；消息块主/副文案14px。\n\n待确认：1. vehicleTitle示例文案字面就是"Year Make Model"，看起来像设计师没替换的占位文案，不是编的假数据，原样保留。2. 图片区右上角的操作图标列（watchlist/hide/note/more共4个，节点7432:69398）hidden=true，没有实现。3. 倒计时/状态chip/消息块是否所有场景卡片都会出现，只看到这一个例子，已做成可选，等后续scenario数据确认。\n\n2026-08 按 "Offer card — content & interaction spec" 重写：原来自由文本的 primaryMessage/secondaryMessage + statusNew/statusReceived/statusSent/statusDeclined 4个独立布尔值 + buttonVersion/buttonCount 已经全部删掉，改成 viewerRole(buyer/seller) + dealState(received/sent/declined/expired) + isNew + 几个金额/时间戳prop，两行文案和hover按钮组都由组件内部按规范表格算出来，不再是手写的自由文本。新增了 Expired 状态（StatusChip 也跟着加了 expired 样式，灰底深灰字，不是Figma核实数值）。'
     },
@@ -1937,13 +2414,72 @@
       mocks: {},
       notes: '不是 Figma 来源的组件,是你直接要求做的一个 QA/文档用途的"总览页":把 OfferCard 在 buyer/seller 两种视角下各自 5 种合法的"类型×状态"组合同时铺出来,每张卡片上方标一句话说明这是什么状态,顶部有 Buyer/Seller 切换。方便一次性对照检查所有状态的文案/芯片/按钮是否符合 "Offer card — content & interaction spec",不用在 OfferCard 自己的 Playground 页面里一个个切换 Mock 示例来看。\n\n10 个场景直接复用 OfferCard/mock.js 里已经建好的数据(和 OfferCard 自己 Playground 页面里的 10 个 Mock 示例数值完全一致),没有重新编数据。每张卡片上方的说明文字是照你举的例子("买家刚发offer等待卖家回复")这个思路写的中文短句,不是规范文档原文。顶部 Buyer/Seller 切换按钮复用了 OfferDashboard 视图切换按钮已经验证过的同一套 pill 分段控件视觉,卡片上方的小灰字标签样式是照你发的截图目测的,不是核实数值。\n\n待确认:1. 5种状态的排列顺序按"进行中→已结束"排的,不是规范文档规定的顺序。2. 这个新组件目前放在"卡片视图"分组里 order 41(紧跟 OfferCard 的 order 40),如果你想要别的位置请告知。'
     },
+    InformationDialog: {
+      name: 'Information Dialog', group: '卡片视图 (Card View)', order: 42, def: InformationDialog,
+      controls: {
+        modelValue: { type: 'boolean', label: 'Open (modelValue / v-model)', default: true },
+        photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl)', default: 'assets/vehicle-photos/2018-ford-focus-rs.jpg' },
+        vehicleTitle: { type: 'text', label: 'Vehicle title (vehicleTitle)', default: '2018 Ford Focus RS' },
+        vin: { type: 'text', label: 'VIN (vin)', default: '884523' },
+        mileage: { type: 'text', label: 'Odometer (mileage)', default: '32,450 miles' },
+        auctionId: { type: 'text', label: 'Auction ID (auctionId)', default: '452161' },
+        offerType: { type: 'select', label: 'Deal type (offerType)', options: [
+          { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }
+        ], default: 'in-negotiation' },
+        viewerRole: { type: 'select', label: 'Viewer role (viewerRole)', options: [
+          { value: 'buyer', label: 'Buyer' }, { value: 'seller', label: 'Seller' }
+        ], default: 'buyer' },
+        dealState: { type: 'select', label: 'Deal state (dealState)', options: [
+          { value: 'received', label: 'Received' }, { value: 'sent', label: 'Sent' },
+          { value: 'declined', label: 'Declined' }, { value: 'expired', label: 'Expired' }
+        ], default: 'received' },
+        isNew: { type: 'boolean', label: 'New flag (isNew)', default: true },
+        counterpartyAmount: { type: 'text', label: "Counterparty's amount (counterpartyAmount)", default: '$4,500' },
+        ownAmount: { type: 'text', label: 'Your own amount (ownAmount)', default: '$3,800' },
+        reservePrice: { type: 'text', label: 'Reserve Price (reservePrice)', default: '$4,800' },
+        acvEstimate: { type: 'text', label: 'ACV Estimate (acvEstimate)', default: '$4,600' },
+        reportUrl: { type: 'text', label: '"View Report" link (reportUrl)', default: '#' },
+        timeLeft: { type: 'text', label: 'Countdown text (timeLeft)', default: '45m Left' },
+        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h (timeLeftUrgent)', default: true }
+      },
+      mocks: {
+        // 2026-09-01:这 5 个 mock 是 fragments/OfferCard/mock.js 里对应
+        // 例子的数字直抄过来的(这个页面自己不引用 OfferCard 的 mock.js,
+        // 是独立复制的一份),按同一份 Number rules 重新生成同步过,细节
+        // 见 OfferCard/mock.js 文件头注释。
+        buyerReceived: { modelValue: true, offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', isNew: true, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', vehicleTitle: '2018 Ford Focus RS', vin: '884523', mileage: '32,450 miles', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, counterpartyAmount: '$4,500', ownAmount: '$3,800', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Yesterday, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Yesterday, 06:30 PM' }
+        ] },
+        buyerMakeOfferSent: { modelValue: true, offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', isNew: false, photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', vehicleTitle: '2022 BMW X5', vin: '410877', mileage: '8,240 miles', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, ownAmount: '$26,500', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$26,500', timestamp: 'Today, 10:49 AM' }
+        ] },
+        sellerReceivedNegotiation: { modelValue: true, offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', isNew: true, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', vehicleTitle: '2018 Ford Focus RS', vin: '884523', mileage: '32,450 miles', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, counterpartyAmount: '$4,100', ownAmount: '$4,500', reservePrice: '$4,800', acvEstimate: '$4,600', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'bid', amount: '$3,800', timestamp: 'Yesterday, 02:10 PM' },
+          { speaker: 'seller', kind: 'counter', amount: '$4,500', timestamp: 'Yesterday, 06:30 PM' },
+          { speaker: 'buyer', kind: 'counter', amount: '$4,100', timestamp: 'Today, 08:12 AM' }
+        ] },
+        sellerMakeOfferReceived: { modelValue: true, offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', isNew: true, photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', vehicleTitle: '2022 BMW X5', vin: '410877', mileage: '8,240 miles', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, counterpartyAmount: '$27,000', ownAmount: '$28,000', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$27,000', timestamp: 'Today, 12:15 PM' }
+        ] },
+        declinedClosed: { modelValue: true, offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', isNew: false, photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', vehicleTitle: '2022 BMW X5', vin: '410877', mileage: '8,240 miles', auctionId: '876143', ownAmount: '$25,000', reservePrice: '$28,000', acvEstimate: '$27,500', reportUrl: '#', history: [
+          { speaker: 'buyer', kind: 'offer', amount: '$25,000', timestamp: 'Mon, Aug 24, 09:15 AM' },
+          { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 03:40 PM' }
+        ] }
+      },
+      notes: '不是独立新组件,是给已经存在的 fragments/InformationDialog/InformationDialog.vue（点 OfferCard 上任意 hover CTA 打开的那个弹窗）单独建的一个 Playground 页面,方便像 OfferCard 一样单独调 Controls/切换 Mock 查看,不用每次都跑去 OfferCard 页面 hover+点按钮才能看到。\n\n没有改动其它任何组件——OfferCard 页面本身的 Controls/Mock/hover 打开 dialog 的行为和之前完全一样,这里只是多加了一个可以直接摆弄 InformationDialog 本身 props 的独立页面。\n\n因为这个组件靠 v-model(modelValue) 控制显示/隐藏,不像其它组件挂载了就直接可见,这里的 modelValue 控制默认给了 true,方便一进这个页面就能看到弹窗;想看"关闭"时是什么样(即什么都不显示)可以把这个控制关掉。\n\n5 个 Mock 覆盖 buyer/seller × in-negotiation/make-offer 的几个关键组合(Received 的两种输入面板形态、Make Offer 的 Sent/Received、一个 Declined 的关闭态),不是 OfferCard 那 10 个 Mock 的完整复刻——这个页面的重点是核对 Dialog 自己的内容/交互规则(金额区/历史气泡/输入面板/Footer),不是覆盖 OfferCard 那份状态矩阵,如果需要补全另外 5 种组合请告知。详细的 Figma 核实记录、"这里刻意不照抄 Figma 这个具体帧"的几处决定、还没有逐一核实的 9/10 状态,都记在 fragments/InformationDialog/notes.md,这里不重复。'
+    },
     OfferDashboard: {
       name: 'Offer Dashboard（整页组装）', group: '页面组装 (Page Assembly)', order: 90, def: OfferDashboard,
       controls: {
         reset: { type: 'button', label: 'Reset dashboard' },
+        cardVersion: { type: 'segmented', label: 'Tile view card version (cardVersion, OfferCard)', options: [
+          { value: 'v1', label: 'V1 — mileage line, optional gap', shortLabel: 'V1' },
+          { value: 'v2', label: 'V2 — auction ID line, latest-move timestamp + gap', shortLabel: 'V2' }
+        ], default: 'v2' },
         isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
-        buyingVehicleCount: { type: 'number', label: 'Vehicles shown on Buying (buyingVehicleCount, 1-6)', min: 1, max: 6, step: 1, default: 6 },
-        sellingVehicleCount: { type: 'number', label: 'Vehicles shown on Selling (sellingVehicleCount, 1-6)', min: 1, max: 6, step: 1, default: 6 },
+        buyingVehicleCount: { type: 'number', label: 'Vehicles shown on Buying (buyingVehicleCount, 1-5)', min: 1, max: 5, step: 1, default: 5 },
+        sellingVehicleCount: { type: 'number', label: 'Vehicles shown on Selling (sellingVehicleCount, 1-5)', min: 1, max: 5, step: 1, default: 5 },
         // 2026-08 按你的要求新增:只在 Offer Dashboard 才出现的 screensize
         // 滑块,模拟任意屏幕宽度看响应式效果,不用真的去拖浏览器窗口或者
         // 切全屏。这个不是传给组件的真实 prop(OfferDashboard 没有叫
@@ -1953,8 +2489,8 @@
         screenWidth: { type: 'range', label: 'Screen width (screenWidth, px)', min: 768, max: 2560, step: 10, default: 1422, uiOnly: true }
       },
       mocks: {
-        defaultExample: { isMultiDealer: true, buyingVehicleCount: 6, sellingVehicleCount: 6 },
-        singleDealerExample: { isMultiDealer: false, buyingVehicleCount: 6, sellingVehicleCount: 6 },
+        defaultExample: { isMultiDealer: true, buyingVehicleCount: 5, sellingVehicleCount: 5 },
+        singleDealerExample: { isMultiDealer: false, buyingVehicleCount: 5, sellingVehicleCount: 5 },
         fewVehiclesExample: { isMultiDealer: true, buyingVehicleCount: 3, sellingVehicleCount: 3 }
       },
       notes: '这是整页的组装，不是任务清单里 order 10-34 要求的独立"模具"组件，是把前面这些已经核实过的 fragment（AppHeader/Breadcrumb/SidebarNav/OfferTabs/SearchInput/FilterChipGroup/OfferTableHeader/OfferTableRow/StatusChip/OfferTypeBadge/Pagination）按 Figma 主 "Offers" 页面的真实布局拼在一起，方便先看整体效果。\n\n2026-08 新增 vehicleCount（数字输入，1~12）：你要求"需要有一个显示多少vehicle的control"，加了这个 control 控制 table/tile 实际显示 12 条 mock 行里的前几条（`rowsLimited = rows.slice(0, vehicleCount)`），不是真实分页。SidebarNav 的 "Offers" 数量、OfferTabs 的 Buying 数量、FilterChipGroup 各 chip 的数量全部跟着 rowsLimited 动态变化（不受下面的 filter chip/Dealership 筛选影响，见下一段）。这是纯 UI 演示用途，不代表真实业务里"车辆数量"和这些字段有这样的计算关系。\n\n2026-08 按你的要求：点 filter chip / Dealership 下拉要真的过滤 table/tile 内容，不只是自己变色。FilterChipGroup 新增 filter-change 事件把选中状态 emit 出来存进 chipFilter；DealershipFilterDropdown 的 Apply/Reset 都会 emit apply（Reset emit 空数组），存进 dealerFilter，重新打开下拉时用 pre-selected 把当前状态带回去。真正渲染的 visibleRows 在 rowsLimited 基础上再套一层 matchesFilters：Dealership 是 AND；In negotiation/Make Offer 是 OR（两个都能选，命中任一个 offerType 就算数，这是 Figma 标注"多选"的自然结果）；New/Received/Sent 互斥单选对应行上的字段；Declined 目前没有任何行数据能匹配，选中后必然是空列表（是正确结果不是漏做）。筛选结果为空时会显示 "No vehicles match the current filters." 提示，不是空白一片。FilterChipGroup 自己 chip 上的数量故意没有跟着这个筛选结果联动。\n\n2026-08 按你的要求新增了两个 controls：1. Reset dashboard（按钮型控件，在面板最上方）——点击会让这个组件重新挂载一次，回到默认状态（Dealership 下拉收起、排序清空，子组件自己维护的状态比如搜索框文字/筛选 chip 选中态也一起重置）。2. isMultiDealer（布尔开关）——对照单经销商参照帧6837:16538核实后，现在统一透传给三处：FilterChipGroup（不显示Dealership chip）、OfferTableHeader（第二列标题变Auction ID、无排序）、每一行OfferTableRow（第二列主标题直接显示Auction ID，不显示Dealer Name）。点击"Dealership"chip仍会展开DealershipFilterDropdown（order 23），但单经销商模式下这颗chip本身已经不显示。[2026-08 已解决，见下一段] DealershipFilterDropdown 展开后的布局之前是紧贴筛选行下方往下排，现在已经改成参照真实原型做的真正悬浮浮层。\n\n2026-08 按你的要求，参照真实原型（本地文件 My-ACV--Dealer-filter-main/index.html，你说只看它的 V1 web 版本 dealership filter 部分，其他都是老旧内容）重做了 Dealership 弹层 + 交互：FilterChipGroup 用 ref="filterChipGroupRef" 暴露出 Dealership 按钮的真实 DOM 节点，这边用 getBoundingClientRect() 算出 dealerPopoverStyle（position:fixed + top/left）让浮层真正悬浮在按钮下方（对齐方向从原型的右对齐改成了左对齐，因为我们的按钮在筛选行最左边，右对齐会超出视口）。点击浮层外部（mousedown）、按 Escape 都会关闭，滚动/resize 时如果还开着会重新定位——这三个全局监听照抄原型的对应逻辑。应用后会在筛选行下面出现一个 .offer-dashboard__dealer-chip 摘要（浅蓝底描边，照抄原型 .dfc-chip），文字是"按字母排序第一个+逗号+N"，点击×只清空经销商筛选，不牵连其他 filter chip。DealershipFilterDropdown 组件本身也换了经销商名单（原型给的10个真实名字，之前 Figma 稿"Apple Chevrolet"重复两次已确认是设计稿遗留错误）、checkbox 画法（CSS方框+::after画勾，不再是SVG资源）、"Select all"⇄"Deselect all"切换、Apply Filter渐变（linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%)，原型CSS里的确切值），细节见该组件自己的notes.md。\n\n布局本身待你确认：1. Sidebar 和右侧内容区之间要不要一条竖向分隔线——Figma metadata 里没有看到对应的 divider 节点，没有加。2. 整页空白区域的背景色没有单独核实过，用了白色。3. 每个子组件各自的"待确认"项没有在这里重复列出，请分别切到各自的条目查看 Notes。\n\n2026-08 新增 tile version（对照 node 7432:68669/7432:69394）：内部加了 viewMode（\'table\'|\'tile\'，纯UI状态，默认table，不是外部prop）。搜索筛选那一行在两种视图下完全不变（Figma里表格版6837:16129和卡片版7432:68713共享同一个搜索筛选区节点，不是我猜的），只是下面表格/卡片网格部分切换。tile模式下按node 7432:70555核实的样子改成"Viewing N results"文字，卡片网格3列gap16px（来自两张卡片x坐标差363.33/16px反推），**没有**底部Pagination——tile版Figma帧本身就没有这个区域。视图切换的两个图标按钮（真实核实自node 7432:70565）本来只在tile版Figma帧里见过，为了让用户能在两个视图间来回切换，同样的按钮也放进了表格视图的顶部工具条——这一步是为了交互闭环做的合理推断，没有单独核实过表格视图顶部本来就有这个控件，待确认。rowsAsCards把已核实的表格行数据原样映射进OfferCard，primaryMessage/secondaryMessage现有mock没有真实数据不编造，直接留空。\n\n2026-08 按你的要求：去掉筛选chip下面的横线+重新核实整页垂直间距。对照新节点7448:9826（hidden=false，App Bar到表格的完整一页）重新量了从上到下每一段的真实间距：App Bar→Breadcrumb 24px、Breadcrumb→Tabs 14px、Tabs→搜索框 24px、搜索框→筛选chip行 16px、筛选chip行→Private Lane/Pagination行 20px纯留白（之前是16px+一条border-top分割线，这条线在Figma里根本不存在，已删掉改成margin-top:20px）、Private Lane/Pagination行→表头 16px（通过.offer-dashboard__table-top的padding-bottom实现，不是额外的空div）。已用getBoundingClientRect()实测浏览器渲染结果逐项核对，六个数值全部吻合，横线确认已消失。'
@@ -1987,13 +2523,58 @@
           if (pair[1].type !== 'button') controlValues[pair[0]] = pair[1].default;
         });
       }
-      watch(current, function (entry) { resetControls(entry); }, { immediate: true });
+      var stageRef = ref(null);
+      // 2026-09 按你的要求:"control 面板出现的时候应该要改变 dashboard
+      // size,而不是cover"——之前 screenWidth 滑块永远按自己当前的数值
+      // (默认1422px)给 .pg-stage__resize-frame 定宽,不管 Controls
+      // 面板开不开、占掉多少空间,.pg-stage 自己是 overflow:auto,宽度不够
+      // 就在内部横向滚动——视觉上就是"内容被面板挡住/裁掉了一块"而不是
+      // "整个 dashboard 跟着变窄重新排布"。
+      // 加一个"自动贴合"模式:只要你没有手动拖过这个滑块
+      // (screenWidthAuto===true),Controls面板开合/侧边栏开合/窗口
+      // resize/切换到这个组件页面时,都会重新量一下 .pg-stage 真实可用
+      // 宽度,把滑块也跟着拨到那个值,让 dashboard 用它自己的响应式布局
+      // 重新排布来填满这块空间,而不是维持一个不会变的旧宽度被裁切。一旦
+      // 你自己动过这个滑块(想固定模拟某个屏幕宽度),就不再自动跟着变了,
+      // 直到你点"Reset dashboard"或者切换组件页面再回来。
+      var screenWidthAuto = ref(true);
+      // 2026-09 修正:之前这里连着 fullscreenOpen 一起挡掉——只要还在全屏
+      // 状态里(不只是刚进/刚出全屏那一瞬间),这个函数就直接return什么都
+      // 不做。这导致全屏状态下点 Reset dashboard(或者拖动侧边栏/Controls
+      // 面板开合、缩放窗口)时,screenWidth 只会回到写死的 default 值
+      // (1422px),不会重新量真实可用宽度——如果全屏视口本身比1422px窄,
+      // Reset 之后 Controls 面板仍然会盖住内容,和"Reset 应该让面板不再
+      // 盖住页面"这条要求矛盾。fullscreenOpen 这个guard的本意是避免和
+      // toggleFullscreen() 自己那段进/出全屏瞬间的宽度测量互相打架,但那
+      // 只在"刚点击全屏切换按钮"的一次性瞬间需要,不代表全屏稳定状态下
+      // 就该永久停用自动贴合——已经去掉这半个条件,只保留
+      // !screenWidthAuto.value 这个"你手动拖过滑块"的判断。
+      function syncScreenWidthToStage() {
+        if (!screenWidthAuto.value) return;
+        if (!(current.value.controls && current.value.controls.screenWidth)) return;
+        nextTick(function () {
+          // CSS 那条 .22s ease 的宽度过渡还没结束就量,量到的是动画中间
+          //某一帧的宽度——多等一点(和 toggleFullscreen 里用的延迟一样)
+          // 才是过渡完成后的最终可用宽度
+          setTimeout(function () {
+            if (stageRef.value) controlValues.screenWidth = stageRef.value.clientWidth;
+          }, 260);
+        });
+      }
+      watch(current, function (entry) {
+        resetControls(entry);
+        screenWidthAuto.value = true;
+        syncScreenWidthToStage();
+      }, { immediate: true });
+      function handleWindowResize() { syncScreenWidthToStage(); }
+      onMounted(function () { window.addEventListener('resize', handleWindowResize); });
+      onBeforeUnmount(function () { window.removeEventListener('resize', handleWindowResize); });
 
       function applyMock(mockObj) { Object.assign(controlValues, mockObj); }
       function selectComponent(key) { selectedKey.value = key; }
-      function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value; }
-      function toggleControls() { controlsOpen.value = !controlsOpen.value; }
-      var stageRef = ref(null);
+      function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value; syncScreenWidthToStage(); }
+      function toggleControls() { controlsOpen.value = !controlsOpen.value; syncScreenWidthToStage(); }
+      function markScreenWidthManual(key) { if (key === 'screenWidth') screenWidthAuto.value = false; }
       var screenWidthBeforeFullscreen = null;
       function toggleFullscreen() {
         fullscreenOpen.value = !fullscreenOpen.value;
@@ -2033,6 +2614,10 @@
         if (key === 'reset') {
           resetControls(current.value);
           stageKey.value++;
+          // Reset 也把"自动贴合宽度"模式恢复回来,不然点了 Reset 之后
+          // screenWidth 还停在你之前手动拖过的值,看起来像没重置干净
+          screenWidthAuto.value = true;
+          syncScreenWidthToStage();
         }
       }
 
@@ -2046,6 +2631,20 @@
         Object.keys(controlValues).forEach(function (k) {
           if (!(defs[k] && defs[k].uiOnly)) out[k] = controlValues[k];
         });
+        // 2026-09 通用支持:如果这个组件有一个叫 modelValue 的 control(比如
+        // InformationDialog 这种靠 v-model 控制开关的弹窗),接上
+        // onUpdate:modelValue,让组件内部点 Close/X/背板关闭时,Controls
+        // 面板里的开关 checkbox 会同步变回未勾选——否则组件emit出去的事件
+        // 没人接,弹窗内部点 Close 会什么反应都没有。只在这个 control 真的
+        // 存在时才加这个监听,不影响任何没有 modelValue control 的组件。
+        if (defs.modelValue) {
+          out['onUpdate:modelValue'] = function (v) { controlValues.modelValue = v; };
+        }
+        // 2026-09 按你的要求:InformationDialog 单独这个页面不要用弹层
+        // overlay 展示(黑背板会盖住右边的 Controls 面板,点不到任何控制
+        // 项)——只在这一个页面强制传 inline:true,组件本身默认还是
+        // false(真实场景/OfferCard 完全不受影响,不算改了其它组件)。
+        if (selectedKey.value === 'InformationDialog') out.inline = true;
         return out;
       });
       // screenWidth 滑块控制的是这个 stage frame 的宽度,不是组件本身的
@@ -2073,7 +2672,8 @@
         sidebarOpen: sidebarOpen, controlsOpen: controlsOpen, fullscreenOpen: fullscreenOpen,
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
-        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageRef: stageRef
+        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageRef: stageRef,
+        markScreenWidthManual: markScreenWidthManual
       };
     },
     template:
@@ -2111,13 +2711,17 @@
       '<button v-if="def.type === \'button\'" type="button" class="pg-control-button" @click="handleControlButton(key)">{{ def.label || key }}</button>' +
       '<template v-else>' +
       '<label>{{ def.label || key }}</label>' +
-      '<select v-if="def.type === \'select\'" v-model="controlValues[key]">' +
+      '<div v-if="def.type === \'segmented\'" class="pg-segmented">' +
+      '<button v-for="opt in def.options" :key="opt.value" type="button" class="pg-segmented__btn" ' +
+      ':class="{ \'pg-segmented__btn--active\': controlValues[key] === opt.value }" @click="controlValues[key] = opt.value">{{ opt.shortLabel || opt.label }}</button>' +
+      '</div>' +
+      '<select v-else-if="def.type === \'select\'" v-model="controlValues[key]">' +
       '<option v-for="opt in def.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>' +
       '</select>' +
       '<input v-else-if="def.type === \'boolean\'" type="checkbox" v-model="controlValues[key]">' +
       '<input v-else-if="def.type === \'number\'" type="number" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]">' +
       '<div v-else-if="def.type === \'range\'" class="pg-control-range">' +
-      '<input type="range" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]">' +
+      '<input type="range" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]" @input="markScreenWidthManual(key)">' +
       '<span class="pg-control-range__value">{{ controlValues[key] }}px</span>' +
       '</div>' +
       '<input v-else type="text" v-model="controlValues[key]">' +

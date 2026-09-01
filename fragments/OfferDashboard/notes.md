@@ -1,5 +1,92 @@
 # OfferDashboard — Notes
 
+## 2026-09-01(第三次)修复真实bug:全屏状态下点 Reset 不会真正回到自动贴合宽度
+你截图指出全屏时 Controls 面板还在盖住右侧卡片内容(卷动条+卡片被裁切),
+并重申了之前说过的规则:面板出现时应该自动贴合宽度,除非手动拖过
+screenWidth 滑块;拖过之后可以出现盖住的情况;但点 "Reset dashboard" 之后
+screenWidth 也要跟着回到自动贴合、不再盖住内容。
+
+根因:`syncScreenWidthToStage()`(Harness 里负责"重新量 .pg-stage 真实
+可用宽度、把 screenWidth 滑块拨过去"的函数)的判断条件里,一直有一句
+`if (fullscreenOpen.value || ...) return;`——只要还处于全屏状态(不只是
+刚点击全屏按钮那一瞬间),这个函数就直接什么都不做。这导致在全屏状态下
+点 Reset dashboard、拖动侧边栏/Controls 面板开合、缩放窗口,都不会真的
+重新贴合宽度——Reset 之后 screenWidth 只会回到写死的 default 值
+(1422px),如果这个默认值比全屏视口实际可用宽度还宽,面板依然会盖住
+内容,只是盖住的程度比手动拖到更大数值时轻一点,看起来像"没重置干净"。
+
+`fullscreenOpen` 这个guard的本意应该是避免和 `toggleFullscreen()` 自己
+那段"刚进/刚出全屏那一瞬间"的宽度测量互相打架(那段逻辑是独立的
+setTimeout,不经过这个函数),但错误地把这个条件写成了"只要还在全屏状态
+就永久跳过",不只挡住了进出全屏的那一瞬间。已经去掉 `fullscreenOpen.value
+||` 这半个条件,只保留 `!screenWidthAuto.value`(你手动拖过滑块)这个
+判断——现在全屏状态下 Reset/侧边栏开合/Controls开合/窗口resize 都会正确
+重新贴合当前真实可用宽度。用浏览器实测过:全屏→手动拖滑块到1873px(制造
+盖住)→点Reset→screenWidth正确回落到当前stage的真实宽度(不再盖住,
+`.pg-stage` 的 `scrollWidth`/`clientWidth` 相等,没有横向滚动)。
+
+## 2026-09-01 行数从 12 变成 10(Buying/Selling 从 6+6 变成 5+5)
+`OfferTableRow/mock.js` 那次整批重新生成金额时删掉了两行不存在的状态
+组合(`rowWithMakeOffer`/`rowFiat500`,原因见该文件自己的
+[notes.md](../OfferTableRow/notes.md)),`rows` 数组和 `buyingRows`/
+`sellingRows` 的切分点已经同步从 `slice(0,6)`/`slice(6,12)` 改成
+`slice(0,5)`/`slice(5,10)`——被删的两行正好一个原本在 Buying、一个原本
+在 Selling,所以两边还是各少一个,仍然是干净的 5+5,不需要重新决定哪些
+行归哪个 tab。`buyingVehicleCount`/`sellingVehicleCount` 这两个 prop 的
+默认值和范围也跟着从 6/1~6 改成 5/1~5。下面几条 2026-08 的历史记录里提到
+"12行"/"6+6" 的地方保留原样,当历史记录看,不代表现在还是这个数字。
+
+## 2026-09 修复真实bug:Dashboard 卡片打开的 Dialog 内容对不上
+你发截图指出"info dialog上没有显示对应card上的内容,只有pending
+offer"。根因:`rowsAsCards` 从一开始就没有把 `reservePrice`/
+`acvEstimate`/`reportUrl`/`history` 这四个字段传给 `<OfferCard>`——
+`OfferCard` 内部又把它们原样转发给点击 CTA 打开的 `InformationDialog`,
+没传等于全部落到 `OfferCard.vue`/`InformationDialog.vue` 自己的默认
+占位值(`Highest Bid $20,000` 之类和这一行真实数据毫无关系的数字),
+`history` 默认空数组,所以弹窗永远显示"Pending Offer"、没有任何气泡。
+现在这四个字段直接从 `row.reservePrice`/`row.acvEstimate`/
+`row.reportUrl`/`row.history`(逐行数据,见
+[OfferTableRow/notes.md](../OfferTableRow/notes.md))里取,不再是
+OfferCard 自己的默认值。
+
+同一批还修了 `InformationDialog.vue` 自己的一个bug(金额区"Highest
+Bid"用错了字段,详见 [InformationDialog/notes.md](../InformationDialog/notes.md)),
+两个bug加在一起才是"卡片和对话框数字完全对不上"这个现象的完整原因。
+
+## 2026-09 Controls 面板开合应该改变 dashboard 尺寸,不是"盖住"
+你截图指出:Controls 面板一直是打开的,dashboard 内容在表格右侧(Update
+列)被直接裁掉/挡住,不是整个页面跟着变窄重新排布。
+
+根因:这不是 OfferDashboard 组件本身的问题,是 Playground 外壳
+(component-playground.html 里的 Harness)的问题——`screenWidth` 滑块
+(模拟屏幕宽度用的)有一个默认值(1422px),Harness 一直照这个数值给
+`.pg-stage__resize-frame` 定宽,不管 `.pg-stage` 自己因为 Controls
+面板/侧边栏开合实际能用的空间是多少。`.pg-stage` 本身是
+`overflow:auto`,宽度不够时只会在内部横向滚动——看起来就是"内容被挡住
+了一块",不是"dashboard 自己变窄重排"。
+
+修法(在 Harness 里,不是 OfferDashboard 组件本身的改动):新增一个
+"自动贴合宽度"模式(`screenWidthAuto`,默认 true)。只要你没有手动拖过
+这个滑块,Controls 面板开合、侧边栏开合、浏览器窗口 resize、切换到这个
+组件页面时,都会重新量一下 `.pg-stage` 真实可用宽度,把滑块也跟着拨到
+那个值,让 dashboard 用它自己的响应式布局重新排布填满这块空间。一旦你
+自己拖过这个滑块(想固定模拟某个屏幕宽度做响应式测试),就不再自动跟着
+变了,直到你点"Reset dashboard"或者切换组件页面再切回来。
+
+如果表格本身(很多列)比量到的可用宽度还宽,`.pg-stage` 仍然会出现横向
+滚动条——这是预期内的("表格太宽,滚动查看"),和"面板挡住内容"是两种
+不同的事,没有要求把表格列本身也做得更紧凑,那是另一个问题。
+
+## 2026-09 tile 视图卡片默认用 v2 内容规则,Dashboard 自己也能切换
+按你的要求,`rowsAsCards` 给每张卡片都传 `card-version`,取自新增的
+`cardVersion` prop(默认 `'v2'`)——不再像上一版那样把 `'v2'` 直接写死,
+现在 Playground 的 Controls 面板里也有一个"Tile view card version"
+下拉可以切回 v1 看效果(OfferCard 组件本身默认还是 'v1',不传就不受
+影响,只有这个 Dashboard 页面组装默认选了 v2)。v2 是什么、改了什么见
+[OfferCard/notes.md](../OfferCard/notes.md),这里不重复。新增的
+`counterpartyTimestamp` 字段借用了和 `ownTimestamp` 同一个
+`row.updateDate`,是尽力而为的映射,不是逐行核实过的真实业务数据。
+
 这是整页的组装,不是任务清单里 order 10-34 要求的独立"模具"组件,是把
 下面这些已经核实过的 fragment 拼在一起,方便先看整体效果:
 

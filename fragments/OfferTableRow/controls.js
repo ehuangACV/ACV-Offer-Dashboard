@@ -47,7 +47,7 @@ export default {
   timeRemaining: {
     type: 'text',
     label: 'Time remaining (timeRemaining)',
-    default: '20h 45m'
+    default: '3h 15m'
   },
   acvEstimate: {
     type: 'text',
@@ -62,7 +62,7 @@ export default {
   receivedAmount: {
     type: 'text',
     label: 'Received amount, can be "--" (receivedAmount)',
-    default: '$7,000'
+    default: '$26,800'
   },
   statusNew: {
     type: 'boolean',

@@ -71,7 +71,9 @@
       "PowerShell(Get-Command python -ErrorAction SilentlyContinue)",
       "PowerShell(Get-Command certutil -ErrorAction SilentlyContinue)",
       "PowerShell(& python --version 2>&1)",
-      "PowerShell(& python -c \"print\\(1\\)\" 2>&1)"
+      "PowerShell(& python -c \"print\\(1\\)\" 2>&1)",
+      "Bash(powershell -Command \"Get-Item 'C:\\\\Users\\\\Einphix\\\\Downloads\\\\Offer States Logic for CC*.md' | Select-Object Name, LastWriteTime | Format-Table -AutoSize\")",
+      "Bash(tasklist //FI \"IMAGENAME eq pwsh.exe\")"
     ]
   }
 }

@@ -1,5 +1,134 @@
 # OfferCard 核实记录
 
+## 2026-09-01 按 "Offer States Logic for CC.md" 的 Number rules 整批重新生成 mock.js 金额
+你截图指出 Information Dialog 金额区几个数字互相矛盾(卖家开价比买家已
+出的价还低,split 落在自己的区间之外),要求整批重新生成而不是逐个打
+补丁,并给了严格的生成规则(reserve 先定→买家开盘价严格<reserve→卖家
+counter 严格落在买家和 reserve 之间,每一方新 counter 必须严格更接近
+对方、不能等于对方数字→In Negotiation<6h/Make Offer<24h)。
+
+具体改了两组:
+- **Ford Focus RS 5 个 In Negotiation 例子**(buyerReceivedExample/
+  buyerSentNegotiationExample/sellerReceivedNegotiationExample/
+  sellerSentExample/buyerExpiredExample):这 5 个本来就是同一段协商的 5
+  个连续快照(同一 vin/auctionId),这次按一条完整的链路重新生成——
+  $3,800→$4,500→$4,100→$4,300,reserve 全程 $4,800 不变,acvEstimate
+  统一 $4,600。每一步都验证过严格落在"自己上一次"和"对方最新"之间。
+- **BMW X5 5 个 Make Offer 例子**:之前 5 个例子的 reserve 各不相同
+  ($23,000/$21,000/$32,000/$29,000),同一辆车 reserve 却不一样,统一成
+  $28,000、acvEstimate 统一 $27,500;买家出价相对 reserve 的比例也收紧到
+  85%–97% 区间内。
+完整的最终数字和逐条理由写在 `mock.js` 文件头注释里,不在这里重复。
+
+## 2026-09 三处布局微调(你直接给的截图指示)
+1. **line1 的时间挪到行末右对齐**:v2 的 received 状态 line1("Seller
+   countered $4,500")后面那个时间("Today, 08:45 AM")之前是拼进同一个
+   字符串里紧跟在金额后面,现在拆成独立的 `messageLine1Timestamp`
+   computed + 独立的 `.offer-card__message-timestamp` 元素,和 line1
+   文字放进同一个 `.offer-card__message-row`(flex,
+   justify-content:space-between)——文字贴左,时间贴最右。sent/
+   declined/expired 这几个状态本来就没有这个时间,继续是空字符串不渲染。
+2. **状态chip永远贴右,不管有没有倒计时**:之前贴右靠的是
+   `.offer-card__flex-row` 的 `justify-content:space-between`,配合"倒计时贴左
+   +chip贴右"两个孩子才成立——declined/expired 这类没有倒计时的卡片,
+   这一行只剩chip一个孩子,`space-between` 对单个孩子不生效,退回默认
+   贴左,这是个真实的布局bug。给 `.offer-card__status-pills` 加了
+   `margin-left:auto`,自己就会贴右,不依赖倒计时那个兄弟节点陪着。
+3. **消息块两行之间补 2px 间距**:`.offer-card__message` 加了
+   `gap:2px`,之前 line1 所在行和 line2 是紧贴的0间距。
+4. **分隔线上下间距从8px改成12px**:`.offer-card__flex-section` 的
+   `gap` 从8px改成12px——这一个gap数值同时控制"倒计时/状态chip那一行"
+   到分隔线、分隔线到消息块这两段间距(flex column的gap对所有孩子间距
+   一视同仁),所以分隔线上下间距是一起变大的,不是分别设置的两个数字。
+
+## 2026-09 v2 车辆信息行补上 "Auction ID" 标签(+ 补回冒号)
+上一版 v2 只把裸数字放进那一行("452161 ・ VIN 884523"),你指出
+"auction ID 要加到ID number前面上去"——加上了标签,但当时为了跟同一行
+VIN 那半边("VIN {vin}",不带冒号)保持一致,写成了"Auction ID
+{auctionId}"(不带冒号)。你又追问"auction ID 的‘:’呢",所以改回带
+冒号:"Auction ID: {auctionId} ・ VIN {vin}"——和 v1 里那行独立的
+"Auction ID: {auctionId}"用的是完全一样的写法,只是从单独一行合并进了
+车辆信息的第二行。
+
+## 2026-09 新增 card 内容 v2(不是 Figma 核实,是你直接给的文字规则)
+新增 `cardVersion` prop('v1'/'v2',默认'v1'),用字符串枚举不用布尔值,
+是因为你说了"之后会有新的version"——以后再加 v3/v4 不需要再破坏性改这个
+prop 的类型。v1 是之前所有已经核实/验证过的内容规则,一个字没动;v2 是
+这次新给的规则,只改了"车辆信息行"和"两行文案"这两处内容,没有动 hover
+机制/倒计时颜色规则/按钮组这些交互层面的东西(你也没提到要改这些)。
+
+**1. 车辆信息行**:v2 把"{mileage} ・ VIN {vin}"改成"{auctionId} ・
+VIN {vin}",同时不再单独渲染下面那行"Auction ID: xxx"——原来是
+mileage+VIN 一行、Auction ID 单独一行(共2行),v2 合并成1行,你原话
+"这样减少一行字"。`mileage` prop 本身没删(数据源可能还需要这个字段),
+只是 v2 卡片不显示它。
+
+**2. 两行文案**:新增 `messageLine1V2`/`messageLine2V2`(v1 原来的逻辑
+原样保留在 `messageLine1V1`/`messageLine2V1`,靠 `cardVersion` 在最终
+`messageLine1`/`messageLine2` 里二选一)。规则:
+- `sent`(轮到对方,你在等):line1 只说"Waiting on the {对方}",不带
+  时间——你原话"因为等待没有时间节点";line2 是"你自己最后一个动作 +
+  时间"。这条和 v1 的措辞/结构完全一样,你给的例子"Your counter $4,200
+  · Today, 09:10 AM"本来就和已有实现一致,没有改的地方。
+- `received`(轮到你,对方刚发过来):line1 变成"对方刚做的动作 + 金额 +
+  **那次动作的时间点**"(v1 原来不带时间,v2 新增,需要新 prop
+  `counterpartyTimestamp`——对方最近一次动作的时间);line2 从"你自己
+  金额 + 你自己的时间"改成"你自己金额 + **和对方差多少**"(新增
+  `gapBetween()` 函数,直接从 `counterpartyAmount`/`ownAmount` 两个已有
+  金额算差值,不再需要像 v1 的 `showGap`+`gapAmount` 那样另外单独维护
+  一个字符串——不存在"金额改了但 gapAmount 忘记同步"这种数据不一致的
+  风险)。买家这一侧的措辞按你截图给的例子"Your offer $3,800 · $700
+  apart"写死用"offer"这个词(不是"counter")——卖家这一侧你没给对应
+  例子,沿用它原来就在用的"Your counter"/"Your reserve"措辞,只是结构
+  上加了差额,没有像买家那样改动词,这是我自己按对称推的,不是你给的
+  例子,**待你确认**卖家侧是否也要统一改成别的词。
+- `declined`/`expired`:你没提到要改,v2 原样复用 v1 的文案。
+
+**3. 新增 prop `counterpartyTimestamp`**:只有 v2 的 `received` 状态
+line1 会用到,默认空字符串,不传就是"对方 动作 金额"不带时间,不会多渲染
+一个孤立的分隔符。mock.js 里 3 个 `received` 例子(buyerReceivedExample/
+sellerReceivedNegotiationExample/sellerReceivedMakeOfferExample)补了这
+个值,直接取自各自 `history` 数组里最新一条(对方发的那条)的
+`timestamp`,和 Dialog 显示的时间保持一致。顺带发现并修正了
+`buyerReceivedExample`/`sellerReceivedNegotiationExample` 两个例子的
+`ownTimestamp`——之前误写成了对方最新那条动作的时间,已按 `history`
+改成"自己那笔金额"实际发出的时间。
+
+**【待你确认】倒计时颜色**:你这条消息里也重申了"所有小于1小时的time
+left用红色"——组件里这条规则本来就已经实现(`timeLeftUrgent` prop 决定
+颜色,<1小时=红/#CC433A,否则灰/#55575C),v1/v2 共用同一段倒计时
+markup,这次没有改动。如果你的意思是这个颜色应该由卡片自己解析
+`timeLeft` 文本里有没有"h"来自动判断,不再依赖外部传的 `timeLeftUrgent`
+布尔值,请明确说一下——现在没有做这个改动,担心猜错方向做出一个你没
+要求的新机制。
+
+**Playground / Dashboard 接入**:OfferCard 自己的 Playground 页面
+Controls 面板新增了"Card version (cardVersion)"下拉(v1/v2),默认 v1,
+不影响之前任何验证过的截图/效果。`OfferDashboard.vue` 的卡片视图
+(`rowsAsCards`→`OfferCard`)按你的要求显式传 `card-version="v2"`,
+新增的 `counterpartyTimestamp` 借用了已有的 `updateDate` 字段(和
+`ownTimestamp` 的映射方式一样,是尽力而为的映射,不是逐行核实过的真实
+业务数据,待你确认)。`OfferCardGallery`(总览页)**没有**跟着加版本
+切换控制,还是固定用组件默认的 v1——不确定你是否想要它也能切换,已在它
+自己的 notes.md 标注待确认。
+
+## 2026-08 按你的要求:所有 hover CTA 打开同一个 Information Dialog
+你的原话:"这个是information dialog. 是点击card上所有CTA打开的dialog.
+无论是accept or delince. 我知道这不合理,先这样做,之后会调整。" ——所以
+`hoverButtons` 里每个按钮(不管是 Accept/Decline/Counter/View Details/
+Manage Offer/Raise Your Offer/Remove From List 哪一个)的 `@click` 都
+只做同一件事:把新增的 `dialogOpen` ref 设为 `true`,不区分点的是哪个
+按钮。这是已知的临时简化,不是最终设计,以后要按钮区分动作时要回来改这里
+的 click handler。
+
+新组件 [`InformationDialog`](../InformationDialog/notes.md)(细节、Figma
+核实、文档依据都记在它自己的 notes.md,这里不重复)挂在
+`.offer-card__hover-buttons` 后面,用 `v-model="dialogOpen"`。为了让
+dialog 有内容,新增了 7 个纯"传给 dialog 用,卡片自己不显示"的 prop:
+`openingBidAmount`/`reservePrice`/`acvEstimate`/`reportUrl`/`history`/
+`floorAmount`/`ceilingAmount`,10 个已有 mock 示例都补上了对应的值(见
+下方 mock.js 变更)。
+
 ## 2026-08 按你给的 "Offer card — content & interaction spec" 重写内容模型
 你明确说"card 的 layout 和 hover 的 interaction 都不需要调整,只需要改
 copy,和应该对应显示的状态"。这次没有动卡片的 DOM 骨架或 hover 模糊+

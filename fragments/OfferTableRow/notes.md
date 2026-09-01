@@ -1,5 +1,58 @@
 # OfferTableRow — Notes
 
+## 2026-09-01(第二次调整)三行的数字整体往下移,离 reserve 更远
+你要求"个别 example 的 counter number 比之前更低一点",举了具体例子
+reserve $5,500 / Highest Bid $4,500 / Seller Counter $5,000。这正好是
+`rowWithNoStatusChip` 当时的 reserve(改之前是 $5,000/$5,300),照你给的
+数字直接改了这一行;另外挑了 `rowChevyMalibu`/`rowFordEscapeSE` 两行做
+同样的调整(reserve 不变,买家/卖家整体往下移一档,离 reserve 更远、
+gap 保持不变),覆盖大/中/小三个金额量级。三行仍然满足严格区间(买家<
+卖家<reserve,不相等)。具体新旧数字对比见 `mock.js` 各自字段旁的注释。
+
+## 2026-09-01 按 "Offer States Logic for CC.md" 的 Number rules 整批重新生成金额,删掉两行
+你截图指出 Information Dialog 里 "Highest Bid $26,000 / Seller Counter
+$7,000 / Reserve $27,000"、"Between $26,000 and $7,000"、split "$16,500"
+互相矛盾,逐行核对后发现不止这一处。你给了完整的生成规则(reserve 先定→
+买家开盘价严格<reserve→卖家 counter 严格落在买家最新和 reserve 之间→
+后续每一方新 counter 必须严格更接近对方,不能等于对方数字、不能反向)+
+两轮修正(锚点只在存在时才生效、区间是严格区间不是闭区间、买家出价相对
+reserve 收紧到 85%–97%、In Negotiation<6h/Make Offer<24h 没有例外),要求
+**整批重新生成,不是逐个打补丁**——"Between $26,000 and $7,000" 这个 bug
+正是补丁式修法(改一个数字,gap/split/区间这些派生值没跟着改)的直接后果。
+
+这次的完整改动、每一行具体数字和理由,全部写在 `mock.js` 文件头的注释里
+(不在这里重复),这里只记两条会影响这份 notes.md 之前记录的结构性变化:
+- **删掉了两行**:`rowWithMakeOffer`(买家+Make Offer+Received,这个
+  组合本身不存在,之前只在注释里标注矛盾没有删,这次直接删掉)、
+  `rowFiat500`(`offerType:'none'` 不是合法类型,每笔 deal 必须是 In
+  Negotiation 或 Make Offer 之一)。下面几条 2026-08 的历史记录里提到
+  这两行的地方(比如"12行"、"3个已核实的行"里的第二个)保留原样不动,
+  当作历史记录看,不代表现在还是这个数字。
+- 行数从 12 变成 10,Buying/Selling 的 5+5 切分(原来 6+6)记录在
+  `OfferDashboard/notes.md`。
+- `rowWithNoStatusChip`/`rowHyundaiKona`/`rowFordEscapeSE` 三行之前用
+  `sentAmount`(或 `receivedAmount`)='--' 靠 `acvEstimate` 兜底凑
+  gap/split,这次补上了真实数字——In Negotiation 的起点必然有一个真实
+  的买家 high bid,不该用兜底值代替。
+
+## 2026-09 按你的要求给 Buying tab 补状态多样性
+你指出"offer dashboard buying tab 下要有不同的card 的不同状态"——之前
+`OfferDashboard.vue` 的 `rowToDealState()` 只在 `statusDeclined`/
+`statusSent` 为 true 时才不落到默认的 'received',而排在 Buying tab
+(前6行)的 6 行数据里,**没有任何一行** `statusSent`/`statusDeclined`
+是 true,所以 6 张卡片全部显示同一个 'received' 状态,看不出区别。改了
+这两行自编的 mockup 数据(不是 Figma 核实数据,见下面"第二批照片"章节,
+改这两行不影响任何已核实字段):
+- `rowLexusES`:`statusDeclined` 改成 `true`。
+- `rowJeepWrangler`:`statusReceived` 改成 `false`、`statusSent` 改成
+  `true`——这一行本来 `receivedAmount` 就是 `'--'`(对方还没回复过),
+  只有 `sentAmount`,标成 `statusReceived` 本身和数据矛盾,顺手修正。
+
+现在 Buying tab 的 6 张卡片是 4 个 received + 1 个 sent(Jeep) + 1 个
+declined(Lexus),不再是清一色的 received。**没有改** Selling tab(后
+6行)——那边本来就已经有 `statusDeclined`(Fiat 500)和 `statusSent`
+(Dodge Charger)分布,不缺多样性。
+
 ## 2026-08 你指出:Update 列的 New chip 不应该有星星图标
 你之前发过截图指出这个位置的 New chip 是没有图标的,这次又发了一次截图
 才发现之前一直没有生效(之前调整 `StatusChip` 组件的星星图标样式时,漏
