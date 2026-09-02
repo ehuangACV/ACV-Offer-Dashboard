@@ -245,6 +245,10 @@
 
         <div class="offer-dashboard__toolbar">
           <SearchInput v-model="searchValue" />
+          <!-- 2026-09-02 按你的要求:Selling tab 不应该有 Declined 这个
+               筛选项,Buying 保持不变。FilterChipGroup 新增的
+               showDeclined prop 按当前 tab 算,不是常量,细节见
+               FilterChipGroup/notes.md -->
           <FilterChipGroup
             ref="filterChipGroupRef"
             v-bind="filters"
@@ -252,6 +256,7 @@
             :is-multi-dealer="isMultiDealer"
             :dealership-open="dealershipDropdownOpen"
             :dealer-chip-label="dealerFilter.length ? dealerChipText : ''"
+            :show-declined="activeMainTab !== 'selling'"
             @toggle-dealership="toggleDealershipDropdown"
             @clear="handleClearFilters"
             @filter-change="chipFilter = $event"
@@ -285,7 +290,17 @@
           <template v-if="viewMode === 'table'">
             <OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
 
-            <OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" />
+            <OfferTableRow
+              v-for="(row, i) in rowsWithDealerMode"
+              :key="i"
+              v-bind="row"
+              :ref="(el) => setTableRowRef(el, i)"
+              :has-prev-deal="i > 0"
+              :has-next-deal="i < rowsWithDealerMode.length - 1"
+              :dialog-version="dialogVersion"
+              @prev-deal="handleTablePrev(i)"
+              @next-deal="handleTableNext(i)"
+            />
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
               No vehicles match the current filters.
             </p>
@@ -297,7 +312,17 @@
 
           <template v-else>
             <div class="offer-dashboard__card-grid" :style="cardGridStyle">
-              <OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" />
+              <OfferCard
+                v-for="(card, i) in rowsAsCards"
+                :key="i"
+                v-bind="card"
+                :ref="(el) => setCardRef(el, i)"
+                :has-prev-deal="i > 0"
+                :has-next-deal="i < rowsAsCards.length - 1"
+                :dialog-version="dialogVersion"
+                @prev-deal="handleCardPrev(i)"
+                @next-deal="handleCardNext(i)"
+              />
             </div>
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
               No vehicles match the current filters.
@@ -338,7 +363,20 @@ const props = defineProps({
   sellingVehicleCount: { type: Number, default: 5 },
   // 2026-09 按你的要求,Dashboard 页面自己也要有能切 OfferCard v1/v2 的
   // control,不再把 'v2' 写死在 rowsAsCards 里
-  cardVersion: { type: String, default: 'v2' }
+  cardVersion: { type: String, default: 'v2' },
+  // 2026-09-02 按 PM 反馈新增:In Negotiation 徽标的两个样式(Current/
+  // Ring),细节见 fragments/OfferCard/OfferCard.vue 的 badgeStyle prop
+  // 注释。这里的 prop 名字加了 card 前缀(cardBadgeStyle)是为了避免和
+  // OfferDashboard 自己以后可能会有的其它 "badgeStyle" 概念混在一起
+  // (比如 StatusChip/OfferTypeBadge 那些表格徽标),同 cardVersion 一样
+  // 只透传给 tile 视图的 OfferCard,不影响 table 视图。
+  cardBadgeStyle: { type: String, default: 'default' },
+  // 2026-09-02 按你的要求新增,给 InformationDialog 的 v1/v2 切换用——
+  // v1 是徽标贴车辆标题区右上角的现有样子,v2 把徽标挪到状态行最前面、
+  // 加 info 图标点开说明弹层,细节见 fragments/InformationDialog/notes.md。
+  // 同时透传给 table 视图(OfferTableRow)和 tile 视图(OfferCard)里各自
+  // 嵌的那个 InformationDialog,两种视图切出来的弹窗版本保持一致。
+  dialogVersion: { type: String, default: 'v1' }
 })
 
 const dealershipDropdownOpen = ref(false)
@@ -599,6 +637,49 @@ const rowsWithDealerMode = computed(() =>
   visibleRows.value.map((row) => ({ ...row, isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value }))
 )
 
+// 2026-09-02 按 Figma node 7597:112866 新增:InformationDialog 两侧的
+// Previous/Next。每个 OfferTableRow/OfferCard 只认识自己这一行/张,不知道
+// "列表"这件事,所以 hasPrevDeal/hasNextDeal(排在第几个)和真正的
+// "切到上一条/下一条"这个动作都要在这里算——这是唯一同时知道"当前可见
+// 列表"和"每一行自己的 dialog 开关"的地方。
+// `openDialog`/`closeDialog` 是 OfferTableRow.vue/OfferCard.vue 用
+// defineExpose 露出来的两个方法(它们自己内部的 dialogOpen 这个 ref 本身
+// 没有暴露给外面,只能通过这两个方法间接控制),这里用 v-for 里的函数式
+// ref(`:ref="(el) => setXxxRef(el, i)"`)把每个实例按当前渲染的下标存进
+// 这两个数组——用函数式 ref 而不是普通字符串 ref,是因为 v-for 列表长度
+// 会随筛选/搜索变化,函数式写法能在每次重新渲染时把数组内容跟着刷新对齐,
+// 不会留着筛选前的旧实例。
+const tableRowRefs = ref([])
+const cardRefs = ref([])
+function setTableRowRef(el, i) {
+  if (el) tableRowRefs.value[i] = el
+}
+function setCardRef(el, i) {
+  if (el) cardRefs.value[i] = el
+}
+// 切换逻辑统一是"关掉当前这一行的对话框 → 等一个 tick(让关闭的过渡/状态
+// 先落定,避免同一时间两个对话框的 v-model 互相打架)→ 打开相邻那一行的
+// 对话框"。没有做成"直接把内容换成相邻数据、同一个对话框不关闭"的方案——
+// 那样需要把 dialogOpen 这个状态整个提到 OfferDashboard 层,牵动面更大,
+// 现在这个"关了再开"的方案改动范围只在这三个文件内,效果上使用者感觉不到
+// 明显差异(两次动画几乎连续播放)。
+function handleTablePrev(i) {
+  tableRowRefs.value[i]?.closeDialog()
+  nextTick(() => tableRowRefs.value[i - 1]?.openDialog())
+}
+function handleTableNext(i) {
+  tableRowRefs.value[i]?.closeDialog()
+  nextTick(() => tableRowRefs.value[i + 1]?.openDialog())
+}
+function handleCardPrev(i) {
+  cardRefs.value[i]?.closeDialog()
+  nextTick(() => cardRefs.value[i - 1]?.openDialog())
+}
+function handleCardNext(i) {
+  cardRefs.value[i]?.closeDialog()
+  nextTick(() => cardRefs.value[i + 1]?.openDialog())
+}
+
 // Tile 视图卡片:直接复用已核实的表格行数据,字段名能对上的原样映射,
 // timeLeft 用 timeRemaining 拼出来。
 // [2026-08 按你的要求(对照节点 7485:41392 核实:Figma 里每张卡片底部都
@@ -657,6 +738,9 @@ const rowsAsCards = computed(() => {
       // 细,只有一个笼统的 updateDate——和 ownTimestamp 借用的是同一个
       // 字段,不是逐行核实过的真实业务数据,待你确认。
       cardVersion: props.cardVersion,
+      // 2026-09-02 按 PM 反馈新增,细节见上面 defineProps 的 cardBadgeStyle
+      // 注释和 OfferCard.vue 的 badgeStyle prop 注释
+      badgeStyle: props.cardBadgeStyle,
       counterpartyTimestamp: row.updateDate,
       // 2026-09 修复真实bug:之前这里完全没有把这三个字段传给
       // OfferCard(=没有传给它内部的 InformationDialog),导致从

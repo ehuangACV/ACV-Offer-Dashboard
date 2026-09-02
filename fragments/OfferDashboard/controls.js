@@ -12,7 +12,29 @@ export default {
   },
   isMultiDealer: {
     type: 'boolean',
-    label: 'Multi-dealer account (isMultiDealer)',
+    label: 'Multi-dealer',
     default: true
+  },
+  // 2026-09-02 按 PM 反馈新增,只透传给 tile 视图的 OfferCard,细节见
+  // OfferDashboard.vue 的 cardBadgeStyle prop 注释
+  cardBadgeStyle: {
+    type: 'select',
+    label: 'In Negotiation badge style',
+    options: [
+      { value: 'default', label: 'Current' },
+      { value: 'ring', label: 'Ring' }
+    ],
+    default: 'default'
+  },
+  // 2026-09-02 按你的要求新增:InformationDialog 的 v1/v2 切换,细节见
+  // fragments/InformationDialog/notes.md
+  dialogVersion: {
+    type: 'select',
+    label: 'Information Dialog version',
+    options: [
+      { value: 'v1', label: 'V1 — badge on vehicle title' },
+      { value: 'v2', label: 'V2 — badge on status row + info tooltip' }
+    ],
+    default: 'v1'
   }
 }

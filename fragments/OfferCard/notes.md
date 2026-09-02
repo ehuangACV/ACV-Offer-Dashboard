@@ -1,5 +1,80 @@
 # OfferCard 核实记录
 
+## 2026-09-02(第八次)新增 hasPrevDeal/hasNextDeal,透传给 InformationDialog
+配合 [InformationDialog](../InformationDialog/notes.md) 新增的两侧
+Previous/Next(对照 Figma node 7597:112866)。OfferCard 自己不知道"列表"
+这件事,只是把 `hasPrevDeal`/`hasNextDeal`(默认都是 false)原样传给
+`InformationDialog` 的 `hasPrev`/`hasNext`,把它的 `prev`/`next` emit
+原样转发成自己的 `prev-deal`/`next-deal`——真正算"排第几个""怎么切"的
+逻辑在 [OfferDashboard](../OfferDashboard/notes.md)。另外新增
+`defineExpose({ openDialog, closeDialog })`,给 OfferDashboard 一个能
+"关掉这张卡的对话框、打开相邻那张卡的对话框"的外部控制入口——`dialogOpen`
+这个 ref 本身没有对外暴露,只能通过这两个方法间接控制。
+
+## 2026-09-02(第七次)把图片上的三个徽标抽成独立组件 ImageBadge
+你指出图片左下角的三个徽标(In Negotiation/Make Offer/dealer name)应该
+用同一个组件,不应该是三段各自手写的 `<span>`+独立 class。已经抽成
+[ImageBadge](../ImageBadge/notes.md),原来这里的
+`.offer-card__type-badge*`/`.offer-card__lane-badge` 这几条 CSS 规则
+删掉了,颜色/边框/高度/圆角数值原样搬过去,没有改动任何视觉效果。
+`OfferCard.vue` 自己只留了 `badgeStyle` 这个 prop(决定要不要给
+`ImageBadge` 传 `ring`),徽标本身的几何/颜色细节都交给 `ImageBadge`
+自己维护。
+
+## 2026-09-02(第六次)更正:统一圆角改成4px,不是8px
+你指出 Make Offer 徽标看起来是4px圆角——核对了一下,代码里原来写的是
+3px(当初核实 Figma 时记录的数值),和你看到的不是同一个数字。既然要
+三个都统一,就以你说的4px为准:`--in-negotiation`(原8px)、
+`--in-negotiation-ring`(上一条改成的8px)、`--make-offer`(原3px)
+这次一起改成4px。这处更正覆盖了之前"Make Offer圆角3px"那条 Figma 核实
+记录,是你直接指出的,不是重新核实的 Figma 数值——如果之后需要重新核实
+Figma 上 Make Offer 徽标准确的圆角数值,这里先记一下这个矛盾。
+
+## 2026-09-02(第五次)Current 和 Ring 两个版本的圆角统一
+你要求 current(`--in-negotiation`)和 ring(`--in-negotiation-ring`)两个
+badgeStyle 版本用同样的高度和圆角。高度之前就已经一致(都是24px);圆角
+原来 ring 是6px(比 current 的8px小,当时是"白色描边贴着8px圆角在这么小
+尺寸下显得太圆"的临时判断),这次改成和 current 一样的8px,padding不变。
+
+## 2026-09-02(第四次)Ring 样式的字重改成 Regular
+你要求 Ring 样式("In Negotiation" + 白色描边)的字重改成 Regular,和其它
+徽标(默认样式的 In Negotiation/Make Offer/lane-badge,都没有单独设
+font-weight,继承的是普通字重)保持一致。之前加的 `font-weight: 700` 已
+删掉。
+
+## 2026-09-02(第三次)图片上的徽标整体上下再减2px
+你要求卡片图片上的徽标(In Negotiation/Make Offer/Ring 样式/dealer name
+lane-badge,一共四条 CSS 规则)整体上下 padding 各再减 2px,其它地方的
+badge/chip(表格里的 StatusChip/OfferTypeBadge)不动。四个之前统一凑到
+28px,这次一起往下调,减完还是互相对得上:
+- `--in-negotiation`:5px→3px,高度 28→24。
+- `--make-offer`:4px→2px(还有 1px 描边×2),高度 28→24。
+- `--in-negotiation-ring`:4px→2px(还有 1px 描边×2),高度 28→24。
+- `.offer-card__lane-badge`:5px→3px,高度 28→24。
+水平方向的 padding 都没有变。
+
+## 2026-09-02(第二次)新增 badgeStyle:In Negotiation 徽标的"Ring"样式
+PM 反馈 In Negotiation 徽标不够明显(Make Offer 有描边、对比更强)。先在
+Playground(component-playground.html)里做了两个概念稿给你挑,没有动这个
+真实文件——一个是换成品牌橙色渐变,一个是保留深色底加一圈白色描边+投影。
+你选定了后者("Ring"),这次正式加进真实组件:
+
+- 新增 prop `badgeStyle`('default'/'ring',默认 'default'),只影响
+  `offerType==='in-negotiation'` 时的徽标,Make Offer 徽标不受影响。
+- 新增 CSS class `.offer-card__type-badge--in-negotiation-ring`,和基础的
+  `--in-negotiation` class 一起叠加在同一个元素上(不是替换)——只覆盖
+  border/border-radius/padding/font-weight/box-shadow,background/color
+  继续从基础 class 继承,不重复声明。border(1px)是新加的,同步把
+  padding 从 5px/6px 减到 4px/5px、border-radius 从 8px 收到 6px,让最终
+  外框尺寸仍然是 28px(和上面那条"统一三个徽标高度"的基准一致),不会
+  看起来变大。
+- `OfferDashboard.vue` 新增 `cardBadgeStyle` prop,透传给 tile 视图的每
+  张 `OfferCard`(`rowsAsCards` 里的 `badgeStyle: props.cardBadgeStyle`),
+  Controls 面板新增了对应的 "In Negotiation badge style" 分段控件
+  (Current/Ring)。table 视图(`OfferTableRow`)不受影响——PM 反馈针对的
+  是卡片视图上的徽标,没有提到表格里的 `OfferTypeBadge`,这次没有动那个
+  组件。
+
 ## 2026-09-02 按你的要求:统一图片区三个徽标的高度
 你截图指出图片左下角的 "Make Offer" 徽标和 "In Negotiation"/dealer name
 (lane badge)徽标高度不一样,要求以 Make Offer 的高度为基准统一。算了一下:
@@ -370,3 +445,9 @@ grid`,`grid-template-columns: repeat(3, 1fr)` + `gap: 16px`)决定实际
 - Tile view 的整体页面接入(视图切换按钮 + "Viewing N results" 文案 +
   卡片网格)记录在 `fragments/OfferDashboard/notes.md`，不在这个组件
   笔记里重复。
+
+## 2026-09-02 追加:新增 dialogVersion prop 透传
+按你的要求新增 InformationDialog 的 v1/v2 切换,OfferCard 自己不关心这个
+版本,只是原样透传给内部嵌的 InformationDialog,由 OfferDashboard 的
+Controls 统一控制。细节见
+[InformationDialog/notes.md](../InformationDialog/notes.md)。

@@ -101,11 +101,12 @@
       (不是80%),own用`rgb(0,97,165)`(和之前的`#0061A5`是同一个
       颜色,只是写法不同)。时间戳**11px**颜色`#75747A`(不是10px/
       `#757575`)。
-    - Accept按钮的"勾"从内嵌SVG改成**字面的"✓"文字字符**(模板原文
-      就是`✓ Accept $4,500`这几个字符拼起来的,不是矢量图标),按钮
-      本身高度**36px**(气泡下面的Accept/Decline)或**40px**
-      (Footer里的主提交按钮)——两种高度模板本身就不一样,不是我
-      写错。
+    - Accept按钮的"勾"最初从内嵌SVG改成过字面的"✓"文字字符(模板原文
+      是`✓ Accept $4,500`这几个字符拼起来的,不是矢量图标)。
+      【2026-09-02 你直接要求去掉】这个"✓"前缀已经删掉,按钮现在只是
+      纯文字"Accept $4,500",不再带任何勾符号。按钮本身高度**36px**
+      (气泡下面的Accept/Decline)或**40px**(Footer里的主提交按钮)——
+      两种高度模板本身就不一样,不是我写错。
     - **Decline 只对卖家渲染**——之前(上一版)`canDecline` 只判断
       `dealState==='received'`,没分买家/卖家,状态文档明确写"The
       buyer cannot decline, ever. Declining is the seller's action
@@ -137,11 +138,44 @@
     任务范围只是这个 Dialog,没有动 OfferCard 的文案逻辑,这个差异
     **待你确认**要不要回头也把 OfferCard 改成同样区分首轮/countered过
     的写法。
+
+    【2026-09-02 新增:两侧 Previous/Next + 车辆信息行的类型徽标】对照
+    Figma node 7597:112866("Offers"整页 + 打开的 Dialog + 两侧的
+    Previous/Next)新增:
+    1. 车辆信息行右上角新增 In Negotiation/Make Offer 徽标,复用
+       fragments/ImageBadge(和 OfferCard 图片上的徽标是同一个组件)。
+       In Negotiation 用 ring 样式(深色底+白色描边)——这正好是这个
+       Figma 节点里量到的真实样式(#1C1D1F 底 + 白色1px描边),不是
+       为了"统一"套用别处的样式,是这个节点本来就长这样。Make Offer
+       这个节点没有真实实例,沿用 ImageBadge 已核实的白底样式。
+    2. 新增 `hasPrev`/`hasNext` 两个布尔 prop + `prev`/`next` 两个
+       emit——"根据是否有其他 deal 决定要不要显示"这条规则拆成两个独立
+       的判断(排第一条时没有 Previous,排最后一条时没有 Next),不是
+       "有列表就两个都显示、没列表就都不显示",这是常见 lightbox/邮件
+       详情页 prev-next 导航的标准做法。默认都是 false,不传就是原来
+       的样子,不影响任何已有用法。
+    3. 按钮位置没有照抄 Figma 在1440px画布里量出来的绝对像素(那是
+       针对574px宽对话框算的相对坐标),改成贴视口左右边缘
+       (left/right:24px,垂直居中)——不管对话框多宽、屏幕多大,这两个
+       按钮永远不会和对话框重叠,更稳妥。文字颜色也从 Figma 的白色改成
+       深色 #212121——Figma 那个背板是60%黑,白字在上面清楚;我们这个
+       背板只有25%黑(能看清背后页面内容),白字在这种浅背板上对比度
+       不够。
+    4. 这两个新按钮只在 `!inline` 时渲染——`inline` 是 Playground 专用的
+       "不用弹层展示"模式(避免黑背板挡住 Controls 面板),固定定位的
+       左右导航按钮在那个场景下同样会挡住面板,和整个弹层机制本身在
+       inline 模式下被跳过是同一个道理。
+    5. 实际的"点 Next 切到下一条 deal"这个跨行为的接线(OfferCard/
+       OfferTableRow → OfferDashboard,算出 hasPrev/hasNext、处理
+       prev/next 事件切换到相邻那一行的数据)记录在
+       fragments/OfferDashboard/notes.md,这个文件本身只负责按钮的
+       显示/隐藏和把点击事件 emit 出去,不知道"列表"这个概念。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
   <Teleport to="body" :disabled="inline">
     <div v-if="modelValue" :class="inline ? 'info-dialog-inline-shell' : 'info-dialog-overlay'" @click.self="handleOverlayClick">
+      <div class="info-dialog__stage">
       <div class="info-dialog" role="dialog" aria-label="Information">
         <div class="info-dialog__header">
           <span class="info-dialog__title">Information</span>
@@ -160,6 +194,12 @@
             <span class="info-dialog__vehicle-line">Odometer: {{ mileage }}</span>
             <span class="info-dialog__vehicle-line">Auction ID: {{ auctionId }}</span>
           </div>
+          <ImageBadge
+            v-if="offerType !== 'none' && dialogVersion !== 'v2'"
+            :variant="offerType"
+            :label="offerTypeLabel"
+            class="info-dialog__type-badge"
+          />
         </div>
 
         <div class="info-dialog__money">
@@ -193,8 +233,60 @@
 
         <div class="info-dialog__status-row">
           <span class="info-dialog__chips">
-            <span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new">New</span>
-            <span v-if="hasStateChip" class="info-dialog__chip" :class="`info-dialog__chip--${dealState}`">{{ stateChipLabel }}</span>
+            <!-- 2026-09-02 v2 新增:徽标从车辆标题区挪到这里,排在状态chip
+                 最前面,徽标内嵌一个 info 图标,点开的说明弹层和 dashboard
+                 表格表头(OfferTableHeader.vue 的 "Type" 信息图标)完全
+                 同一份内容/样式,细节见该文件旁边的注释。【2026-09-02
+                 更正】info 图标本身没有照抄表头那个蓝底白"i"的画法——你
+                 要求"用黑白的",改成一个纯描边圆圈+实心"i"的极简图标,
+                 stroke/fill 都用 currentColor,跟着徽标自己的文字颜色走
+                 (In Negotiation 徽标是白字,图标就是白色;Make Offer
+                 徽标是深色字,图标跟着变深色),不需要为两种徽标背景单独
+                 调颜色 -->
+            <ImageBadge
+              v-if="offerType !== 'none' && dialogVersion === 'v2'"
+              :variant="offerType"
+              :label="offerTypeLabel"
+              class="info-dialog__type-badge-v2"
+            >
+              <button
+                ref="typeInfoBtnRef"
+                type="button"
+                class="info-dialog__type-info-btn"
+                aria-label="What does this mean?"
+                @click.stop="showTypeGuide = !showTypeGuide"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6.25" stroke="currentColor" stroke-width="1.1"/>
+                  <circle cx="7" cy="4.5" r="0.9" fill="currentColor"/>
+                  <rect x="6.25" y="6.2" width="1.5" height="4.3" rx="0.5" fill="currentColor"/>
+                </svg>
+              </button>
+              <div v-if="showTypeGuide" ref="typeGuideRef" class="info-dialog__type-guide">
+                <div class="info-dialog__type-guide-arrow" />
+                <div class="info-dialog__type-guide-head">
+                  <span class="info-dialog__type-guide-title">Type</span>
+                  <button type="button" class="info-dialog__type-guide-close" aria-label="Close" @click.stop="showTypeGuide = false">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#545454" stroke-width="1.7" stroke-linecap="round"/></svg>
+                  </button>
+                </div>
+                <div class="info-dialog__type-guide-section">
+                  <OfferTypeBadge type="in-negotiation" label="In Negotiation" />
+                  <p class="info-dialog__type-guide-desc">(6h limit) High bidder from the auction.</p>
+                  <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
+                </div>
+                <div class="info-dialog__type-guide-section">
+                  <OfferTypeBadge type="make-offer" label="Make Offer" />
+                  <p class="info-dialog__type-guide-desc">(24h limit) Post-auction offer from any buyer.</p>
+                  <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
+                </div>
+                <div class="info-dialog__type-guide-footer">
+                  <button type="button" class="info-dialog__type-guide-btn" @click.stop="showTypeGuide = false">Got it</button>
+                </div>
+              </div>
+            </ImageBadge>
+            <span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new" :class="{ 'info-dialog__chip--v2': dialogVersion === 'v2' }">New</span>
+            <span v-if="hasStateChip" class="info-dialog__chip" :class="[`info-dialog__chip--${dealState}`, { 'info-dialog__chip--v2': dialogVersion === 'v2' }]">{{ stateChipLabel }}</span>
           </span>
           <span v-if="hasCountdown" class="info-dialog__time-remaining">
             Time Remaining
@@ -225,7 +317,7 @@
               <div v-if="i === lastCounterpartyIndex && !isClosed" class="info-dialog__bubble-actions">
                 <template v-if="!confirmingAccept">
                   <button v-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit('decline')">Decline</button>
-                  <button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">✓ Accept {{ counterpartyAmount }}</button>
+                  <button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">Accept {{ counterpartyAmount }}</button>
                 </template>
                 <button v-else-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit('decline')">Decline</button>
               </div>
@@ -279,12 +371,58 @@
           >{{ footerButton }}</button>
         </div>
       </div>
+
+      <!-- 2026-09-02 按 Figma node 7597:112866 新增:两侧的
+           Previous/Next,只在 !inline 时渲染(inline 是 Playground 专用的
+           "不用弹层展示"模式,原地渲染没有铺满视口的黑背板,固定定位的
+           左右导航按钮在那个场景下没有意义,也会挡住 Controls 面板,和
+           整个弹层机制本身在 inline 模式下被跳过的道理一样)。位置没有照抄
+           Figma 在1440px画布里量到的绝对像素(那是针对固定574px宽对话框
+           算出来的相对坐标,换到我们真实网页里对话框宽度/视口宽度都会变)。
+           【2026-09-02 更正】最初改成贴视口左右边缘(left/right固定
+           24px),你反馈"距离dialog太远"——因为视口边缘锚定的按钮离对话框
+           的距离取决于屏幕宽度,屏幕越宽这两个按钮离对话框越远,不是
+           固定的视觉间距。改成贴 .info-dialog__stage(下面新加的、只包着
+           对话框本身的定位容器)的左右边缘,用 right:100%/left:100% + 16px
+           的 margin 让按钮永远紧贴对话框卡片边缘外 16px,不再受视口宽度
+           影响。【2026-09-02 再次更正】文字颜色最初从 Figma 的白色改成了
+           深色 #212121(当时背板只有 25% 黑,白字在这种浅背板上对比度
+           不够)。后来背板 (`.info-dialog-overlay`) 加深到 50% 黑之后,
+           你反馈文字"太深",改回白色——现在背板够深,白字对比度足够,
+           和 Figma 原本的白色文字一致了。 -->
+      <button
+        v-if="!inline && hasPrev"
+        type="button"
+        class="info-dialog__nav info-dialog__nav--prev"
+        aria-label="Previous deal"
+        @click="$emit('prev')"
+      >
+        <span class="info-dialog__nav-circle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6" /></svg>
+        </span>
+        <span class="info-dialog__nav-label">Previous</span>
+      </button>
+      <button
+        v-if="!inline && hasNext"
+        type="button"
+        class="info-dialog__nav info-dialog__nav--next"
+        aria-label="Next deal"
+        @click="$emit('next')"
+      >
+        <span class="info-dialog__nav-circle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+        </span>
+        <span class="info-dialog__nav-label">Next</span>
+      </button>
+      </div>
     </div>
   </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import ImageBadge from '../ImageBadge/ImageBadge.vue'
+import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -314,12 +452,64 @@ const props = defineProps({
   // prop,true 时不用 Teleport 挪到 body、不铺黑色背板,直接在原地渲染
   // 卡片本身。默认 false,真实场景(OfferCard 点 hover 按钮打开)完全不受
   // 影响,还是原来的居中 overlay + 25% 黑背板。
-  inline: { type: Boolean, default: false }
+  inline: { type: Boolean, default: false },
+  // 2026-09-02 按 Figma node 7597:112866 新增:对话框两侧的
+  // Previous/Next——"根据是否有其他 deal 决定要不要显示"这条规则拆成两个
+  // 独立的布尔值,不是一个"是否有列表"的开关:在一个多条 deal 的列表里,
+  // 排在第一条时理应看不到 Previous、排在最后一条时理应看不到 Next,这是
+  // 常见 lightbox/邮件详情页 prev-next 导航的标准做法,不是"要么两个都
+  // 显示、要么都不显示"。这两个 prop 由外层(OfferCard/OfferTableRow →
+  // OfferDashboard)按当前 deal 在可见列表里的位置算出来,默认都是
+  // false——不传就等于"没有其他 deal 可以切",两个按钮都不显示,新增这个
+  // 功能不会影响任何已有用法。
+  hasPrev: { type: Boolean, default: false },
+  hasNext: { type: Boolean, default: false },
+  // 2026-09-02 按你的要求新增 v2:v1(默认)是徽标贴在车辆标题区右上角的
+  // 现有样子;v2 把徽标挪到状态行(New/Received/...)最前面、配一个可以
+  // 点开说明弹层的 info 图标,细节见下面徽标/状态行相关的注释和
+  // fragments/InformationDialog/notes.md。由 OfferDashboard 的 Controls
+  // 统一控制,不是这个组件自己默认切换的。
+  dialogVersion: { type: String, default: 'v1' }
 })
-const emit = defineEmits(['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer'])
+const emit = defineEmits(['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer', 'prev', 'next'])
 
 const isBuyer = computed(() => props.viewerRole === 'buyer')
 const isMakeOffer = computed(() => props.offerType === 'make-offer')
+// 2026-09-02 按 Figma node 7597:112866(In Negotiation 徽标出现在车辆信息
+// 行右上角)新增,复用 fragments/ImageBadge——和 OfferCard 图片上的徽标
+// 是同一个组件。这里不传 ring,走默认样式(深色底,无描边无投影)——
+// 按你的要求,dialog 上的徽标不需要 ring 版本的描边/投影,和 Card 图片上
+// 需要靠描边+投影提升可辨识度的场景不一样(dialog 里徽标本身就在浅灰底
+// 卡片上,不存在"和图片背景混在一起看不清"的问题)。Make Offer 沿用
+// ImageBadge 已核实的白底+灰描边样式,保持两种类型一致的视觉语言。
+// 2026-09-02 新增 v2 之后,这个位置(车辆标题区右上角)的徽标只在
+// dialogVersion==='v1' 时渲染——v2 把徽标挪到下面的状态行,两个位置
+// 不会同时出现同一个徽标,细节见下面状态行附近的注释。
+const offerTypeLabel = computed(() => (isMakeOffer.value ? 'Make Offer' : 'In Negotiation'))
+
+// 2026-09-02 v2 徽标内 info 图标的说明弹层——点外部/按 Escape 关闭,照抄
+// OfferTableHeader.vue "Type" 信息图标弹层的同一套惯例(这个项目里弹层
+// 组件一贯的关闭方式,DealershipFilterDropdown/Pagination 下拉也是同一套)
+const showTypeGuide = ref(false)
+const typeInfoBtnRef = ref(null)
+const typeGuideRef = ref(null)
+function handleTypeGuideOutsideClick(event) {
+  if (!showTypeGuide.value) return
+  if (typeInfoBtnRef.value?.contains(event.target)) return
+  if (typeGuideRef.value?.contains(event.target)) return
+  showTypeGuide.value = false
+}
+function handleTypeGuideEscapeKey(event) {
+  if (event.key === 'Escape') showTypeGuide.value = false
+}
+onMounted(() => {
+  document.addEventListener('mousedown', handleTypeGuideOutsideClick)
+  document.addEventListener('keydown', handleTypeGuideEscapeKey)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleTypeGuideOutsideClick)
+  document.removeEventListener('keydown', handleTypeGuideEscapeKey)
+})
 const isClosed = computed(() => props.dealState === 'declined' || props.dealState === 'expired')
 const hasCountdown = computed(() => !!props.timeLeft && !isClosed.value)
 // 模板字面是"45m",没有"Left"这个尾巴("Time Remaining"这个标签已经说明
@@ -378,27 +568,36 @@ watch(() => props.modelValue, (open) => { if (open) resetTransientState() })
 // 调用方约定
 watch(() => [props.dealState, props.counterpartyAmount, props.ownAmount, props.viewerRole, props.offerType], resetTransientState)
 
+// 2026-09-02 按你的要求更正:In Negotiation 里买卖双方可以连续出价——
+// 不用等对方回复,只要遵守价格规则(自己这次的出价要比自己上一次更靠近
+// 对方,即买家更高/卖家更低),就可以在 dealState==='sent' 时(还在等对方
+// 回复)再发一次 counter,不是只能在 dealState==='received'(轮到你)时
+// 才能出价。这个价格规则不需要单独写新的校验逻辑——"Between
+// {{buyerAmount}} and {{sellerAmount}}"这条已有的范围本来就是"买家最新
+// 数字到卖家最新数字之间"(buyerAmount/sellerAmount 只看当前买卖双方各自
+// 最新的数字,不关心 dealState 是 received 还是 sent),连续出价时这个
+// 范围天然就等价于"比自己上一次出价更靠近对方",不用额外判断。
+// Make Offer 不受这条影响,规则不变:Received(卖家视角)只能
+// Accept/Decline,没有输入面板;Sent 只有 buyer 才能再抬价("Raise Your
+// Offer"),seller 在 Make Offer 上没有 Sent 状态。
 const inputPanel = computed(() => {
   if (isClosed.value || confirmingAccept.value) return null
   if (props.dealState !== 'received' && props.dealState !== 'sent') return null
-  if (props.dealState === 'received') {
-    // Received:只有 In Negotiation 才有 Counter offer 面板;Make Offer·
-    // Received(卖家视角)是 Accept/Decline only,没有输入面板
-    return isMakeOffer.value ? null : 'counter'
-  }
-  // Sent:In Negotiation 的 Sent 没有输入面板(等对方回复);Make Offer 的
-  // Sent 只有 buyer 才有"New offer"面板(可以再抬价),seller 在 Make
-  // Offer 上没有 Sent 状态
-  if (isMakeOffer.value && isBuyer.value) return 'offer'
+  if (!isMakeOffer.value) return 'counter'
+  if (props.dealState === 'sent' && isBuyer.value) return 'offer'
   return null
 })
 
-// "Offer States Logic for CC.md" Split The Difference 一节,三个条件
+// "Offer States Logic for CC.md" Split The Difference 一节,原本三个条件
 // 缺一不可:1. 类型是 In Negotiation(Make Offer 永远没有);2. 双方都有
-// 数字;3. 轮到你(dealState==='received')。之前只判断了第2条,已经
-// 补上第1/3条
+// 数字;3. 轮到你(dealState==='received')。【2026-09-02 更正】第3条
+// 跟着上面 inputPanel 的改动放宽——In Negotiation 现在 sent 状态下也能
+// 发 counter,Split The Difference 这个输入面板内的快捷选项理应跟着
+// 输入面板一起出现,不再限定只有 received 才显示,改成直接复用
+// inputPanel==='counter' 这个判断(等价于"是 In Negotiation 并且当前在
+// 走 counter 流程",不用再单独重复 !isMakeOffer 这个条件)。
 const showSplitDifference = computed(() =>
-  !isMakeOffer.value && props.dealState === 'received' && !!props.counterpartyAmount && !!props.ownAmount
+  inputPanel.value === 'counter' && !!props.counterpartyAmount && !!props.ownAmount
 )
 function midpointAmount(a, b) {
   const na = Number(String(a).replace(/[^0-9.]/g, ''))
@@ -450,7 +649,7 @@ function handleFooterCommit() {
 .info-dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -458,6 +657,60 @@ function handleFooterCommit() {
   padding: 40px 16px;
   box-sizing: border-box;
   z-index: 1000;
+}
+
+/* 2026-09-02 新增,包住 .info-dialog 本身(不包 overlay 的内边距),让下面
+   两个按钮可以用 right:100%/left:100% 相对"对话框卡片的边缘"定位,而不是
+   相对整个视口——否则视口越宽,按钮离对话框实际的视觉距离就越远,和
+   "16px 间距"这个诉求矛盾。display:inline-flex 让这个容器收缩到刚好包住
+   .info-dialog(52px 圆形导航按钮本身用 position:absolute 不占布局空间,
+   不会撑大这个容器)。 */
+.info-dialog__stage {
+  position: relative;
+  display: inline-flex;
+}
+/* 细节(为什么文字是深色不是白色)见模板里这两个按钮旁边的注释。
+   right:100%/left:100% 贴 stage(= 对话框卡片)的左右边缘,margin 16px
+   撑出和对话框的固定间距——你反馈"距离dialog太远"(原来是贴视口边缘
+   固定24px,屏幕越宽实际间距越大),改成这样贴对话框卡片本身。 */
+.info-dialog__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+}
+.info-dialog__nav--prev {
+  right: 100%;
+  margin-right: 16px;
+}
+.info-dialog__nav--next {
+  left: 100%;
+  margin-left: 16px;
+}
+.info-dialog__nav-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #212121;
+}
+.info-dialog__nav-label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.15px;
+  color: #FFFFFF;
 }
 
 /* inline 模式(Playground 专用,见 script 里的注释):不铺背板、不
@@ -515,11 +768,22 @@ function handleFooterCommit() {
 }
 
 .info-dialog__vehicle {
+  position: relative;
   display: flex;
   gap: 16px;
   padding: 14px;
   border-radius: 4px;
   background: #F7F7F8;
+}
+
+/* 2026-09-02 按 Figma node 7597:112866 新增,徽标贴着这一块的右上角,
+   数值(top/right)是照这个节点量出来的比例估的,不是像素级核实——那个
+   节点的车辆信息行是574px宽对话框里的一个固定尺寸块,和我们520px宽
+   对话框、14px padding 不是同一套坐标,直接照抄像素反而会对不上 */
+.info-dialog__type-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
 }
 
 .info-dialog__vehicle-photo {
@@ -642,6 +906,147 @@ function handleFooterCommit() {
 .info-dialog__chip--sent { background: #E0E0E0; color: #212121; }
 .info-dialog__chip--declined { background: #FFEFBF; color: #402D00; }
 .info-dialog__chip--expired { background: #E0E0E0; color: #55575C; }
+
+/* 2026-09-02 v2 新增:你要求"status chip match to type badge 的高度"——
+   type badge(ImageBadge)高度是 24px,这几个状态 chip 原来是 22px(见上面
+   .info-dialog__chip 的 height:22px)。只在 v2 时加 1px 上下 padding
+   (4px→5px,水平 padding 不变),22px + 2px = 24px,刚好和徽标对齐,不
+   直接改 .info-dialog__chip 本身的高度(v1 还是原来的 22px,不受影响)。 */
+.info-dialog__chip--v2 {
+  height: 24px;
+  padding: 5px 8px;
+}
+
+/* 2026-09-02 v2 新增:徽标从车辆标题区挪到状态行最前面,复用同一个
+   ImageBadge 组件(样式跟 v1 的徽标完全一样,深色底/白底两种颜色不变),
+   只是这次多传了一个 slot(info 图标按钮 + 说明弹层),ImageBadge 本身
+   已经加了 gap:4px,图标会自动跟文字之间空出一点距离,不需要在这里
+   单独设 margin。position:relative 让下面的说明弹层可以用 position:
+   absolute 相对徽标自己定位,不用再包一层额外的容器。 */
+.info-dialog__type-badge-v2 {
+  flex-shrink: 0;
+}
+
+.info-dialog__type-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  /* <button> 默认不继承祖先的 color(浏览器 UA 样式表给了它自己的默认
+     文字色),显式 inherit 才能让图标的 currentColor 真的拿到徽标的
+     文字色(白色/深色),不然会一直是浏览器默认的黑色 */
+  color: inherit;
+}
+
+/* 2026-09-02 v2 新增:说明弹层,内容/结构/样式跟 OfferTableHeader.vue 里
+   "Type" 信息图标弹出的那张卡片完全一样(你要求"用dashboard table上的
+   同样的tooltip")——因为 Vue SFC 的 <style scoped> 不会跨组件文件生效,
+   这里必须重复一份同样数值的 CSS,不是重新设计。定位从"贴表头单元格
+   左下方"改成"贴徽标左下方"(top: calc(100% + 10px); left: 0),因为
+   这次的锚点(徽标本身,24px高)比表头那个信息图标(20×20)矮一些、
+   出现的位置也不一样,箭头/间距的绝对数值跟着调整,不是照抄表头那份
+   数值,但卡片本身(背景/圆角/阴影/字号/两个section的结构/Got it按钮)
+   和表头一模一样。 */
+.info-dialog__type-guide {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 20;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: #F5FBFF;
+  border-radius: 16px;
+  box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14);
+  font-family: 'Roboto', sans-serif;
+  cursor: default;
+}
+
+.info-dialog__type-guide-arrow {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  width: 16px;
+  height: 8px;
+  background: #F5FBFF;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.info-dialog__type-guide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.info-dialog__type-guide-title {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 30px;
+  letter-spacing: 0.15px;
+  color: #0E0E0F;
+}
+
+.info-dialog__type-guide-close {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.info-dialog__type-guide-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.info-dialog__type-guide-desc {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+  color: #0E0E0F;
+}
+
+.info-dialog__type-guide-desc strong {
+  font-weight: 500;
+}
+
+.info-dialog__type-guide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.info-dialog__type-guide-btn {
+  border: none;
+  background: #0077D8;
+  color: #FFFFFF;
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 14px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  cursor: pointer;
+}
 
 .info-dialog__time-remaining {
   display: flex;

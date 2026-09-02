@@ -1,5 +1,15 @@
 # OfferTableRow — Notes
 
+## 2026-09-02(第三次)新增 hasPrevDeal/hasNextDeal,透传给 InformationDialog
+配合 [InformationDialog](../InformationDialog/notes.md) 新增的两侧
+Previous/Next(对照 Figma node 7597:112866)。做法和
+[OfferCard](../OfferCard/notes.md) 那边完全一样:`hasPrevDeal`/
+`hasNextDeal`(默认 false)原样传给 `hasPrev`/`hasNext`,`prev`/`next`
+emit 转发成 `prev-deal`/`next-deal`,新增 `defineExpose({ openDialog,
+closeDialog })` 给 [OfferDashboard](../OfferDashboard/notes.md) 一个
+外部控制入口。真正算"排第几个""怎么切"的逻辑都在 OfferDashboard,这个
+文件只是被动接收结果。
+
 ## 2026-09-02(第二次)三处小调整:hover背景色 / CTA右对齐 / 列改名
 你看了上一条改动的实际效果后,给了三点修正:
 1. **hover 背景色 #F0F8FF**:对照 Figma node 1:21166 核实,这个节点里
@@ -29,10 +39,11 @@
 `4z7FK34Fgit7Fi9UxZu0za`,"Offers - Negotiation" 文件)作为 CTA 具体样式
 的参照——`get_design_context` 核实这个节点真实渲染出来是一条 hover 态的
 表格行:Update 列的 StatusChip/日期被换成 "Counter"(outlined 小号
-pill)+ "✓ Accept $26,000"(filled 渐变 pill,checkmark 用字面的"✓"字符,
-和 `InformationDialog` 的 Accept 按钮同一个写法)+ 一条 1px 分割线 + 纯
+pill)+ "Accept $26,000"(filled 渐变 pill)+ 一条 1px 分割线 + 纯
 文字链接 "More Info"(颜色 `#0061A5`,复用本项目已核实过的链接色,不是
-Figma 原始 token 给的 `#004E7D`)。
+Figma 原始 token 给的 `#004E7D`)。【2026-09-02 更正】filled 按钮最初带
+字面的"✓"字符前缀(和 `InformationDialog` 的 Accept 按钮同一个写法),
+你直接要求去掉,两处都改成纯文字,不再带勾。
 
 实现上:
 - 新增 `viewerRole`/`reservePrice`/`reportUrl`/`history` 4 个 prop——
@@ -298,3 +309,7 @@ Selling 里另外两个 Make Offer 状态的行(`rowFordEscapeTitanium` 9h15m /
    StatusChip 叠加的情况,StatusChip 本身"+N 溢出"逻辑的触发阈值(第几个
    开始收纳)在这三行数据里都没有触发,继续沿用 StatusChip 自己
    notes.md 里的待确认状态。
+
+## 2026-09-02 追加:新增 dialogVersion prop 透传
+同 OfferCard,原样透传给内部嵌的 InformationDialog,细节见
+[InformationDialog/notes.md](../InformationDialog/notes.md)。

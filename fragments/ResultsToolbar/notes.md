@@ -42,3 +42,7 @@ pill,只是换成 Figma 自己标的数值)。
 - `prev`/`next` 这两个 emit 目前 `OfferDashboard.vue` 没有监听(抽出来
   之前 `<Pagination v-bind="topPagination" />` 也没有监听过,顶部分页的
   上一页/下一页本来就还没接上真实翻页逻辑)——保持原样,不是这次遗漏。
+
+## 2026-09-02 追加：view switcher 左右padding再加4px
+按你的要求，`.results-toolbar__view-toggle-btn` 左右padding从12px改成
+16px（上下10px不变）——不是重新核实的Figma数值，是你直接给的覆盖。

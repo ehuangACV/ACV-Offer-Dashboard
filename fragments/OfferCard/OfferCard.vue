@@ -293,12 +293,13 @@
     >
       <img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">
       <div class="offer-card__image-badges">
-        <span
+        <ImageBadge
           v-if="offerType !== 'none'"
-          class="offer-card__type-badge"
-          :class="`offer-card__type-badge--${offerType}`"
-        >{{ offerTypeLabel }}</span>
-        <span v-if="dealerName" class="offer-card__lane-badge">{{ dealerName }}</span>
+          :variant="offerType"
+          :label="offerTypeLabel"
+          :ring="offerType === 'in-negotiation' && badgeStyle === 'ring'"
+        />
+        <ImageBadge v-if="dealerName" variant="dealer" :label="dealerName" />
       </div>
     </a>
 
@@ -390,6 +391,11 @@
       :time-left="timeLeft"
       :time-left-urgent="timeLeftUrgent"
       :history="history"
+      :has-prev="hasPrevDeal"
+      :has-next="hasNextDeal"
+      :dialog-version="dialogVersion"
+      @prev="$emit('prev-deal')"
+      @next="$emit('next-deal')"
     />
   </div>
 </template>
@@ -398,8 +404,17 @@
 import { ref, computed } from 'vue'
 import StatusChip from '../StatusChip/StatusChip.vue'
 import InformationDialog from '../InformationDialog/InformationDialog.vue'
+import ImageBadge from '../ImageBadge/ImageBadge.vue'
 
 const dialogOpen = ref(false)
+// 2026-09-02 按 Figma node 7597:112866 新增:配合 InformationDialog 的
+// Previous/Next,OfferDashboard 需要能"关掉这张卡的对话框、打开相邻那张
+// 卡的对话框",但 dialogOpen 这个 ref 本身没有对外暴露(只在这个组件内部
+// 用),所以露出这两个方法作为唯一的外部控制入口,不直接暴露 ref 本身。
+defineExpose({
+  openDialog: () => { dialogOpen.value = true },
+  closeDialog: () => { dialogOpen.value = false }
+})
 
 const props = defineProps({
   photoUrl: { type: String, default: '' },
@@ -470,8 +485,34 @@ const props = defineProps({
   // 时候发生的)。v1 没有这个字段的显示位置,只有v2 message line1 在
   // dealState 是 received 时会用到。默认空字符串,不传就不在line1追加
   // 时间。
-  counterpartyTimestamp: { type: String, default: '' }
+  counterpartyTimestamp: { type: String, default: '' },
+  // 2026-09-02 按 PM 反馈新增:'default'(原样)/'ring'——In Negotiation
+  // 徽标之前 PM 觉得不够明显(Make Offer 有描边、对比更强),在 Playground
+  // 里先做了两个概念稿给你挑,你选定了"ring"这个方向(深色底不变,加一圈
+  // 白色描边+投影,靠"有清晰边缘"这个 Make Offer 本来就有的优势提升
+  // 可辨识度),这次正式放进真实组件。只影响 offerType==='in-negotiation'
+  // 时的徽标,Make Offer 徽标本身不受影响。默认 'default',不传就是原来
+  // 的纯色徽标,只有 OfferDashboard.vue 新增的 cardBadgeStyle 这个 prop
+  // 会传 'ring' 进来。
+  badgeStyle: { type: String, default: 'default' },
+  // 2026-09-02 按 Figma node 7597:112866 新增,透传给 InformationDialog
+  // 的 hasPrev/hasNext——这两个值本身"这张卡是不是列表里第一/最后一张"
+  // 这件事,OfferCard 自己不知道(它只认识自己这一张卡),要由外层
+  // (OfferDashboard 的 rowsAsCards)按当前卡片在可见列表里的位置算好了
+  // 传进来。默认都是 false,不传就是"没有其他 deal 可以切",两个按钮都
+  // 不显示,不影响任何已有用法。
+  hasPrevDeal: { type: Boolean, default: false },
+  hasNextDeal: { type: Boolean, default: false },
+  // 2026-09-02 按你的要求新增,原样透传给 InformationDialog 的
+  // dialogVersion——OfferCard 自己不关心这个版本切换,只是转手传下去,
+  // 由 OfferDashboard 的 Controls 统一控制,细节见
+  // fragments/InformationDialog/notes.md。
+  dialogVersion: { type: String, default: 'v1' }
 })
+// 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
+// Previous/Next 之后,OfferCard 自己不知道"上一张/下一张是哪张卡",只是
+// 把这个意图原样往上 emit,交给真正维护列表的 OfferDashboard 处理
+defineEmits(['prev-deal', 'next-deal'])
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'
@@ -815,48 +856,21 @@ function copyVin() {
   gap: 6px;
 }
 
-/* Card 上的状态徽标,和表格里的 OfferTypeBadge 数值不完全一样,见 METADATA */
-.offer-card__type-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 12px;
-  line-height: 18px;
-  letter-spacing: 0.4px;
-  white-space: nowrap;
-}
-/* 2026-09-02 按你的要求:以 Make Offer 徽标的高度为基准(18px 行高 +
-   上下4px padding + 1px描边×2 = 28px),把 In Negotiation 和下面的
-   dealership name(lane badge)都改成同一个高度——这两个都没有描边,
-   靠单独加大上下 padding 到5px凑到同样的28px(18+5+5=28),不是重新
-   核实的 Figma 数值,是你直接要求"以 Make Offer 为基准统一高度"。 */
-.offer-card__type-badge--in-negotiation {
-  background: #1C1D1F;
-  color: #FFFFFF;
-  border-radius: 8px;
-  padding: 5px 6px;
-}
-.offer-card__type-badge--make-offer {
-  background: #FFFFFF;
-  color: #0E0E0F;
-  border: 1px solid #8D9199;
-  border-radius: 3px;
-  padding: 4px 6px;
-}
-
-.offer-card__lane-badge {
-  display: inline-flex;
-  align-items: center;
-  backdrop-filter: blur(0.75px);
-  background: rgba(0, 0, 0, 0.4);
-  color: #FFFFFF;
-  font-size: 12px;
-  line-height: 18px;
-  letter-spacing: 0.4px;
-  text-align: right;
-  white-space: nowrap;
-  border-radius: 8px;
-  padding: 5px 10px;
-}
+/* 2026-09-02(第七次)你指出图片上这三个徽标(In Negotiation/Make
+   Offer/dealer name)应该用同一个组件——原来这里各自的
+   offer-card__type-badge 和 offer-card__lane-badge 这几条规则已经抽成
+   独立组件 fragments/ImageBadge/ImageBadge.vue(颜色/边框数值原样搬过
+   去,没有变),这里不再重复定义。之前几轮"统一高度/圆角/字重"的推导
+   过程记录在 ImageBadge.vue 自己的注释和 OfferCard/notes.md 里。
+   【2026-09-02 事故记录】上面这段注释原来把两个 class 名字写在一起时,
+   中间意外拼出了 CSS 注释的结束符(星号紧跟着斜杠那两个字符),导致这条
+   注释提前在这里结束,后面本来该是注释内容的中文说明被当成了真的 CSS
+   代码(语法错误),连带把下面 .offer-card__info 那条设置左右16px
+   padding 的规则也吃掉了——这就是"改了徽标之后卡片下半部分 padding
+   消失"这个 bug 的真正原因,和 ImageBadge 本身的样式无关,纯粹是这条
+   注释写法的失误。教训:CSS 注释里不要把两个 class 名字紧贴着写,中间
+   至少留一个空格或用别的词分隔,否则容易再犯同样的错(这条注释自己
+   刚刚就犯了一次,已经改写成现在这样)。 */
 
 .offer-card__info {
   display: flex;

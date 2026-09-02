@@ -80,8 +80,10 @@
   .pg-control-field { margin-bottom: 16px; }
   /* 2026-09 按你给的截图重做:label 从"小灰字"改成"深色粗体小标题"
      (对应截图里"Viewport"这种section标题的分量),不再是不起眼的
-     附属说明文字 */
-  .pg-control-field label { display: block; font-size: 14px; font-weight: 600; color: #1F2430; margin-bottom: 8px; }
+     附属说明文字。【2026-09-02 更正】你反馈控制面板文字要精简——除了
+     .pg-controls__title 这个总标题保留原样,每个控制自己的 label 改成
+     Regular(不再是600)、字号从14px缩小2px到12px */
+  .pg-control-field label { display: block; font-size: 12px; font-weight: 400; color: #1F2430; margin-bottom: 8px; }
   .pg-control-field select, .pg-control-field input[type=text], .pg-control-field input[type=number] { width: 100%; padding: 9px 12px; border: 1px solid #D8DAE0; border-radius: 8px; font-size: 13px; color: #1F2430; box-sizing: border-box; transition: border-color .15s ease, box-shadow .15s ease; }
   .pg-control-field select:focus, .pg-control-field input[type=text]:focus, .pg-control-field input[type=number]:focus { outline: none; border-color: #6C7BFF; box-shadow: 0 0 0 3px rgba(108,123,255,.15); }
   /* 布尔控件画成 iOS 风格的开关,而不是普通 checkbox */
@@ -110,8 +112,15 @@
     box-shadow: 0 1px 2px rgba(0,0,0,.25);
     transition: transform .15s ease;
   }
-  .pg-control-field input[type=checkbox]:checked { background: #F26522; }
+  .pg-control-field input[type=checkbox]:checked { background: #2F5BFF; }
   .pg-control-field input[type=checkbox]:checked::before { transform: translateX(16px); }
+  /* 2026-09-02 按你的要求:布尔开关(switcher)本身的label和开关放到同一行
+     (label左、开关右),不再是label单独占一行、开关另起一行——只对
+     type==='boolean' 的控件生效,通过 Harness 模板里动态加的
+     pg-control-field--switch 这个修饰 class 实现,其它类型(select/
+     text/number/segmented/range)的控件布局不受影响 */
+  .pg-control-field--switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .pg-control-field--switch label { margin-bottom: 0; }
   /* 2026-09 按你给的截图重做 reset 这颗按钮:浅灰底、深色粗体字、居中,
      不再是描边橙色小按钮 */
   .pg-control-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; border: 1px solid #E4E6EC; border-radius: 10px; background: #F3F4F6; color: #1F2430; font-size: 14px; font-weight: 700; cursor: pointer; transition: background-color .15s ease, border-color .15s ease; }
@@ -434,10 +443,17 @@
   /* 2026-09-02 按 Figma node 7320:22065("segmented button") 重做:padding
      驱动尺寸(10px/12px),不再写死 32x32px 正方形,细节见
      fragments/ResultsToolbar/ResultsToolbar.vue 同一处注释 */
-  .results-toolbar__view-toggle-btn { display: flex; align-items: center; justify-content: center; padding: 10px 12px; background: #FFFFFF; border: 1px solid #D1D3D6; border-radius: 0; cursor: pointer; box-sizing: border-box; }
+  .results-toolbar__view-toggle-btn { display: flex; align-items: center; justify-content: center; padding: 10px 16px; background: #FFFFFF; border: 1px solid #D1D3D6; border-radius: 0; cursor: pointer; box-sizing: border-box; }
   .results-toolbar__view-toggle-btn:first-child { border-radius: 111px 0 0 111px; }
   .results-toolbar__view-toggle-btn:last-child { border-left: none; border-radius: 0 111px 111px 0; }
   .results-toolbar__view-toggle-btn--active { background: #F5F5F5; }
+
+  /* -- ImageBadge -- */
+  .image-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; border-radius: 4px; box-sizing: border-box; }
+  .image-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; padding: 3px 6px; }
+  .image-badge--in-negotiation-ring { border: 1px solid #FFFFFF; padding: 2px 5px; }
+  .image-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; padding: 2px 6px; }
+  .image-badge--dealer { backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; text-align: right; padding: 3px 10px; }
 
   /* -- OfferCard -- */
   .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
@@ -466,12 +482,17 @@
   .offer-card__image { display: block; position: relative; width: 100%; height: 210px; background: #DCDFE8; flex-shrink: 0; }
   .offer-card__photo { width: 100%; height: 100%; object-fit: cover; display: block; }
   .offer-card__image-badges { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 6px; }
-  .offer-card__type-badge { display: inline-flex; align-items: center; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; }
-  /* 2026-09-02 按你的要求以 Make Offer 徽标高度(28px)为基准统一三个
-     徽标的高度,细节见 fragments/OfferCard/OfferCard.vue 同一处注释 */
-  .offer-card__type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border-radius: 8px; padding: 5px 6px; }
-  .offer-card__type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; border-radius: 3px; padding: 4px 6px; }
-  .offer-card__lane-badge { display: inline-flex; align-items: center; backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; text-align: right; white-space: nowrap; border-radius: 8px; padding: 5px 10px; }
+  /* 2026-09-02:图片上的三个徽标(In Negotiation/Make Offer/dealer name)
+     抽成了独立组件 ImageBadge,原来这里的 offer-card__type-badge 和
+     offer-card__lane-badge 几条规则删掉了,CSS 挪到上面 "-- ImageBadge --"
+     单独一段,细节见 fragments/ImageBadge/notes.md。【事故记录,同步
+     fragments/OfferCard/OfferCard.vue 那边的说明】这条注释原来把两个
+     class 名字写在一起时,中间意外拼出了 CSS 注释的结束符(星号紧跟着
+     斜杠那两个字符),导致这条注释提前结束,后面本该是注释的中文说明被
+     当成了真的 CSS 代码,连带吃掉了下面 offer-card__info 的
+     padding:0 16px 这条规则——这才是"改了徽标之后卡片下半部分 padding
+     消失"的真正原因。写这里的教训:CSS 注释里不要把两个 class 名字紧贴着
+     写(中间至少留一个空格或用别的词分隔),否则容易再犯同样的错。 */
   .offer-card__info { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
   .offer-card__vehicle { display: flex; flex-direction: column; }
   .offer-card__vehicle-title { font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.15px; color: #0E0E0F; }
@@ -497,13 +518,20 @@
   /* -- InformationDialog(见 fragments/InformationDialog/notes.md ——
      2026-09 整体按 "Information Dialog Template.html" + "Offer States
      Logic for CC.md" 重写,不再以 Figma 为准) -- */
-  .info-dialog-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.25); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 40px 16px; box-sizing: border-box; z-index: 1000; }
+  .info-dialog-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 40px 16px; box-sizing: border-box; z-index: 1000; }
   .info-dialog-inline-shell { display: flex; justify-content: center; padding: 24px 0; }
   .info-dialog { display: flex; flex-direction: column; gap: 14px; width: 520px; flex-shrink: 0; padding: 20px 22px 18px; border-radius: 12px; background: #FFFFFF; box-shadow: 0 0 0 1px #E8E9EB, 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12), 0 5px 5px rgba(0, 0, 0, 0.20); font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   .info-dialog__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .info-dialog__title { font-size: 20px; font-weight: 500; line-height: 28px; letter-spacing: 0.1px; color: #0E0E0F; }
   .info-dialog__close { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: none; background: none; color: #0E0E0F; cursor: pointer; }
-  .info-dialog__vehicle { display: flex; gap: 16px; padding: 14px; border-radius: 4px; background: #F7F7F8; }
+  .info-dialog__vehicle { position: relative; display: flex; gap: 16px; padding: 14px; border-radius: 4px; background: #F7F7F8; }
+  .info-dialog__type-badge { position: absolute; top: 14px; right: 14px; }
+  .info-dialog__stage { position: relative; display: inline-flex; }
+  .info-dialog__nav { position: absolute; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; cursor: pointer; font-family: 'Roboto', sans-serif; }
+  .info-dialog__nav--prev { right: 100%; margin-right: 16px; }
+  .info-dialog__nav--next { left: 100%; margin-left: 16px; }
+  .info-dialog__nav-circle { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; background: #FFFFFF; color: #212121; }
+  .info-dialog__nav-label { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.15px; color: #FFFFFF; }
   .info-dialog__vehicle-photo { position: relative; width: 116px; height: 84px; flex: none; border-radius: 3px; overflow: hidden; background: #E6E9EF; }
   .info-dialog__vehicle-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .info-dialog__vehicle-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
@@ -524,6 +552,19 @@
   .info-dialog__chip--sent { background: #E0E0E0; color: #212121; }
   .info-dialog__chip--declined { background: #FFEFBF; color: #402D00; }
   .info-dialog__chip--expired { background: #E0E0E0; color: #55575C; }
+  .info-dialog__chip--v2 { height: 24px; padding: 5px 8px; }
+  .info-dialog__type-badge-v2 { flex-shrink: 0; }
+  .info-dialog__type-info-btn { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; flex-shrink: 0; border: none; background: none; padding: 0; cursor: pointer; color: inherit; }
+  .info-dialog__type-guide { position: absolute; top: calc(100% + 10px); left: 0; z-index: 20; width: 320px; display: flex; flex-direction: column; gap: 20px; padding: 20px; background: #F5FBFF; border-radius: 16px; box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14); font-family: 'Roboto', sans-serif; cursor: default; }
+  .info-dialog__type-guide-arrow { position: absolute; top: -8px; left: 12px; width: 16px; height: 8px; background: #F5FBFF; clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+  .info-dialog__type-guide-head { display: flex; align-items: center; justify-content: space-between; }
+  .info-dialog__type-guide-title { font-size: 20px; font-weight: 500; line-height: 30px; letter-spacing: 0.15px; color: #0E0E0F; }
+  .info-dialog__type-guide-close { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: none; background: none; padding: 0; cursor: pointer; flex-shrink: 0; }
+  .info-dialog__type-guide-section { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .info-dialog__type-guide-desc { margin: 0; font-size: 14px; font-weight: 400; line-height: 20px; letter-spacing: 0.1px; color: #0E0E0F; }
+  .info-dialog__type-guide-desc strong { font-weight: 500; }
+  .info-dialog__type-guide-footer { display: flex; align-items: center; justify-content: flex-end; }
+  .info-dialog__type-guide-btn { border: none; background: #0077D8; color: #FFFFFF; padding: 8px 16px; border-radius: 100px; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; line-height: 14px; letter-spacing: 0.1px; white-space: nowrap; cursor: pointer; }
   .info-dialog__time-remaining { display: flex; align-items: baseline; gap: 8px; font-size: 13px; letter-spacing: 0.1px; color: #55575C; white-space: nowrap; }
   .info-dialog__time-remaining-value { font-size: 14px; font-weight: 500; color: #55575C; }
   .info-dialog__time-remaining-value--urgent { color: #CC433A; }
@@ -891,7 +932,8 @@
       sentCount: { type: [String, Number], default: 0 },
       sentSelected: { type: Boolean, default: false },
       declinedCount: { type: [String, Number], default: 0 },
-      declinedSelected: { type: Boolean, default: false }
+      declinedSelected: { type: Boolean, default: false },
+      showDeclined: { type: Boolean, default: true }
     },
     emits: ['toggle-dealership', 'clear', 'filter-change', 'clear-dealer'],
     template:
@@ -910,7 +952,7 @@
       '<button type="button" class="filter-chip" :disabled="newCount === 0 || newCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'new\' }" @click="toggleSingleSelect(\'new\')">New{{ (newCount && newCount !== \'0\') ? \' (\' + newCount + \')\' : \'\' }}</button>' +
       '<button type="button" class="filter-chip" :disabled="receivedCount === 0 || receivedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'received\' }" @click="toggleSingleSelect(\'received\')">Received{{ (receivedCount && receivedCount !== \'0\') ? \' (\' + receivedCount + \')\' : \'\' }}</button>' +
       '<button type="button" class="filter-chip" :disabled="sentCount === 0 || sentCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'sent\' }" @click="toggleSingleSelect(\'sent\')">Sent{{ (sentCount && sentCount !== \'0\') ? \' (\' + sentCount + \')\' : \'\' }}</button>' +
-      '<button type="button" class="filter-chip" :disabled="declinedCount === 0 || declinedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'declined\' }" @click="toggleSingleSelect(\'declined\')">Declined{{ (declinedCount && declinedCount !== \'0\') ? \' (\' + declinedCount + \')\' : \'\' }}</button>' +
+      '<button v-if="showDeclined" type="button" class="filter-chip" :disabled="declinedCount === 0 || declinedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'declined\' }" @click="toggleSingleSelect(\'declined\')">Declined{{ (declinedCount && declinedCount !== \'0\') ? \' (\' + declinedCount + \')\' : \'\' }}</button>' +
       '<button type="button" class="filter-chip-group__clear" @click="handleClear">Clear</button>' +
       '</div>',
     setup: function (props, { emit, expose }) {
@@ -953,6 +995,7 @@
       watch(function () { return props.receivedCount; }, function (v) { if (isZero(v) && singleSelected.value === 'received') singleSelected.value = null; });
       watch(function () { return props.sentCount; }, function (v) { if (isZero(v) && singleSelected.value === 'sent') singleSelected.value = null; });
       watch(function () { return props.declinedCount; }, function (v) { if (isZero(v) && singleSelected.value === 'declined') singleSelected.value = null; });
+      watch(function () { return props.showDeclined; }, function (v) { if (!v && singleSelected.value === 'declined') singleSelected.value = null; });
       var refs = toRefs(props);
       return Object.assign({}, refs, {
         dealershipBtnRef: dealershipBtnRef,
@@ -989,7 +1032,7 @@
       '<label v-for="(dealer, index) in filteredDealers" :key="index" class="dealer-dropdown__item">' +
       '<input type="checkbox" class="dealer-dropdown__native-checkbox" :checked="selected.includes(dealer)" @change="toggle(dealer)">' +
       '<span class="dealer-dropdown__checkbox"></span>{{ dealer }}</label>' +
-      '<p v-if="filteredDealers.length === 0" class="dealer-dropdown__empty">未找到匹配的经销商</p>' +
+      '<p v-if="filteredDealers.length === 0" class="dealer-dropdown__empty">No matching dealers found</p>' +
       '</div>' +
       '<div class="dealer-dropdown__footer">' +
       '<button type="button" class="dealer-dropdown__reset" @click="reset">Reset</button>' +
@@ -1176,8 +1219,30 @@
   // Logic for CC.md" 整个重写(不再以 Figma 为准),细节和取舍见
   // fragments/InformationDialog/InformationDialog.vue 自己的 METADATA,
   // 这里只做逐字镜像。
+  // ---------- ImageBadge (order 39, 卡片视图) ----------
+  // 2026-09-02 从 OfferCard 里抽出来的独立组件,细节见
+  // fragments/ImageBadge/notes.md,这里只做逐字镜像。
+  // 2026-09-02(第二次)挪到 InformationDialog 前面——InformationDialog
+  // 现在也用到 ImageBadge(车辆信息行的类型徽标),而
+  // "components: { ImageBadge: ImageBadge }" 这行是在 defineComponent()
+  // 调用那一刻就去读右边这个变量的值,如果 ImageBadge 还留在原来
+  // InformationDialog 后面的位置,这时候这个 var 还没赋值,会拿到
+  // undefined——和之前 OfferTableRow 挪到 InformationDialog 后面是
+  // 同一个原因,见那边注释。
+  var ImageBadge = defineComponent({
+    name: 'ImageBadge',
+    props: {
+      variant: { type: String, default: 'in-negotiation' },
+      label: { type: String, required: true },
+      ring: { type: Boolean, default: false }
+    },
+    template:
+      '<span class="image-badge" :class="[`image-badge--${variant}`, variant === \'in-negotiation\' && ring ? \'image-badge--in-negotiation-ring\' : \'\']">{{ label }}<slot></slot></span>'
+  });
+
   var InformationDialog = defineComponent({
     name: 'InformationDialog',
+    components: { ImageBadge: ImageBadge, OfferTypeBadge: OfferTypeBadge },
     props: {
       modelValue: { type: Boolean, default: false },
       photoUrl: { type: String, default: '' },
@@ -1200,12 +1265,16 @@
       // 2026-09 Playground 专用:inline=true 时不用 teleport/黑背板,原地
       // 渲染,方便单独调这个组件时还能点到 Controls 面板。真实用法
       // (OfferCard 里点 hover 按钮打开)不传这个 prop,默认 false 不受影响
-      inline: { type: Boolean, default: false }
+      inline: { type: Boolean, default: false },
+      hasPrev: { type: Boolean, default: false },
+      hasNext: { type: Boolean, default: false },
+      dialogVersion: { type: String, default: 'v1' }
     },
-    emits: ['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer'],
+    emits: ['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer', 'prev', 'next'],
     template:
       '<teleport to="body" :disabled="inline">' +
       '<div v-if="modelValue" :class="inline ? \'info-dialog-inline-shell\' : \'info-dialog-overlay\'" @click.self="handleOverlayClick">' +
+      '<div class="info-dialog__stage">' +
       '<div class="info-dialog" role="dialog" aria-label="Information">' +
       '<div class="info-dialog__header"><span class="info-dialog__title">Information</span>' +
       '<button type="button" class="info-dialog__close" aria-label="Close" @click="handleClose">' +
@@ -1218,7 +1287,9 @@
       '<span class="info-dialog__vehicle-line">VIN: {{ vin }}</span>' +
       '<span class="info-dialog__vehicle-line">Odometer: {{ mileage }}</span>' +
       '<span class="info-dialog__vehicle-line">Auction ID: {{ auctionId }}</span>' +
-      '</div></div>' +
+      '</div>' +
+      '<ImageBadge v-if="offerType !== \'none\' && dialogVersion !== \'v2\'" :variant="offerType" :label="offerTypeLabel" class="info-dialog__type-badge" />' +
+      '</div>' +
       '<div class="info-dialog__money">' +
       '<div v-if="isMakeOffer" class="info-dialog__money-figure">' +
       '<span class="info-dialog__money-label">Buyer Offer</span>' +
@@ -1243,8 +1314,27 @@
       '</div>' +
       '<div class="info-dialog__status-row">' +
       '<span class="info-dialog__chips">' +
-      '<span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new">New</span>' +
-      '<span v-if="hasStateChip" class="info-dialog__chip" :class="\'info-dialog__chip--\' + dealState">{{ stateChipLabel }}</span>' +
+      '<ImageBadge v-if="offerType !== \'none\' && dialogVersion === \'v2\'" :variant="offerType" :label="offerTypeLabel" class="info-dialog__type-badge-v2">' +
+      '<button ref="typeInfoBtnRef" type="button" class="info-dialog__type-info-btn" aria-label="What does this mean?" @click.stop="showTypeGuide = !showTypeGuide">' +
+      '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.25" stroke="currentColor" stroke-width="1.1"/><circle cx="7" cy="4.5" r="0.9" fill="currentColor"/><rect x="6.25" y="6.2" width="1.5" height="4.3" rx="0.5" fill="currentColor"/></svg>' +
+      '</button>' +
+      '<div v-if="showTypeGuide" ref="typeGuideRef" class="info-dialog__type-guide">' +
+      '<div class="info-dialog__type-guide-arrow"></div>' +
+      '<div class="info-dialog__type-guide-head"><span class="info-dialog__type-guide-title">Type</span>' +
+      '<button type="button" class="info-dialog__type-guide-close" aria-label="Close" @click.stop="showTypeGuide = false">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#545454" stroke-width="1.7" stroke-linecap="round"/></svg>' +
+      '</button></div>' +
+      '<div class="info-dialog__type-guide-section"><OfferTypeBadge type="in-negotiation" label="In Negotiation" />' +
+      '<p class="info-dialog__type-guide-desc">(6h limit) High bidder from the auction.</p>' +
+      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p></div>' +
+      '<div class="info-dialog__type-guide-section"><OfferTypeBadge type="make-offer" label="Make Offer" />' +
+      '<p class="info-dialog__type-guide-desc">(24h limit) Post-auction offer from any buyer.</p>' +
+      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p></div>' +
+      '<div class="info-dialog__type-guide-footer"><button type="button" class="info-dialog__type-guide-btn" @click.stop="showTypeGuide = false">Got it</button></div>' +
+      '</div>' +
+      '</ImageBadge>' +
+      '<span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new" :class="{ \'info-dialog__chip--v2\': dialogVersion === \'v2\' }">New</span>' +
+      '<span v-if="hasStateChip" class="info-dialog__chip" :class="[\'info-dialog__chip--\' + dealState, { \'info-dialog__chip--v2\': dialogVersion === \'v2\' }]">{{ stateChipLabel }}</span>' +
       '</span>' +
       '<span v-if="hasCountdown" class="info-dialog__time-remaining">Time Remaining ' +
       '<span class="info-dialog__time-remaining-value" :class="{ \'info-dialog__time-remaining-value--urgent\': timeLeftUrgent }">{{ timeRemainingDisplay }}</span></span>' +
@@ -1263,7 +1353,7 @@
       '<div v-if="i === lastCounterpartyIndex && !isClosed" class="info-dialog__bubble-actions">' +
       '<template v-if="!confirmingAccept">' +
       '<button v-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit(\'decline\')">Decline</button>' +
-      '<button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">✓ Accept {{ counterpartyAmount }}</button>' +
+      '<button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">Accept {{ counterpartyAmount }}</button>' +
       '</template>' +
       '<button v-else-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit(\'decline\')">Decline</button>' +
       '</div>' +
@@ -1290,12 +1380,43 @@
       '<button type="button" class="info-dialog__close-link" @click="handleClose">Close</button>' +
       '<button v-if="footerButton" type="button" class="info-dialog__commit-btn" :disabled="!footerButtonEnabled" @click="handleFooterCommit">{{ footerButton }}</button>' +
       '</div>' +
-      '</div></div>' +
+      '</div>' +
+      '<button v-if="!inline && hasPrev" type="button" class="info-dialog__nav info-dialog__nav--prev" aria-label="Previous deal" @click="$emit(\'prev\')">' +
+      '<span class="info-dialog__nav-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6" /></svg></span>' +
+      '<span class="info-dialog__nav-label">Previous</span>' +
+      '</button>' +
+      '<button v-if="!inline && hasNext" type="button" class="info-dialog__nav info-dialog__nav--next" aria-label="Next deal" @click="$emit(\'next\')">' +
+      '<span class="info-dialog__nav-circle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg></span>' +
+      '<span class="info-dialog__nav-label">Next</span>' +
+      '</button>' +
+      '</div>' +
+      '</div>' +
       '</teleport>',
     setup: function (props, ctx) {
       var emit = ctx.emit;
       var isBuyer = computed(function () { return props.viewerRole === 'buyer'; });
       var isMakeOffer = computed(function () { return props.offerType === 'make-offer'; });
+      var offerTypeLabel = computed(function () { return isMakeOffer.value ? 'Make Offer' : 'In Negotiation'; });
+      var showTypeGuide = ref(false);
+      var typeInfoBtnRef = ref(null);
+      var typeGuideRef = ref(null);
+      function handleTypeGuideOutsideClick(event) {
+        if (!showTypeGuide.value) return;
+        if (typeInfoBtnRef.value && typeInfoBtnRef.value.contains(event.target)) return;
+        if (typeGuideRef.value && typeGuideRef.value.contains(event.target)) return;
+        showTypeGuide.value = false;
+      }
+      function handleTypeGuideEscapeKey(event) {
+        if (event.key === 'Escape') showTypeGuide.value = false;
+      }
+      onMounted(function () {
+        document.addEventListener('mousedown', handleTypeGuideOutsideClick);
+        document.addEventListener('keydown', handleTypeGuideEscapeKey);
+      });
+      onBeforeUnmount(function () {
+        document.removeEventListener('mousedown', handleTypeGuideOutsideClick);
+        document.removeEventListener('keydown', handleTypeGuideEscapeKey);
+      });
       var isClosed = computed(function () { return props.dealState === 'declined' || props.dealState === 'expired'; });
       var hasCountdown = computed(function () { return !!props.timeLeft && !isClosed.value; });
       var timeRemainingDisplay = computed(function () { return props.timeLeft.replace(/\s*Left\s*$/i, ''); });
@@ -1336,16 +1457,19 @@
       // 2026-09 修复:Playground 切换 mock 时 modelValue 一直是 true,上面
       // 那个 watch 不会触发,上一个场景的确认面板状态会原样带到下一个场景
       watch(function () { return [props.dealState, props.counterpartyAmount, props.ownAmount, props.viewerRole, props.offerType]; }, resetTransientState);
+      // 2026-09-02 按你的要求更正:In Negotiation 里买卖双方可以连续出价,
+      // 不用等对方回复,只要遵守价格规则(自己这次比自己上一次更靠近对方),
+      // 就可以在 dealState==='sent' 时也再发一次 counter,细节见真实文件
+      // fragments/InformationDialog/InformationDialog.vue 同名 computed 注释。
       var inputPanel = computed(function () {
         if (isClosed.value || confirmingAccept.value) return null;
         if (props.dealState !== 'received' && props.dealState !== 'sent') return null;
-        if (props.dealState === 'received') return isMakeOffer.value ? null : 'counter';
-        if (isMakeOffer.value && isBuyer.value) return 'offer';
+        if (!isMakeOffer.value) return 'counter';
+        if (props.dealState === 'sent' && isBuyer.value) return 'offer';
         return null;
       });
-      // "Offer States Logic for CC.md" Split The Difference:三个条件都要满足
       var showSplitDifference = computed(function () {
-        return !isMakeOffer.value && props.dealState === 'received' && !!props.counterpartyAmount && !!props.ownAmount;
+        return inputPanel.value === 'counter' && !!props.counterpartyAmount && !!props.ownAmount;
       });
       function midpointAmount(a, b) {
         var na = Number(String(a).replace(/[^0-9.]/g, ''));
@@ -1376,7 +1500,7 @@
       }
       var refs = toRefs(props);
       return Object.assign({}, refs, {
-        isBuyer: isBuyer, isMakeOffer: isMakeOffer, isClosed: isClosed, hasCountdown: hasCountdown,
+        isBuyer: isBuyer, isMakeOffer: isMakeOffer, offerTypeLabel: offerTypeLabel, isClosed: isClosed, hasCountdown: hasCountdown,
         timeRemainingDisplay: timeRemainingDisplay,
         hasStateChip: hasStateChip, showNewChip: showNewChip, stateChipLabel: stateChipLabel,
         buyerAmount: buyerAmount, sellerAmount: sellerAmount, sectionHeader: sectionHeader,
@@ -1385,7 +1509,8 @@
         acceptChecked: acceptChecked, enteredAmount: enteredAmount, useSplit: useSplit,
         inputPanel: inputPanel, showSplitDifference: showSplitDifference, splitAmount: splitAmount,
         footerButtonEnabled: footerButtonEnabled, footerButton: footerButton,
-        handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleFooterCommit: handleFooterCommit
+        handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleFooterCommit: handleFooterCommit,
+        showTypeGuide: showTypeGuide, typeInfoBtnRef: typeInfoBtnRef, typeGuideRef: typeGuideRef
       });
     }
   });
@@ -1427,8 +1552,14 @@
       viewerRole: { type: String, default: 'buyer' },
       reservePrice: { type: String, default: '$27,000' },
       reportUrl: { type: String, default: '#' },
-      history: { type: Array, default: function () { return []; } }
+      history: { type: Array, default: function () { return []; } },
+      // 2026-09-02 同 OfferCard 的 hasPrevDeal/hasNextDeal,细节见
+      // fragments/OfferTableRow/notes.md。
+      hasPrevDeal: { type: Boolean, default: false },
+      hasNextDeal: { type: Boolean, default: false },
+      dialogVersion: { type: String, default: 'v1' }
     },
+    emits: ['prev-deal', 'next-deal'],
     template:
       '<div class="offer-table-row">' +
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
@@ -1474,9 +1605,10 @@
       '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" ' +
       ':auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="statusNew" ' +
       ':counterparty-amount="receivedAmount" :own-amount="sentAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" ' +
-      ':report-url="reportUrl" :time-left="timeRemaining ? `${timeRemaining} Left` : \'\'" :time-left-urgent="timeLeftUrgent" :history="history" />' +
+      ':report-url="reportUrl" :time-left="timeRemaining ? `${timeRemaining} Left` : \'\'" :time-left-urgent="timeLeftUrgent" :history="history" ' +
+      ':has-prev="hasPrevDeal" :has-next="hasNextDeal" :dialog-version="dialogVersion" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
       '</div>',
-    setup: function (props) {
+    setup: function (props, ctx) {
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
       });
@@ -1503,7 +1635,7 @@
         }
         if (isBuyer.value) {
           if (s === 'received') {
-            return { buttons: [{ label: 'Counter', style: 'outlined' }, { label: '✓ Accept ' + props.receivedAmount, style: 'filled' }], infoLink: 'More Info' };
+            return { buttons: [{ label: 'Counter', style: 'outlined' }, { label: 'Accept ' + props.receivedAmount, style: 'filled' }], infoLink: 'More Info' };
           }
           if (s === 'sent') {
             return isMakeOffer.value
@@ -1516,6 +1648,12 @@
         }
         return { buttons: [], infoLink: null };
       });
+      // 2026-09-02 同 OfferCard,供 OfferDashboard 跨行控制 dialog,细节见
+      // fragments/OfferDashboard/notes.md。
+      ctx.expose({
+        openDialog: function () { dialogOpen.value = true; },
+        closeDialog: function () { dialogOpen.value = false; }
+      });
       var refs = toRefs(props);
       return Object.assign({}, refs, {
         offerTypeLabel: offerTypeLabel, dialogOpen: dialogOpen, dealState: dealState,
@@ -1526,7 +1664,7 @@
 
   var OfferCard = defineComponent({
     name: 'OfferCard',
-    components: { StatusChip: StatusChip, InformationDialog: InformationDialog },
+    components: { StatusChip: StatusChip, InformationDialog: InformationDialog, ImageBadge: ImageBadge },
     props: {
       photoUrl: { type: String, default: '' },
       offerType: { type: String, default: 'in-negotiation' },
@@ -1554,14 +1692,25 @@
       // 规则(去掉mileage行用auctionId顶替+两行文案新规则),细节见
       // fragments/OfferCard/notes.md
       cardVersion: { type: String, default: 'v1' },
-      counterpartyTimestamp: { type: String, default: '' }
+      counterpartyTimestamp: { type: String, default: '' },
+      // 2026-09-02 按 PM 反馈新增(正式功能,不再是 Playground 专用概念
+      // 稿)——'default'/'ring',只影响 offerType==='in-negotiation' 时
+      // 的徽标,细节见 fragments/OfferCard/OfferCard.vue 同名 prop 注释。
+      badgeStyle: { type: String, default: 'default' },
+      // 2026-09-02 Figma 7597:112866 新增 dialog 内 Previous/Next 按钮,
+      // 是否显示由 Dashboard 那一层根据列表位置传入,细节见
+      // fragments/OfferCard/notes.md 与 InformationDialog/notes.md。
+      hasPrevDeal: { type: Boolean, default: false },
+      hasNextDeal: { type: Boolean, default: false },
+      dialogVersion: { type: String, default: 'v1' }
     },
+    emits: ['prev-deal', 'next-deal'],
     template:
       '<div class="offer-card" :class="{ \'offer-card--v1\': hoverButtons.length > 0, \'offer-card--v1-btn-1\': hoverButtons.length === 1, \'offer-card--v1-btn-2\': hoverButtons.length === 2, \'offer-card--v1-btn-3\': hoverButtons.length === 3 }">' +
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
       '<div class="offer-card__image-badges">' +
-      '<span v-if="offerType !== \'none\'" class="offer-card__type-badge" :class="\'offer-card__type-badge--\' + offerType">{{ offerTypeLabel }}</span>' +
-      '<span v-if="dealerName" class="offer-card__lane-badge">{{ dealerName }}</span>' +
+      '<ImageBadge v-if="offerType !== \'none\'" :variant="offerType" :label="offerTypeLabel" :ring="offerType === \'in-negotiation\' && badgeStyle === \'ring\'" />' +
+      '<ImageBadge v-if="dealerName" variant="dealer" :label="dealerName" />' +
       '</div></a>' +
       '<div class="offer-card__info">' +
       '<div class="offer-card__vehicle">' +
@@ -1596,9 +1745,9 @@
       '<div v-if="hoverButtons.length" class="offer-card__hover-buttons">' +
       '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="dialogOpen = true">{{ btn.label }}</button>' +
       '</div>' +
-      '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" />' +
+      '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" :dialog-version="dialogVersion" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
       '</div>',
-    setup: function (props) {
+    setup: function (props, ctx) {
       var dialogOpen = ref(false);
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
@@ -1726,6 +1875,13 @@
       function copyVin() {
         if (navigator.clipboard) { navigator.clipboard.writeText(props.vin).catch(function () {}); }
       }
+      // 2026-09-02 让 OfferDashboard 能通过 template ref 跨卡片控制 dialog
+      // 状态(Previous/Next 需要关掉当前的再打开相邻的),细节见
+      // fragments/OfferDashboard/notes.md。
+      ctx.expose({
+        openDialog: function () { dialogOpen.value = true; },
+        closeDialog: function () { dialogOpen.value = false; }
+      });
       var refs = toRefs(props);
       return Object.assign({}, refs, {
         dialogOpen: dialogOpen,
@@ -1759,18 +1915,18 @@
       // 没有真正的 import,只能手动内联同一份数值——按同一份 Number rules
       // 重新生成同步过,细节见 OfferCard/mock.js 文件头注释。
       var buyerItems = [
-        { label: 'In Negotiation · Received — 卖家刚还价,等你决定', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM' } },
-        { label: 'In Negotiation · Sent — 你刚还价,等卖家回复', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM' } },
-        { label: 'Make Offer · Sent — 你刚发offer,等卖家回复', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM' } },
-        { label: 'Declined — 卖家拒绝了你的offer,已结束', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000' } },
-        { label: 'Expired — 超时没人处理,已结束', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '' } }
+        { label: 'In Negotiation · Received — seller just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM' } },
+        { label: 'In Negotiation · Sent — you just countered, waiting on seller', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM' } },
+        { label: 'Make Offer · Sent — you just sent an offer, waiting on seller', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM' } },
+        { label: 'Declined — seller declined your offer, closed', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000' } },
+        { label: 'Expired — timed out with no action, closed', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '' } }
       ];
       var sellerItems = [
-        { label: 'In Negotiation · Received — 买家刚还价,等你决定', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM' } },
-        { label: 'In Negotiation · Sent — 你刚还价,等买家回复', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM' } },
-        { label: 'Make Offer · Received — 买家刚发offer,等你决定', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000' } },
-        { label: 'Declined — 你拒绝了买家的offer,已结束', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200' } },
-        { label: 'Expired — 超时没人处理,已结束', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '' } }
+        { label: 'In Negotiation · Received — buyer just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM' } },
+        { label: 'In Negotiation · Sent — you just countered, waiting on buyer', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM' } },
+        { label: 'Make Offer · Received — buyer just sent an offer, waiting on you', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000' } },
+        { label: 'Declined — you declined the buyer\'s offer, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200' } },
+        { label: 'Expired — timed out with no action, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '' } }
       ];
       var activeItems = computed(function () { return role.value === 'buyer' ? buyerItems : sellerItems; });
       return { role: role, activeItems: activeItems };
@@ -1955,7 +2111,13 @@
       sellingVehicleCount: { type: Number, default: 5 },
       // 2026-09 按你的要求,Dashboard 页面自己也要有能切 OfferCard v1/v2
       // 的 control,不再把 'v2' 写死在 rowsAsCards 里
-      cardVersion: { type: String, default: 'v2' }
+      cardVersion: { type: String, default: 'v2' },
+      // 2026-09-02 按 PM 反馈新增,细节见 fragments/OfferDashboard/
+      // OfferDashboard.vue 同名 prop 注释
+      cardBadgeStyle: { type: String, default: 'default' },
+      // 2026-09-02 按你的要求新增,InformationDialog 的 v1/v2 切换,细节见
+      // fragments/InformationDialog/notes.md
+      dialogVersion: { type: String, default: 'v1' }
     },
     template:
       '<div class="offer-dashboard">' +
@@ -1968,7 +2130,7 @@
       '<div class="offer-dashboard__toolbar">' +
       '<SearchInput v-model="searchValue" />' +
       '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" class="offer-dashboard__filters" :is-multi-dealer="isMultiDealer" ' +
-      ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" ' +
+      ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" :show-declined="activeMainTab !== \'selling\'" ' +
       '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event" @clear-dealer="dealerFilter = []" />' +
       '</div>' +
       '<div v-if="dealershipDropdownOpen" ref="dealerPopoverWrapRef" class="offer-dashboard__dealer-popover-anchor" :style="dealerPopoverStyle">' +
@@ -1979,13 +2141,15 @@
       ':has-prev-page="topPagination.hasPrevPage" :has-next-page="topPagination.hasNextPage" />' +
       '<template v-if="viewMode === \'table\'">' +
       '<OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
-      '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" />' +
+      '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" :dialog-version="dialogVersion" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" />' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="visibleRows.length" :total-count="visibleRows.length" /></div>' +
       '</template>' +
       '<template v-else>' +
       '<div class="offer-dashboard__card-grid" :style="cardGridStyle">' +
-      '<OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" />' +
+      '<OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" :ref="function (el) { setCardRef(el, i); }" ' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsAsCards.length - 1" :dialog-version="dialogVersion" @prev-deal="handleCardPrev(i)" @next-deal="handleCardNext(i)" />' +
       '</div>' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '</template>' +
@@ -2156,6 +2320,33 @@
           return Object.assign({}, row, { isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value });
         });
       });
+      // 2026-09-02 Figma 7597:112866 的 dialog Previous/Next 按钮需要跨
+      // 卡片/跨行控制,靠 OfferCard/OfferTableRow 各自 expose 出来的
+      // openDialog/closeDialog,细节见 fragments/OfferDashboard/notes.md。
+      var tableRowRefs = ref([]);
+      var cardRefs = ref([]);
+      function setTableRowRef(el, i) {
+        if (el) tableRowRefs.value[i] = el;
+      }
+      function setCardRef(el, i) {
+        if (el) cardRefs.value[i] = el;
+      }
+      function handleTablePrev(i) {
+        if (tableRowRefs.value[i]) tableRowRefs.value[i].closeDialog();
+        nextTick(function () { if (tableRowRefs.value[i - 1]) tableRowRefs.value[i - 1].openDialog(); });
+      }
+      function handleTableNext(i) {
+        if (tableRowRefs.value[i]) tableRowRefs.value[i].closeDialog();
+        nextTick(function () { if (tableRowRefs.value[i + 1]) tableRowRefs.value[i + 1].openDialog(); });
+      }
+      function handleCardPrev(i) {
+        if (cardRefs.value[i]) cardRefs.value[i].closeDialog();
+        nextTick(function () { if (cardRefs.value[i - 1]) cardRefs.value[i - 1].openDialog(); });
+      }
+      function handleCardNext(i) {
+        if (cardRefs.value[i]) cardRefs.value[i].closeDialog();
+        nextTick(function () { if (cardRefs.value[i + 1]) cardRefs.value[i + 1].openDialog(); });
+      }
       // tile 视图卡片:直接复用已核实的表格行数据,字段名对得上的原样映射。
       // [2026-08 按你的要求(对照节点7485:41392核实每张卡片都有message)
       // 恢复] 不再显式传空字符串覆盖 primaryMessage/secondaryMessage,让
@@ -2196,6 +2387,7 @@
             ownAmount: own,
             ownTimestamp: row.updateDate,
             cardVersion: props.cardVersion,
+            badgeStyle: props.cardBadgeStyle,
             counterpartyTimestamp: row.updateDate,
             // 2026-09 修复真实bug:之前没有把这三个字段传给OfferCard(=没
             // 传给它内部的InformationDialog),导致从Dashboard真实数据
@@ -2226,7 +2418,10 @@
         handleApplyDealerFilter: handleApplyDealerFilter, handleClearFilters: handleClearFilters,
         filterChipGroupRef: filterChipGroupRef, dealerPopoverWrapRef: dealerPopoverWrapRef,
         dealerPopoverStyle: dealerPopoverStyle, toggleDealershipDropdown: toggleDealershipDropdown,
-        hasAnyNewDeal: hasAnyNewDeal
+        hasAnyNewDeal: hasAnyNewDeal,
+        setTableRowRef: setTableRowRef, setCardRef: setCardRef,
+        handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
+        handleCardPrev: handleCardPrev, handleCardNext: handleCardNext
       };
     }
   });
@@ -2235,18 +2430,18 @@
   // Registry: 分组 / 顺序 / controls / mock 示例 / notes.md 原文
   // ============================================================
   var GROUPS = [
-    { title: '页面外壳 (Page Shell)', items: [
+    { title: 'Page Shell', items: [
       { key: 'AppHeader', order: 10, name: 'App Header' },
       { key: 'Breadcrumb', order: 11, name: 'Breadcrumb' },
       { key: 'SidebarNav', order: 12, name: 'Sidebar Nav' }
     ]},
-    { title: '导航与筛选 (Nav & Filters)', items: [
+    { title: 'Nav & Filters', items: [
       { key: 'OfferTabs', order: 20, name: 'Offer Tabs' },
       { key: 'SearchInput', order: 21, name: 'Search Input' },
       { key: 'FilterChipGroup', order: 22, name: 'Filter Chip Group' },
       { key: 'DealershipFilterDropdown', order: 23, name: 'Dealership Filter Dropdown' }
     ]},
-    { title: '数据表格 (Offers Table)', items: [
+    { title: 'Offers Table', items: [
       { key: 'OfferTableHeader', order: 30, name: 'Offer Table Header' },
       { key: 'OfferTableRow', order: 31, name: 'Offer Table Row' },
       { key: 'StatusChip', order: 32, name: 'Status Chip' },
@@ -2254,19 +2449,20 @@
       { key: 'Pagination', order: 34, name: 'Pagination' },
       { key: 'ResultsToolbar', order: 35, name: 'Results Toolbar' }
     ]},
-    { title: '卡片视图 (Card View)', items: [
+    { title: 'Card View', items: [
+      { key: 'ImageBadge', order: 39, name: 'Image Badge' },
       { key: 'OfferCard', order: 40, name: 'Offer Card' },
       { key: 'OfferCardGallery', order: 41, name: 'Offer Card — All States' },
       { key: 'InformationDialog', order: 42, name: 'Information Dialog' }
     ]},
-    { title: '页面组装 (Page Assembly)', items: [
-      { key: 'OfferDashboard', order: 90, name: 'Offer Dashboard（整页组装）' }
+    { title: 'Page Assembly', items: [
+      { key: 'OfferDashboard', order: 90, name: 'Offer Dashboard' }
     ]}
   ];
 
   var REGISTRY = {
     AppHeader: {
-      name: 'App Header', group: '页面外壳 (Page Shell)', order: 10, def: AppHeader,
+      name: 'App Header', group: 'Page Shell', order: 10, def: AppHeader,
       controls: {
         initialSelectedIndex: { type: 'select', label: 'Initial selected nav item', options: [
           { value: '0', label: 'Marketplace' }, { value: '1', label: 'My ACV' }, { value: '2', label: 'Market Report' },
@@ -2276,22 +2472,22 @@
         userName: { type: 'text', label: 'User name', default: 'Emily Huang' },
         avatarLetter: { type: 'text', label: 'Avatar letter', default: 'A' },
         rewardsLabel: { type: 'text', label: 'Rewards badge text', default: 'Dealer Rewards Program' },
-        hasNewOffers: { type: 'boolean', label: '"My ACV" 旁边显示 New 红点', default: false }
+        hasNewOffers: { type: 'boolean', label: 'Show New badge next to "My ACV"', default: false }
       },
       mocks: {
         defaultExample: { initialSelectedIndex: 0, companyName: 'Magnacar Auto Corp', userName: 'Emily Huang', avatarLetter: 'A', rewardsLabel: 'Dealer Rewards Program' },
         longCompanyExample: { initialSelectedIndex: 4, companyName: 'Sunset Motors LLC', userName: 'Jamie Rivera', avatarLetter: 'J', rewardsLabel: 'Dealer Rewards Program' }
       },
-      notes: '这个组件已经从 Figma 版本整体替换成 Claude Design 项目 "ACV Auctions Design System"（projectId 1294432b-f5f9-488f-9691-d01499283248）里的 components/08-app-bar-navigation-web.card.html，通过 DesignSync 工具的 get_file 直接读取真实源码（不是 Figma get_design_context），logo 也换成了该项目 assets/logo.svg 的原始内容。这是用户直接指定的替换，不是我自己选的数据源。\n\n替换前的旧版本（Figma 节点 6837:16087）用的是"浅橙背景 pill + 圆点"表示选中态，这个新版本用的是"文字变橙 + 底部 2px 实色下划线"，两者是不同设计，不是同一版本的两次核实结果。\n\n已核实（直接来自源文件的 CSS/HTML/JS）：容器高 58px 白底描边 #D1D3D6；nav tab 默认色 #55575C / hover #FAFAFA / 按下 #F1F1F1；选中态色 #F26522 + 底部 2px 下划线；"New" 徽标背景 #FF5449 文字 #F7F7F8；More 菜单白底圆角4px三层阴影；Rewards 展开态描边/文字 #F26522，收缩态 36x36 圆形描边 #D44D0C 带 tooltip；通知/汉堡 40x40 圆形 hover #F5F5F5 按下 #E0E0E0 focus 描边 #7B61FF；头像 32x32 圆形背景 #F26522。\n\n响应式收缩逻辑（照搬源文件 layout() 算法）：量导航区和右侧区的间距，≤15px 时依次：1. Rewards pill 收缩成图标 2. 用户姓名+公司收起只剩头像 3. 至少 2 个 nav 项挪进 More 4. 继续逐个挪，直到间距 >15px 或只剩 1 项。容器宽度 <980px 时额外应用 md 断点。组件本身用 resize:horizontal，可以直接拖右下角测试。\n\n按你的要求做的改动：删除了源文件原本的 "Nav 6" / "Nav 7" 占位项，只保留前 5 个真实命名的项。源文件明确写了 "no focus treatment is defined" 给 nav item，所以没有为 tab 加 focus-visible 样式，这是源文件本来的设计缺口。\n\n待你确认：1. Rewards 图标颜色继承 currentColor 为 #F26522，没有额外专属色号。2. "More" 菜单只有容器足够窄（比如拖到 500px 左右）才会出现，默认宽度下 5 个 nav 项通常都能显示。'
+      notes: 'This component has been fully replaced from the Figma version with components/08-app-bar-navigation-web.card.html from the Claude Design project "ACV Auctions Design System" (projectId 1294432b-f5f9-488f-9691-d01499283248), read directly via the DesignSync tool\'s get_file (not Figma\'s get_design_context); the logo was also swapped for the original content of that project\'s assets/logo.svg. This is a replacement you explicitly specified, not a data source I chose myself.\n\nThe old version before the replacement (Figma node 6837:16087) used a "light-orange background pill + dot" to indicate the selected state; this new version uses "text turns orange + solid 2px underline at the bottom" — these are two different designs, not two verification passes of the same version.\n\nVerified (directly from the source file\'s CSS/HTML/JS): container height 58px, white background, #D1D3D6 border; nav tab default color #55575C / hover #FAFAFA / pressed #F1F1F1; selected-state color #F26522 with a 2px underline at the bottom; "New" badge background #FF5449, text #F7F7F8; More menu white background, 4px corner radius, three-layer shadow; Rewards expanded state has an #F26522 border/text, collapsed state is a 36x36 circle with a #D44D0C border and a tooltip; notification/hamburger icons are 40x40 circles, hover #F5F5F5, pressed #E0E0E0, focus border #7B61FF; avatar is a 32x32 circle with #F26522 background.\n\nResponsive collapse logic (ported directly from the source file\'s layout() algorithm): it measures the gap between the nav area and the right-hand area, and when that gap is ≤15px it proceeds in order: 1. the Rewards pill collapses to an icon 2. the user name + company collapse down to just the avatar 3. at least 2 nav items move into More 4. it keeps moving items one at a time until the gap is >15px or only 1 item remains. The md breakpoint is additionally applied when the container width is <980px. The component itself uses resize:horizontal, so you can drag the bottom-right corner directly to test it.\n\nChanges made at your request: removed the source file\'s original "Nav 6" / "Nav 7" placeholder items, keeping only the first 5 items with real names. The source file explicitly states "no focus treatment is defined" for the nav item, so no focus-visible style was added for the tab — this is a design gap that already existed in the source file.\n\nFor you to confirm: 1. The Rewards icon color inherits currentColor as #F26522, with no additional dedicated color code. 2. The "More" menu only appears when the container is narrow enough (e.g. dragged down to around 500px) — at the default width, all 5 nav items usually fit and display.'
     },
     Breadcrumb: {
-      name: 'Breadcrumb', group: '页面外壳 (Page Shell)', order: 11, def: Breadcrumb,
+      name: 'Breadcrumb', group: 'Page Shell', order: 11, def: Breadcrumb,
       controls: { crumbs: { type: 'text', label: 'Breadcrumb labels, comma-separated', default: 'My ACV,Offers' } },
       mocks: { defaultExample: { crumbs: 'My ACV,Offers' }, threeLevelExample: { crumbs: 'My ACV,Offers,Negotiation' } },
-      notes: '已核实（hidden=false，节点 6837:16095/16096）：文案 "My ACV"/"Offers" 均为 Roboto Regular 16px/24 letter-spacing 0.15px 色 #545454；文案间距 14px；分隔符图标 11x11 填色 #DCDFE8，已下载真实 SVG。两级文案样式完全一致，没有发现"当前页"高亮之类的差异化处理。\n\n待你确认：1. Figma 里只找到两级面包屑的实例，组件按通用"任意长度列表"实现，但三级及以上时样式是否仍然一致没有对应实例可以核实。2. 没有找到移动端（375宽）下的对应实例，响应式行为待确认。'
+      notes: 'Verified (hidden=false, node 6837:16095/16096): the "My ACV"/"Offers" text is Roboto Regular 16px/24, letter-spacing 0.15px, color #545454 for both; text spacing is 14px; the separator icon is 11x11 filled #DCDFE8, with the real SVG downloaded. Both levels of text share exactly the same style — no "current page" highlighting or other differentiation was found.\n\nFor you to confirm: 1. Only a two-level breadcrumb instance was found in Figma; the component is implemented as a generic "list of any length," but whether the style still holds at three levels or more cannot be verified since there is no corresponding instance. 2. No corresponding instance was found for mobile (375 width), so the responsive behavior is still to be confirmed.'
     },
     SidebarNav: {
-      name: 'Sidebar Nav', group: '页面外壳 (Page Shell)', order: 12, def: SidebarNav,
+      name: 'Sidebar Nav', group: 'Page Shell', order: 12, def: SidebarNav,
       controls: {
         activeItem: { type: 'select', label: 'Active item', options: [
           { value: 'my-inventory', label: 'My Inventory' }, { value: 'saved-auctions', label: 'Saved Auctions' },
@@ -2303,31 +2499,31 @@
         offersCount: { type: 'text', label: 'Offers count badge', default: '5' }
       },
       mocks: { defaultExample: { activeItem: 'offers', offersCount: 5 } },
-      notes: '2026-08 更新：去掉了展开/收起交互。之前版本给 Active / Negotiation / Billing 做了点击展开/收起，展开内容来自 4 个 hidden=true 的 Figma "Sub menu" 节点，内容互相对不上、归属不明确。你已经明确说"这个不用管，sidebar nav 不需要 interaction"，所以现在直接去掉了这个功能——箭头图标本身（已核实、hidden=false）还保留展示，只是纯装饰，不响应点击，组件也不再暴露任何展开态的 props/controls。\n\n已核实（hidden=false）：容器背景 #FFFFFF flex-col gap 4px 宽 260px；普通项文字 Roboto Regular 16px/24 letter-spacing 0.15px 色 #545454；选中项(Offers)背景 #EBF6FF 文字 Roboto Medium 色 #004E7D；数量徽标背景 #FF5449 文字 #F7F7F8；展开箭头图标本身（纯展示）24x24 填色 #545454；分隔线高 39px 内部线色 #DCDFE8。\n\n之前查到的 4 个 hidden 节点内容对应关系已经不再相关，不需要确认。'
+      notes: '2026-08 update: removed the expand/collapse interaction. The previous version gave Active / Negotiation / Billing a click-to-expand/collapse behavior, with the expanded content coming from 4 hidden=true Figma "Sub menu" nodes whose content didn\'t line up with each other and whose ownership was unclear. You explicitly said "don\'t worry about this, the sidebar nav doesn\'t need interaction," so this feature has now been removed outright — the arrow icon itself (verified, hidden=false) is still shown, but it is now purely decorative, does not respond to clicks, and the component no longer exposes any expanded-state props/controls.\n\nVerified (hidden=false): container background #FFFFFF, flex-col, gap 4px, width 260px; regular item text is Roboto Regular 16px/24, letter-spacing 0.15px, color #545454; the selected item (Offers) has background #EBF6FF, text Roboto Medium, color #004E7D; the count badge has background #FF5449, text #F7F7F8; the expand-arrow icon itself (display only) is 24x24, filled #545454; the divider is 39px tall with an internal line color of #DCDFE8.\n\nThe previously found mapping of the 4 hidden nodes\' contents is no longer relevant and does not need confirming.'
     },
     OfferTabs: {
-      name: 'Offer Tabs', group: '导航与筛选 (Nav & Filters)', order: 20, def: OfferTabs,
+      name: 'Offer Tabs', group: 'Nav & Filters', order: 20, def: OfferTabs,
       controls: {
         activeTab: { type: 'select', label: 'Selected tab', options: [{ value: 'buying', label: 'Buying' }, { value: 'selling', label: 'Selling' }], default: 'buying' },
         buyingCount: { type: 'text', label: 'Buying count', default: '3' },
         sellingCount: { type: 'text', label: 'Selling count', default: '2' }
       },
       mocks: { defaultExample: { activeTab: 'buying', buyingCount: 3, sellingCount: 2 }, sellingSelectedExample: { activeTab: 'selling', buyingCount: 3, sellingCount: 2 } },
-      notes: '已核实（hidden=false，来自节点 6903:23020）：Buying(选中) 背景 #FEF9F6 文字 #F26522 Medium；Buying 数量徽标背景 #F26522 文字白；Buying 指示条高2px色#F26522；Selling(未选中) 无背景文字#757575；Selling 数量徽标背景#D1D3D6 文字#55575C；底部通用分隔线#DCDFE8。\n\n待你确认：1. "Selling 选中态" —— Figma 里没有找到"Selling 选中"的可见实例，组件目前直接照搬 Buying 选中态的数值（背景/文字/指示条颜色对调），没有独立核实过。2. 发现两个 hidden=true 的备用 tab 变体（带图标的旧设计），当前组件没有采用。'
+      notes: 'Verified (hidden=false, from node 6903:23020): Buying (selected) has background #FEF9F6, text #F26522 Medium; the Buying count badge has background #F26522, white text; the Buying indicator bar is 2px tall, color #F26522; Selling (unselected) has no background, text #757575; the Selling count badge has background #D1D3D6, text #55575C; the shared bottom divider is #DCDFE8.\n\nFor you to confirm: 1. "Selling selected state" — no visible instance of a "Selling selected" state was found in Figma; the component currently just copies the values from the Buying selected state (swapping the background/text/indicator colors), and this has not been independently verified. 2. Two hidden=true fallback tab variants were found (an older design with icons); the current component does not use them.'
     },
     SearchInput: {
-      name: 'Search Input', group: '导航与筛选 (Nav & Filters)', order: 21, def: SearchInput,
+      name: 'Search Input', group: 'Nav & Filters', order: 21, def: SearchInput,
       controls: {
         modelValue: { type: 'text', label: 'Input value', default: '' },
         placeholder: { type: 'text', label: 'Placeholder text', default: 'Search by year, make, model, VIN' }
       },
       mocks: { emptyExample: { modelValue: '', placeholder: 'Search by year, make, model, VIN' }, filledExample: { modelValue: '2018 Ford', placeholder: 'Search by year, make, model, VIN' } },
-      notes: '已核实（hidden=false，节点 6837:16150）：背景 #F7F7F8 顶部圆角4px；占位文案 Roboto Regular 16px/24 letter-spacing 0.5px 色 rgba(0,0,0,0.67)；搜索图标20x20已下载真实SVG填色黑色。\n\n待你确认：1. 只找到空态的实例，聚焦态/已输入文字态/清除按钮等交互状态没有找到对应实例。2. 输入框高度56px是根据 Figma 节点72px高减去16px底部空白得出的，这16px空白具体留给什么没有查到对应内容。'
+      notes: 'Verified (hidden=false, node 6837:16150): background #F7F7F8, top corners rounded 4px; the placeholder text is Roboto Regular 16px/24, letter-spacing 0.5px, color rgba(0,0,0,0.67); the search icon is 20x20 with the real SVG downloaded, filled black.\n\nFor you to confirm: 1. Only the empty-state instance was found; no corresponding instance was found for interaction states such as focused, filled-with-text, or a clear button. 2. The input height of 56px was derived from the Figma node\'s 72px height minus 16px of bottom whitespace; what that 16px of whitespace is specifically reserved for was not found in any corresponding content.'
     },
     FilterChipGroup: {
-      name: 'Filter Chip Group', group: '导航与筛选 (Nav & Filters)', order: 22, def: FilterChipGroup,
+      name: 'Filter Chip Group', group: 'Nav & Filters', order: 22, def: FilterChipGroup,
       controls: {
-        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer', default: true },
         dealershipOpen: { type: 'boolean', label: 'Dealership dropdown expanded', default: false },
         negotiationCount: { type: 'text', label: 'In negotiation count', default: '2' },
         makeOfferCount: { type: 'text', label: 'Make Offer count', default: '1' },
@@ -2341,10 +2537,10 @@
         allActiveExample: { isMultiDealer: true, dealershipOpen: false, negotiationCount: 4, makeOfferCount: 2, newCount: 3, receivedCount: 5, sentCount: 2, declinedCount: 1 },
         singleDealerExample: { isMultiDealer: false, dealershipOpen: false, negotiationCount: 2, makeOfferCount: 1, newCount: 1, receivedCount: 1, sentCount: 0, declinedCount: 0 }
       },
-      notes: '已核实（hidden=false，节点 6847:49392）：启用态 chip 白底边框/文字#212121 14px/21 letter-spacing .25px 圆角8 高32；disabled(数量0)态边框/文字#8D9199 背景仍白色；Dealership下拉箭头18x18；chip间竖分隔线高28色#0E0E0F；"Clear"按钮色#004E7D（节点唯一返回的链接色token）。\n\nFigma 原生设计标注（data-interaction-annotations，不是编的）：多选 Dealership/In Negotiation/Make Offer；单选(互斥) New/Received/Sent/Declined；默认态都不选时显示ALL。\n\n2026-08补充确认（选中态）：用户给了新参照节点6847:49600（hidden=false，"In negotiation"选中态实例）：背景#F0F8FF、边框1px#0061A5、文字#0061A5，圆角仍8px不变。这个实例只核实了In negotiation这一个chip，其余chip的选中态是按"同一组件家族应该同色"统一套用的推断，不是逐个核实过。之前"加粗边框"占位已替换。chip现在可以直接点击切换选中态（In negotiation/Make Offer独立多选，New/Received/Sent/Declined互斥单选，来自Figma标注）。\n\n2026-08新增isMultiDealer：对照单经销商参照帧6837:16538核实，单经销商账号下筛选行里根本没有Dealership chip（不是隐藏，节点树里就没有），已加isMultiDealer prop控制。\n\n待你确认：1. "Clear"按钮颜色是推断的，不是直接标注的hex。2. 之前误把hidden=true的旧版本chip当成候选数据，已排除。'
+      notes: 'Verified (hidden=false, node 6847:49392): the enabled-state chip has a white background, border/text #212121, 14px/21, letter-spacing .25px, corner radius 8, height 32; the disabled (count 0) state has border/text #8D9199 with the background still white; the Dealership dropdown arrow is 18x18; the vertical divider between chips is 28 tall, color #0E0E0F; the "Clear" button color is #004E7D (the only link-color token the node returns).\n\nNative Figma design annotations (data-interaction-annotations, not made up): Dealership/In Negotiation/Make Offer are multi-select; New/Received/Sent/Declined are single-select (mutually exclusive); the default state with nothing selected shows ALL.\n\n2026-08 additional confirmation (selected state): you gave a new reference node, 6847:49600 (hidden=false, an "In negotiation" selected-state instance): background #F0F8FF, border 1px #0061A5, text #0061A5, corner radius still unchanged at 8px. This instance only verified the one In negotiation chip — the selected states of the other chips are applied uniformly on the inference that "the same component family should share the same colors," not verified one by one. The earlier "bold border" placeholder has been replaced. Chips can now be clicked directly to toggle selection (In Negotiation/Make Offer are independent multi-select, New/Received/Sent/Declined are mutually exclusive single-select, per the Figma annotations).\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account, the filter row has no Dealership chip at all (not hidden — it simply isn\'t in the node tree), so an isMultiDealer prop has been added to control this.\n\nFor you to confirm: 1. The "Clear" button color is inferred, not a directly annotated hex value. 2. An earlier mistake where a hidden=true old-version chip was treated as candidate data has been ruled out.'
     },
     DealershipFilterDropdown: {
-      name: 'Dealership Filter Dropdown', group: '导航与筛选 (Nav & Filters)', order: 23, def: DealershipFilterDropdown,
+      name: 'Dealership Filter Dropdown', group: 'Nav & Filters', order: 23, def: DealershipFilterDropdown,
       controls: {
         isMultiDealer: { type: 'boolean', label: 'Only shown when account has multiple dealerships', default: true },
         preSelected: { type: 'text', label: 'Pre-selected dealerships, comma-separated', default: '' }
@@ -2354,12 +2550,12 @@
         preSelectedExample: { isMultiDealer: true, preSelected: 'Apple Chevrolet,CarMax Boston' },
         singleDealerExample: { isMultiDealer: false, preSelected: '' }
       },
-      notes: '2026-08 重大更新：改参照真实原型重做（不再以Figma静态稿为准）。你提供了本地文件 My-ACV--Dealer-filter-main/index.html + style.css，明确说只参照它的V1 web版本dealership filter部分，其他大部分是老旧的错误内容。这是一个真实可运行的原型（#dealer-popover + 配套JS交互逻辑），比之前只能从Figma静态稿推断的内容更权威，整个组件对照这份原型重做了一遍。\n\n数值更正：1. "{n} selected"文字色改成#757575（之前Figma推断是#0E0E0F）。2. 搜索框占位文案改成"Search by dealer name or ID..."（之前是"Search dealer name"）。3. checkbox改成18x18 CSS方框圆角3+::after画勾（选中态背景/边框#004E7D，和Figma核实的颜色一致，只是画法从SVG资源变成纯CSS）。4. 经销商名单改成原型的10个真实名字，无重复：Asbury Automotive Group / Apple Chevrolet / Baxter Auto Mall / CarMax Boston / Classic Honda / DriveTime A / DriveTime Mall / DriveTime Denver / Enterprise Car Sales / Hendrick Automotive——之前"Apple Chevrolet"重复两次一直标着"疑似设计稿错误待确认"，这次由原型证实确实是Figma稿遗留错误，这条待确认已关闭。5. Apply Filter渐变改成原型CSS里的确切值linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%)，不再是自己拼的近似值。6. "Select all"现在会在"Select all"⇄"Deselect all"之间切换，只针对当前搜索可见的经销商生效（照抄原型updateCount()逻辑）。7. 弹出方式从"紧贴筛选行往下顶开布局"改成参照原型做的真正position:fixed悬浮浮层，定位/开合/点击外部关闭/Escape关闭/滚动跟随的逻辑在OfferDashboard里实现（因为需要拿到触发按钮的DOM节点），细节见该组件notes.md。\n\n待你确认：1. 弹出对齐方向从原型的"右对齐"改成了"左对齐"（我们的按钮在筛选行最左边，右对齐会超出视口），这个调整是否符合预期。2. 摘要小chip的关闭按钮范围收窄成"只清经销商筛选"，原型自己的clearFilter()是全部清空的合并逻辑，这个收窄是否符合预期。3. 原型的其余部分（V2/V3/mobile等）按你的要求完全没有参照，之后需要用到要再单独说。'
+      notes: '2026-08 major update: rebuilt against the real prototype (no longer treating the Figma static mock as authoritative). You provided the local files My-ACV--Dealer-filter-main/index.html + style.css and explicitly said to reference only its V1 web dealership filter section — most of the rest is outdated/incorrect content. This is a real, runnable prototype (#dealer-popover plus its accompanying JS interaction logic), more authoritative than what could previously only be inferred from the Figma static mock, and the whole component has been rebuilt against this prototype.\n\nValue corrections: 1. The "{n} selected" text color changed to #757575 (previously inferred from Figma as #0E0E0F). 2. The search box placeholder text changed to "Search by dealer name or ID..." (previously "Search dealer name"). 3. The checkbox changed to an 18x18 CSS box with corner radius 3 + a checkmark drawn with ::after (selected-state background/border #004E7D, matching the color verified in Figma — only the drawing method changed from an SVG asset to pure CSS). 4. The dealership list changed to the prototype\'s 10 real names with no duplicates: Asbury Automotive Group / Apple Chevrolet / Baxter Auto Mall / CarMax Boston / Classic Honda / DriveTime A / DriveTime Mall / DriveTime Denver / Enterprise Car Sales / Hendrick Automotive — previously "Apple Chevrolet" appeared twice and had been flagged as "possibly a design-file error, to confirm"; the prototype now confirms this was indeed a leftover Figma error, so that open item is closed. 5. The Apply Filter gradient changed to the exact value from the prototype\'s CSS, linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%), rather than an approximation I had put together myself. 6. "Select all" now toggles between "Select all" ⇄ "Deselect all", applying only to the dealerships currently visible under the active search (copied directly from the prototype\'s updateCount() logic). 7. The popover behavior changed from "pushes the layout down right under the filter row" to a genuine position:fixed floating overlay modeled on the prototype; the positioning/open-close/click-outside-to-close/Escape-to-close/scroll-follow logic is implemented in OfferDashboard (since it needs the trigger button\'s DOM node) — see that component\'s notes.md for details.\n\nFor you to confirm: 1. The popover alignment changed from the prototype\'s "right-aligned" to "left-aligned" (our button sits at the far left of the filter row, so right-aligning would overflow the viewport) — please confirm this adjustment is as expected. 2. The summary chip\'s close button scope has been narrowed to "clear only the dealership filter"; the prototype\'s own clearFilter() is a combined logic that clears everything — please confirm this narrowing is as expected. 3. Per your instructions, the rest of the prototype (V2/V3/mobile, etc.) was not referenced at all — let me know separately if any of that is needed later.'
     },
     OfferTableHeader: {
-      name: 'Offer Table Header', group: '数据表格 (Offers Table)', order: 30, def: OfferTableHeader,
+      name: 'Offer Table Header', group: 'Offers Table', order: 30, def: OfferTableHeader,
       controls: {
-        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer', default: true },
         sortColumn: { type: 'select', label: 'Column being sorted', options: [{ value: '', label: '(none)' }, { value: 'dealer-name', label: 'Dealer Name' }, { value: 'time-remaining', label: 'Time Remaining' }], default: '' }
       },
       mocks: {
@@ -2367,13 +2563,13 @@
         sortedByDealerExample: { isMultiDealer: true, sortColumn: 'dealer-name' },
         singleDealerExample: { isMultiDealer: false, sortColumn: null }
       },
-      notes: '已核实（hidden=false，节点 6837:16185）：图片占位78px无文字；Dealer Name(200px) 标题Roboto Medium 14px/20 letter-spacing .1px 色#212121，副标题"Auction ID・Type" 12px/18 letter-spacing .4px 色#757575，信息图标20x20蓝底#2196F5，排序图标16x16色#757575；Vehicle(197px)标题+"Mileage・VIN"副标题；Time Remaining(124px)两行标题带排序图标；ACV Estimate/Sent/Received/Update均单行标题无排序图标。统一：高50px背景#FAFAFA底部描边#DCDFE8。\n\n2026-08新增isMultiDealer：对照单经销商参照帧6837:16538核实，单经销商账号下第二列标题变成"Auction ID"、副标题变成"Type"，且没有排序图标（节点树里根本没有这个子节点，不是隐藏），已加isMultiDealer prop控制。\n\n待你确认：1. 只有Dealer Name和Time Remaining两列有排序图标实例，其余列没有对应实例所以没加。2. 表头左侧发现两个hidden=true的备用列（旧版本），没有采用。'
+      notes: 'Verified (hidden=false, node 6837:16185): the image placeholder is 78px with no text; Dealer Name (200px) has a title in Roboto Medium 14px/20, letter-spacing .1px, color #212121, a subtitle "Auction ID・Type" at 12px/18, letter-spacing .4px, color #757575, a 20x20 info icon on a blue #2196F5 background, and a 16x16 sort icon in color #757575; Vehicle (197px) has a title plus a "Mileage・VIN" subtitle; Time Remaining (124px) has a two-line title with a sort icon; ACV Estimate/Sent/Received/Update all have single-line titles with no sort icon. Shared: height 50px, background #FAFAFA, bottom border #DCDFE8.\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account the second column\'s title becomes "Auction ID" and its subtitle becomes "Type", with no sort icon (that child node simply doesn\'t exist in the node tree, it isn\'t just hidden), so an isMultiDealer prop has been added to control this.\n\nFor you to confirm: 1. Only the Dealer Name and Time Remaining columns have a sort-icon instance; the other columns have no corresponding instance, so none was added for them. 2. Two hidden=true fallback columns (an older version) were found on the left side of the header and were not adopted.'
     },
     OfferTableRow: {
-      name: 'Offer Table Row', group: '数据表格 (Offers Table)', order: 31, def: OfferTableRow,
+      name: 'Offer Table Row', group: 'Offers Table', order: 31, def: OfferTableRow,
       controls: {
-        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
-        photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl, empty = no photo)', default: '' },
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer', default: true },
+        photoUrl: { type: 'text', label: 'Vehicle photo URL', default: '' },
         dealerName: { type: 'text', label: 'Dealer name', default: 'CarMax Boston' },
         auctionId: { type: 'text', label: 'Auction ID', default: '264578' },
         offerType: { type: 'select', label: 'Badge below Dealer column', options: [{ value: 'none', label: '(hidden)' }, { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }], default: 'in-negotiation' },
@@ -2389,29 +2585,29 @@
         updateDate: { type: 'text', label: 'Update column date', default: 'Today' }
       },
       mocks: rowMocks,
-      notes: '已核实（hidden=false，对照了三条真实行实例）：照片80px(图64x64圆角未从Figma拿到具体像素，占位8px)；Dealer Name(200px)名称14px/21letter-spacing.25px色#0E0E0F，编号12px/18letter-spacing.4px色#55575C，编号和下方的OfferTypeBadge在同一行水平并排（gap 8px，2026-08根据新Figma帧7403:4653更正，之前误做成竖排三行）；Vehicle(195px居中)；Sent/Received出现真实值"--"表示未发起；Update列StatusChip堆叠(0~2个)+日期。\n\n重要发现：做这个组件时对照第二行真实数据，发现"Make Offer"徽标在真实使用场景里被包在一个带边框(#8D9199)的父容器里，更正了 OfferTypeBadge 之前"无边框"的结论。\n\n待你确认：1. 车辆缩略图圆角具体数值未从Figma拿到。2. 三行示例的照片资源看起来是同一张图的两层重叠导出，组件只用了一个photoUrl。3. 只见过Update列0/1/2个StatusChip叠加的情况，"+N溢出"逻辑的触发阈值未验证。\n\n2026-08新增isMultiDealer：对照单经销商参照帧6837:16538核实，单经销商账号下第二列不显示dealerName，改用auctionId做主标题（用原dealer-name的字号字色），OfferTypeBadge单独贴左，auctionId不重复出现。'
+      notes: 'Verified (hidden=false, checked against three real row instances): the photo is 80px (the image itself is 64x64, corner radius wasn\'t obtained from Figma as a specific pixel value, padding 8px); Dealer Name (200px) has a name at 14px/21, letter-spacing .25px, color #0E0E0F, and an ID at 12px/18, letter-spacing .4px, color #55575C, with the ID and the OfferTypeBadge below it sitting side by side horizontally on the same line (gap 8px, corrected 2026-08 based on new Figma frame 7403:4653 — previously mistakenly laid out as three stacked rows); Vehicle (195px, centered); Sent/Received can show the literal value "--" to mean not yet initiated; the Update column stacks StatusChips (0 to 2) plus a date.\n\nImportant finding: while building this component, checking against the second row of real data revealed that the "Make Offer" badge, in real usage, is wrapped in a parent container with a border (#8D9199) — this corrects the earlier OfferTypeBadge conclusion of "no border."\n\nFor you to confirm: 1. The vehicle thumbnail\'s specific corner-radius value was not obtained from Figma. 2. The photo assets in the three example rows look like they were exported as two overlapping layers of the same image; the component only uses a single photoUrl. 3. Only cases with 0/1/2 stacked StatusChips in the Update column have been observed; the trigger threshold for the "+N overflow" logic has not been verified.\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account the second column does not show dealerName, using auctionId as the main title instead (with the original dealer-name\'s font size/color), with the OfferTypeBadge pinned to the left on its own and auctionId not repeated elsewhere.'
     },
     StatusChip: {
-      name: 'Status Chip', group: '数据表格 (Offers Table)', order: 32, def: StatusChip,
+      name: 'Status Chip', group: 'Offers Table', order: 32, def: StatusChip,
       controls: {
         status: { type: 'select', label: 'Status', options: [{ value: 'new', label: 'New' }, { value: 'received', label: 'Received' }, { value: 'sent', label: 'Sent' }, { value: 'declined', label: 'Declined' }, { value: 'expired', label: 'Expired' }, { value: 'overflow', label: '+N (overflow badge)' }], default: 'new' },
         label: { type: 'text', label: 'Label text', default: 'New' },
         showIcon: { type: 'boolean', label: 'Show icon', default: true }
       },
       mocks: { newExample: { status: 'new', label: 'New', showIcon: true }, receivedExample: { status: 'received', label: 'Received', showIcon: true }, sentExample: { status: 'sent', label: 'Sent', showIcon: false }, declinedExample: { status: 'declined', label: 'Declined', showIcon: false }, expiredExample: { status: 'expired', label: 'Expired', showIcon: false }, overflowExample: { status: 'overflow', label: '+1', showIcon: false } },
-      notes: '这个组件是表格 Update 列的更新事件徽标（New/Received），不是筛选行的 FilterChipGroup——两者视觉相似但完全不同，用途和出现位置都不同。\n\n一次重要更正（2026-08）：早期版本把"Counter Received"/"Counter Sent"也列为已确认状态，依据是"能查到真实颜色数值"，但这两个node在Figma里都是hidden=true的变体，代表设计师保留的旧版本，不能等同于当前有效设计。结论：只有hidden=false的实例才算已核实。\n\n已核实（hidden=false）：New 背景#F4FFF6文字#006C4C圆角4px有icon；Received背景#F0F8FF文字#0061A5圆角4px无icon；Sent背景#E0E0E0文字#212121圆角3px无icon（2026-08新增，对照node7487:62990核实，和溢出徽标颜色一样但是巧合，不是同一状态）；Declined背景#FFEFBF文字#402D00圆角4px无icon（2026-08新增，对照node7487:62983核实）；溢出徽标"+N"背景#E0E0E0文字#212121圆角3px无icon。\n\n2026-08 你给了Frame 630266091（node 7487:62998）核实New/Received/Sent/Declined四个chip对应筛选行四个filter chip的状态，顺带发现New/Received的圆角实际是4px，不是之前统一用的3px，已经改过来；Sent单独是3px（Figma里这几个chip圆角本身没统一，不是我写错），溢出徽标保持3px不变。\n\n已移除/降级为未确认：Counter Received/Counter Sent（之前误列为已确认，现移除）；In Negotiation（实际属于OfferTypeBadge范畴，已移除避免重复冲突）；Outbid依旧未找到任何实例，Declined已在上面确认。'
+      notes: 'This component is the update-event badge (New/Received) in the table\'s Update column — it is not the filter row\'s FilterChipGroup. The two look visually similar but are completely different, with different purposes and different places where they appear.\n\nAn important correction (2026-08): an earlier version also listed "Counter Received"/"Counter Sent" as verified states, on the basis that "real color values could be found for them," but both of those nodes in Figma are hidden=true variants representing old versions the designer kept around — they can\'t be treated as equivalent to the currently valid design. Conclusion: only hidden=false instances count as verified.\n\nVerified (hidden=false): New has background #F4FFF6, text #006C4C, corner radius 4px, with an icon; Received has background #F0F8FF, text #0061A5, corner radius 4px, no icon; Sent has background #E0E0E0, text #212121, corner radius 3px, no icon (added 2026-08, verified against node 7487:62990 — it happens to share the same color as the overflow badge, but that\'s a coincidence, not the same state); Declined has background #FFEFBF, text #402D00, corner radius 4px, no icon (added 2026-08, verified against node 7487:62983); the overflow badge "+N" has background #E0E0E0, text #212121, corner radius 3px, no icon.\n\n2026-08 you provided Frame 630266091 (node 7487:62998) to verify that the New/Received/Sent/Declined chips correspond to the four filter-row filter-chip states, and in the process it was found that New/Received actually have a 4px corner radius, not the 3px that had been applied uniformly before — this has now been fixed; Sent is separately 3px (these chips\' corner radii genuinely aren\'t uniform in Figma itself — this isn\'t something I got wrong), and the overflow badge stays unchanged at 3px.\n\nRemoved / downgraded to unverified: Counter Received/Counter Sent (previously mistakenly listed as verified, now removed); In Negotiation (actually belongs under OfferTypeBadge, removed to avoid a duplicate/conflicting definition); Outbid still has no instance found; Declined has been confirmed above.'
     },
     OfferTypeBadge: {
-      name: 'Offer Type Badge', group: '数据表格 (Offers Table)', order: 33, def: OfferTypeBadge,
+      name: 'Offer Type Badge', group: 'Offers Table', order: 33, def: OfferTypeBadge,
       controls: {
         type: { type: 'select', label: 'Type', options: [{ value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }], default: 'in-negotiation' },
         label: { type: 'text', label: 'Label text', default: 'In Negotiation' }
       },
       mocks: { inNegotiationExample: { type: 'in-negotiation', label: 'In Negotiation' }, makeOfferExample: { type: 'make-offer', label: 'Make Offer' } },
-      notes: '和 StatusChip 的区别：StatusChip出现在表格Update列，表示"更新事件"，同一格可叠加多个；OfferTypeBadge出现在Dealer Name/Auction ID列下方，表示当前阶段/类型，每行只有一个，不叠加。\n\n已核实（均为hidden=false）：In Negotiation 背景#1C1D1F白字白色1px描边；Make Offer 芯片本身背景#FFFFFF文字#0E0E0F，边框来自包裹框#8D9199（见下方更正记录）。\n\n更正记录一：早期版本Make Offer是根据截图目测猜的占位样式（白底+虚线边框+#212121文字），之后用真实实例替换。\n\n更正记录二（做OfferTableRow时发现）：上一次更正只单独查询了芯片本身节点，得出"没有边框"结论。做OfferTableRow时连着完整表格行核实第二行数据，发现该芯片在真实使用场景里被包在父节点"status pills"包裹框里，这个包裹框本身带边框1px色#8D9199圆角3px。也就是说"没有边框"是错的——单独查询子节点会漏掉父节点上加的边框，现已更正。这也提醒了一个通用教训：核实chip/badge样式时不能只看它自己的节点，还要看真实使用场景里的父节点有没有额外叠加样式。\n\n复核记录（用户提出圆角/居中问题后）：重新核实了6837:16706和6837:16269/6837:16275，两处圆角都是rounded-[3px]，和代码里的3px一致，没有需要改的圆角数值；但漏了justify-center，已补上justify-content:center和box-sizing:border-box。如果这样之后圆角看起来还是不对，需要实际渲染截图才能继续排查。\n\n2026-08 用户直接指定覆盖：你发截图说圆角看不出来，直接要求"圆角4"，已改成border-radius:4px，不再是Figma核实的3px——这是你的明确指示，不是查到了新的Figma数值。StatusChip目前还是3px，没有跟着改。'
+      notes: 'Difference from StatusChip: StatusChip appears in the table\'s Update column and represents an "update event," and multiple can stack in the same cell; OfferTypeBadge appears below the Dealer Name/Auction ID column and represents the current stage/type — there is only ever one per row, no stacking.\n\nVerified (both hidden=false): In Negotiation has background #1C1D1F, white text, white 1px border; the Make Offer chip itself has background #FFFFFF, text #0E0E0F, with the border actually coming from its wrapper container #8D9199 (see the correction below).\n\nCorrection record one: the early version of Make Offer used a placeholder style eyeballed from a screenshot (white background + dashed border + #212121 text), which was later replaced with a real instance.\n\nCorrection record two (found while building OfferTableRow): the previous correction only queried the chip\'s own node in isolation and concluded "no border." While building OfferTableRow, checking the second row of real data against the full table row revealed that in real usage this chip is wrapped inside a parent "status pills" container, and that wrapper itself carries a 1px border, color #8D9199, corner radius 3px. In other words, "no border" was wrong — querying a child node on its own misses borders applied on a parent node, and this has now been corrected. This is also a reminder of a general lesson: when verifying chip/badge styling, you can\'t just look at its own node — you also need to check whether the parent node in real usage layers on any extra styling.\n\nRe-check record (after you raised a corner-radius/centering question): 6837:16706 and 6837:16269/6837:16275 were re-verified, and both corner radii are rounded-[3px], matching the 3px already in the code, so no corner-radius value needed changing; however, justify-center had been missed, so justify-content:center and box-sizing:border-box have been added. If the corner radius still looks off after this, an actual rendered screenshot will be needed to keep investigating.\n\n2026-08 override specified directly by the user: you sent a screenshot saying the corner radius wasn\'t visible and directly asked for "corner radius 4," so it has been changed to border-radius:4px, no longer the 3px verified from Figma — this is your explicit instruction, not a newly discovered Figma value. StatusChip is still 3px and has not been changed to match.'
     },
     Pagination: {
-      name: 'Pagination', group: '数据表格 (Offers Table)', order: 34, def: Pagination,
+      name: 'Pagination', group: 'Offers Table', order: 34, def: Pagination,
       controls: {
         showViewingText: { type: 'boolean', label: 'Show "Viewing X out of Y results"', default: false },
         viewingCount: { type: 'text', label: 'Current visible count', default: '6' },
@@ -2424,60 +2620,86 @@
         topExample: { showViewingText: false, rowsPerPage: '10', hasPrevPage: false, hasNextPage: true },
         bottomExample: { showViewingText: true, viewingCount: 6, totalCount: 6, rowsPerPage: '10', hasPrevPage: false, hasNextPage: true }
       },
-      notes: '2026-08 重大更新：下拉/箭头改用 Claude Design 项目里的 ACV Pagination 组件（components/09c-pagination.card.html），通过 DesignSync（claude_design MCP）读取，替换掉之前基于 Figma 静态稿 + 原生<select>拼出来的版本。\n\n主要变化：1. "Rows per page"字号行高改成14px/20px（去掉letter-spacing）。2. 下拉改成真正的自定义菜单（点开/点选项收起/点外部收起/Escape收起），不再是原生<select>——菜单白底边框#DCDFE8圆角(仅下2角)4px阴影0 4px 10px rgba(0,0,0,.12)，选中项背景#1A73E8文字白色，hover背景#F0F1F4，下拉箭头换成描边风格chevron。3. 打开/聚焦态新增box-shadow: 0 0 0 3px #CFE3F5。4. 上一页/下一页图标换成描边风格角括号，新增hover(圆形#F0F1F4)和focus-visible(2px #0061A5圆形描边)交互态。5. Rows per page选项还是10/20/50/100，没有变化。6. 组件自带白底+padding 12px 16px+圆角4px，作为独立卡片样式。\n\n2026-08 你指出要按之前的样子补回来：源文件的range文案格式是"{start}-{end} of {total}"（比如"1-10 of 35"），一度整个换成了这个格式，但你说"Viewing X out of Y results"这个文案还是需要的，已经改回原文案+原样式（14px/21 letter-spacing.25px色#212121），showRange/currentPage这些新加的prop已经撤掉，恢复成showViewingText/viewingCount/totalCount。\n\n待你确认：1. showViewingText这个"顶部不显示、底部显示"的开关是延续之前项目的既有做法。2. 组件自带的白底padding套进OfferDashboard后如果和周围padding叠加显得空隙过大，可能需要调整外层容器padding。3. 中间页时两个箭头样式，组件卡片本身只给了两个静态示例，没有专门演示"中间页"状态。'
+      notes: '2026-08 major update: the dropdown/arrows now use the ACV Pagination component from the Claude Design project (components/09c-pagination.card.html), read via DesignSync (the claude_design MCP), replacing the previous version that was pieced together from the Figma static mock plus a native <select>.\n\nMain changes: 1. "Rows per page" font size/line height changed to 14px/20px (letter-spacing removed). 2. The dropdown changed to a real custom menu (opens on click, closes on option click, closes on outside click, closes on Escape) instead of a native <select> — the menu has a white background, border #DCDFE8, corner radius 4px on the bottom two corners only, shadow 0 4px 10px rgba(0,0,0,.12); the selected option has background #1A73E8 with white text; hover has background #F0F1F4; the dropdown arrow changed to an outlined-style chevron. 3. Added box-shadow: 0 0 0 3px #CFE3F5 for the open/focused state. 4. The previous/next page icons changed to outlined-style angle brackets, with new hover (circle #F0F1F4) and focus-visible (2px #0061A5 circular outline) interaction states. 5. The Rows per page options are still 10/20/50/100, unchanged. 6. The component now comes with its own white background + 12px 16px padding + 4px corner radius, styled as a standalone card.\n\n2026-08 you pointed out something needed to be restored to how it was before: the source file\'s range text format is "{start}-{end} of {total}" (e.g. "1-10 of 35"), and at one point everything had been switched over to this format, but you said the "Viewing X out of Y results" text was still needed, so it has been changed back to the original text + original styling (14px/21, letter-spacing .25px, color #212121), and the newly added showRange/currentPage props have been removed, restoring showViewingText/viewingCount/totalCount.\n\nFor you to confirm: 1. The showViewingText toggle — "not shown at the top, shown at the bottom" — carries over an existing convention from the earlier project. 2. If the component\'s built-in white background and padding end up looking like too much empty space once stacked with the surrounding padding inside OfferDashboard, the outer container\'s padding may need adjusting. 3. For the middle-page state of the two arrows, the component card itself only provides two static examples and does not specifically demonstrate a "middle page" state.'
     },
     ResultsToolbar: {
-      name: 'Results Toolbar', group: '数据表格 (Offers Table)', order: 35, def: ResultsToolbar,
+      name: 'Results Toolbar', group: 'Offers Table', order: 35, def: ResultsToolbar,
       controls: {
-        viewMode: { type: 'select', label: 'View mode (viewMode)', options: [{ value: 'tile', label: 'Tile' }, { value: 'table', label: 'Table' }], default: 'table' },
-        resultsCount: { type: 'number', label: '"Viewing N results" count (resultsCount, tile mode only)', default: 5 },
-        hasPrevPage: { type: 'boolean', label: 'Previous page enabled (hasPrevPage, table mode only)', default: false },
-        hasNextPage: { type: 'boolean', label: 'Next page enabled (hasNextPage, table mode only)', default: true }
+        viewMode: { type: 'select', label: 'View mode', options: [{ value: 'tile', label: 'Tile' }, { value: 'table', label: 'Table' }], default: 'table' },
+        resultsCount: { type: 'number', label: '"Viewing N results" count', default: 5 },
+        hasPrevPage: { type: 'boolean', label: 'Previous page enabled', default: false },
+        hasNextPage: { type: 'boolean', label: 'Next page enabled', default: true }
       },
       mocks: {
         tileExample: { viewMode: 'tile', resultsCount: 5 },
         tableExample: { viewMode: 'table', hasPrevPage: false, hasNextPage: true }
       },
-      notes: '2026-09-02 新增：从 OfferDashboard 里抽出来的独立组件——你给了 tile 视图（"Viewing 5 results" + 切换按钮）和 table 视图（"🔑 Private Lane" + Pagination + 切换按钮）两张截图，指出这两条工具条应该做成同一个组件的两个 view，不是分开各写一次。组件名字是按你的要求自己起的（"你看叫什么合适"），取 "Viewing N results" 这行文案的 "results" + 它本身是一条工具条拼的，不是 Figma 图层自带的名字。\n\n这次是纯粹的搬迁，没有改动任何数值/行为——CSS class 名字从 offer-dashboard__* 统一改成了 results-toolbar__*，选择器本身没有变。viewMode 从组件内部按钮直接改的本地 ref 变成标准的 v-model 双向绑定（update:viewMode emit），resultsCount/hasPrevPage/hasNextPage 对应 tile 的 "Viewing N results" 数字和 table 顶部 Pagination 的两个箭头状态。所有关于"为什么长这样"的 Figma 核实记录（切换按钮 pill 形状对照节点7432:69595、Private Lane 标签抄自参照原型 My-ACV--Dealer-filter-main、76px 固定行高的推导过程）都在 fragments/OfferDashboard/notes.md 和这个组件自己的 CSS 注释里，这里不重复。'
+      notes: '2026-09-02 addition: a standalone component extracted out of OfferDashboard — you provided two screenshots, a tile view ("Viewing 5 results" + toggle buttons) and a table view ("🔑 Private Lane" + Pagination + toggle buttons), and pointed out that these two toolbars should be built as two views of the same component rather than written separately each time. The component name was made up at your request ("whatever name you think fits") — taken from the "results" in "Viewing N results" plus the fact that it\'s itself a toolbar being assembled — it is not a name that came from a Figma layer.\n\nThis was a pure relocation, with no change to any value or behavior — the CSS class names were uniformly renamed from offer-dashboard__* to results-toolbar__*, with the selectors themselves unchanged. viewMode changed from a local ref set directly by the component\'s internal buttons to a standard v-model two-way binding (update:viewMode emit); resultsCount/hasPrevPage/hasNextPage correspond to the tile view\'s "Viewing N results" number and the table view\'s top Pagination arrow states. All the Figma verification records explaining "why it looks like this" (the toggle button\'s pill shape checked against node 7432:69595, the Private Lane label copied from the reference prototype My-ACV--Dealer-filter-main, the reasoning behind the fixed 76px row height) live in fragments/OfferDashboard/notes.md and this component\'s own CSS comments — not repeated here.'
+    },
+    ImageBadge: {
+      name: 'Image Badge', group: 'Card View', order: 39, def: ImageBadge,
+      controls: {
+        variant: { type: 'select', label: 'Badge type', options: [
+          { value: 'in-negotiation', label: 'In Negotiation' },
+          { value: 'make-offer', label: 'Make Offer' },
+          { value: 'dealer', label: 'Dealer name (lane badge)' }
+        ], default: 'in-negotiation' },
+        label: { type: 'text', label: 'Badge text', default: 'In Negotiation' },
+        ring: { type: 'boolean', label: 'Ring style', default: false }
+      },
+      mocks: {
+        inNegotiationExample: { variant: 'in-negotiation', label: 'In Negotiation' },
+        inNegotiationRingExample: { variant: 'in-negotiation', label: 'In Negotiation', ring: true },
+        makeOfferExample: { variant: 'make-offer', label: 'Make Offer' },
+        dealerExample: { variant: 'dealer', label: 'Apple Chevrolet' }
+      },
+      notes: '2026-09-02 addition: a standalone component extracted out of OfferCard — you pointed out that the three badges in the photo\'s bottom-left corner (In Negotiation/Make Offer/dealer name) should use the same component, rather than three separately hand-written <span> elements with their own classes. The color/border values were carried over as-is with no visual change — this just merges the four rules that used to be scattered across OfferCard.vue (.offer-card__type-badge--in-negotiation / --make-offer / --in-negotiation-ring / .offer-card__lane-badge) into a single component with a variant (\'in-negotiation\'/\'make-offer\'/\'dealer\') plus a ring boolean (only takes effect when variant=\'in-negotiation\').\n\nHeight (24px) and corner radius (4px) are the two shared base-style geometry properties; only the background/text color/border/horizontal padding differ per variant — these two values were settled gradually over several earlier rounds of changes (standardized around Make Offer\'s height as the baseline, then reduced by 2px top and bottom, with the corner radius standardized per your point that "Make Offer is clearly 4px") — the reasoning behind that is recorded in fragments/OfferCard/notes.md and not repeated here.\n\nThere is currently no separate comparison against a table version — the OfferTypeBadge component in the table (order 33) is a completely separate component whose values genuinely differ from this one; the two have not been merged this time, nor did you ask for them to be merged — this is just a reminder that these are two different components and shouldn\'t be confused.'
     },
     OfferCard: {
-      name: 'Offer Card', group: '卡片视图 (Card View)', order: 40, def: OfferCard,
+      name: 'Offer Card', group: 'Card View', order: 40, def: OfferCard,
       controls: {
-        cardVersion: { type: 'segmented', label: 'Card version (cardVersion)', options: [
+        cardVersion: { type: 'segmented', label: 'Card version', options: [
           { value: 'v1', label: 'V1 — mileage line, optional gap', shortLabel: 'V1' },
           { value: 'v2', label: 'V2 — auction ID line, latest-move timestamp + gap', shortLabel: 'V2' }
         ], default: 'v1' },
-        photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl, empty = gray placeholder)', default: '' },
-        offerType: { type: 'select', label: 'Deal type (offerType) — fixed for the deal, not a status', options: [
+        // 2026-09-02 按 PM 反馈新增的正式功能(不再是概念稿)——PM 觉得
+        // In Negotiation 徽标不够明显,选定了"加一圈白色描边+投影"这个
+        // 方向,已经放进真实组件 fragments/OfferCard/OfferCard.vue。
+        badgeStyle: { type: 'segmented', label: 'In Negotiation badge style', options: [
+          { value: 'default', label: 'Current', shortLabel: 'Current' },
+          { value: 'ring', label: 'Ring', shortLabel: 'Ring' }
+        ], default: 'default' },
+        photoUrl: { type: 'text', label: 'Vehicle photo URL', default: '' },
+        offerType: { type: 'select', label: 'Deal type — fixed for the deal, not a status', options: [
           { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }
         ], default: 'in-negotiation' },
-        dealerName: { type: 'text', label: 'Dealer / lane badge (dealerName)', default: 'CarMax Boston' },
-        vehicleTitle: { type: 'text', label: 'Vehicle title (vehicleTitle)', default: 'Year Make Model' },
-        mileage: { type: 'text', label: 'Mileage (mileage)', default: '250,000 miles' },
-        vin: { type: 'text', label: 'VIN (vin)', default: '192211' },
-        auctionId: { type: 'text', label: 'Auction ID (auctionId)', default: '452161' },
-        viewerRole: { type: 'select', label: 'Viewer role (viewerRole)', options: [
+        dealerName: { type: 'text', label: 'Dealer / lane badge', default: 'CarMax Boston' },
+        vehicleTitle: { type: 'text', label: 'Vehicle title', default: 'Year Make Model' },
+        mileage: { type: 'text', label: 'Mileage', default: '250,000 miles' },
+        vin: { type: 'text', label: 'VIN', default: '192211' },
+        auctionId: { type: 'text', label: 'Auction ID', default: '452161' },
+        viewerRole: { type: 'select', label: 'Viewer role', options: [
           { value: 'buyer', label: 'Buyer' }, { value: 'seller', label: 'Seller' }
         ], default: 'seller' },
-        dealState: { type: 'select', label: 'Deal state (dealState)', options: [
+        dealState: { type: 'select', label: 'Deal state', options: [
           { value: 'received', label: 'Received — their move, your turn' },
           { value: 'sent', label: 'Sent — your move, waiting on them' },
           { value: 'declined', label: 'Declined — closed' },
           { value: 'expired', label: 'Expired — closed' }
         ], default: 'received' },
-        isNew: { type: 'boolean', label: 'New flag (isNew, only shows with Received/Declined)', default: true },
-        timeLeft: { type: 'text', label: 'Countdown text (timeLeft, empty = hide; auto-hidden on Declined/Expired)', default: '45m Left' },
-        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h (timeLeftUrgent → red, else grey)', default: false },
-        counterpartyAmount: { type: 'text', label: "Counterparty's amount (counterpartyAmount)", default: '$4,500' },
-        ownAmount: { type: 'text', label: 'Your own amount — offer/counter/reserve (ownAmount)', default: '$3,800' },
-        ownTimestamp: { type: 'text', label: 'Your amount timestamp (ownTimestamp)', default: 'Today, 08:45 AM' },
-        expiredAt: { type: 'text', label: 'Expired-at time, optional (expiredAt, empty = omit)', default: '' },
-        showGap: { type: 'boolean', label: '[v1 only, open question] Show gap instead of timestamp (showGap, Received only)', default: false },
-        gapAmount: { type: 'text', label: '[v1 only] Gap amount text (gapAmount)', default: '$700 apart' },
-        reservePrice: { type: 'text', label: 'Reserve price, for the dialog (reservePrice)', default: '$4,800' },
-        acvEstimate: { type: 'text', label: 'ACV estimate, for the dialog (acvEstimate)', default: '$4,600' },
-        reportUrl: { type: 'text', label: '"View Report" link, for the dialog (reportUrl)', default: '#' },
-        counterpartyTimestamp: { type: 'text', label: '[v2 only] Counterparty\'s latest move timestamp (counterpartyTimestamp)', default: '' }
+        isNew: { type: 'boolean', label: 'New flag', default: true },
+        timeLeft: { type: 'text', label: 'Countdown text', default: '45m Left' },
+        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h', default: false },
+        counterpartyAmount: { type: 'text', label: "Counterparty's amount", default: '$4,500' },
+        ownAmount: { type: 'text', label: 'Your own amount — offer/counter/reserve', default: '$3,800' },
+        ownTimestamp: { type: 'text', label: 'Your amount timestamp', default: 'Today, 08:45 AM' },
+        expiredAt: { type: 'text', label: 'Expired-at time, optional', default: '' },
+        showGap: { type: 'boolean', label: '[v1 only, open question] Show gap instead of timestamp', default: false },
+        gapAmount: { type: 'text', label: '[v1 only] Gap amount text', default: '$700 apart' },
+        reservePrice: { type: 'text', label: 'Reserve price, for the dialog', default: '$4,800' },
+        acvEstimate: { type: 'text', label: 'ACV estimate, for the dialog', default: '$4,600' },
+        reportUrl: { type: 'text', label: '"View Report" link, for the dialog', default: '#' },
+        counterpartyTimestamp: { type: 'text', label: '[v2 only] Counterparty\'s latest move timestamp', default: '' }
       },
       mocks: {
         // 2026-09-01:按 "Offer States Logic for CC.md" 的 Number rules
@@ -2529,41 +2751,41 @@
           { speaker: 'buyer', kind: 'offer', amount: '$25,800', timestamp: 'Mon, Aug 17, 10:05 AM' }
         ] }
       },
-      notes: '这是 tile version（Figma node 7432:68669）里的卡片，对应 ACV 通用 Auction Card 结构（acv-auction-cards 技能）：图片区（带经销商/lane徽标 + 状态徽标叠加）+ Vehicle Detail区（标题/里程・VIN/Auction ID，字段顺序按技能要求保留）+ Flexible区（倒计时+New/Received StatusChip+分隔线+一句话消息）。之后会有不同scenario复用这个组件传不同数据，所以除了标题/里程/VIN/Auction ID之外的字段都做成可选（不传/传空字符串就不渲染）。\n\n已核实（节点7432:69394，hidden=false）：卡片容器白底边框#E8E9EB圆角12px；图片区高210px；图片左下角状态徽标——In Negotiation背景#1C1D1F白字圆角8px无边框（注意和表格版OfferTypeBadge不一样，表格版是圆角3px带白色描边，这里是两套独立核实的数值，没有强行合并）；Make Offer（核实自7441:5248/5254）外层描边1px#8D9199圆角3px内层白底，和表格版完全一致；经销商/lane徽标背景rgba(0,0,0,.4)+blur(.75px)白字圆角8px。\n\nVehicle Detail区：标题16px/24 Medium色#0E0E0F；里程・VIN+复制图标（真实下载的SVG，点击复制VIN到剪贴板）14px/21色#55575C；Auction ID同色号。Flexible区：Clock图标(真实下载)+倒计时文字14px/20 Medium色#CC433A；New/Received直接复用已核实的StatusChip颜色；分隔线#EBEBEB；消息块主/副文案14px。\n\n待确认：1. vehicleTitle示例文案字面就是"Year Make Model"，看起来像设计师没替换的占位文案，不是编的假数据，原样保留。2. 图片区右上角的操作图标列（watchlist/hide/note/more共4个，节点7432:69398）hidden=true，没有实现。3. 倒计时/状态chip/消息块是否所有场景卡片都会出现，只看到这一个例子，已做成可选，等后续scenario数据确认。\n\n2026-08 按 "Offer card — content & interaction spec" 重写：原来自由文本的 primaryMessage/secondaryMessage + statusNew/statusReceived/statusSent/statusDeclined 4个独立布尔值 + buttonVersion/buttonCount 已经全部删掉，改成 viewerRole(buyer/seller) + dealState(received/sent/declined/expired) + isNew + 几个金额/时间戳prop，两行文案和hover按钮组都由组件内部按规范表格算出来，不再是手写的自由文本。新增了 Expired 状态（StatusChip 也跟着加了 expired 样式，灰底深灰字，不是Figma核实数值）。'
+      notes: 'This is the card from the tile version (Figma node 7432:68669), matching the general ACV Auction Card structure (the acv-auction-cards skill): an image area (with dealer/lane badge + status badge overlaid) + a Vehicle Detail area (title / mileage・VIN / Auction ID, with field order kept per the skill\'s requirements) + a Flexible area (countdown + New/Received StatusChip + divider + a one-line message). This component will later be reused with different data across different scenarios, so every field besides title/mileage/VIN/Auction ID has been made optional (not rendered if omitted or passed as an empty string).\n\nVerified (node 7432:69394, hidden=false): the card container has a white background, border #E8E9EB, corner radius 12px; the image area is 210px tall; the status badge in the image\'s bottom-left corner — In Negotiation has background #1C1D1F, white text, corner radius 8px, no border (note this differs from the table version\'s OfferTypeBadge, which is corner radius 3px with a white border — these are two independently verified sets of values that have not been forced to merge); Make Offer (verified from 7441:5248/5254) has an outer 1px border #8D9199, corner radius 3px, white inner background, exactly matching the table version; the dealer/lane badge has background rgba(0,0,0,.4) + blur(.75px), white text, corner radius 8px.\n\nVehicle Detail area: the title is 16px/24 Medium, color #0E0E0F; mileage・VIN plus a copy icon (a genuinely downloaded SVG that copies the VIN to the clipboard on click) at 14px/21, color #55575C; Auction ID uses the same color. Flexible area: a Clock icon (genuinely downloaded) plus countdown text at 14px/20 Medium, color #CC433A; New/Received directly reuse the already-verified StatusChip colors; the divider is #EBEBEB; the message block\'s primary/secondary text is 14px.\n\nTo confirm: 1. The vehicleTitle example text is literally "Year Make Model," which looks like a placeholder the designer never replaced — this is not fabricated fake data, it has been kept as-is. 2. The row of action icons in the image area\'s top-right corner (watchlist/hide/note/more, 4 total, node 7432:69398) is hidden=true and has not been implemented. 3. Whether the countdown/status chip/message block appear on every scenario\'s card is unknown, since only this one example has been seen — they have been made optional pending confirmation from later scenario data.\n\n2026-08 rewrite per the "Offer card — content & interaction spec": the original free-text primaryMessage/secondaryMessage, the 4 separate booleans statusNew/statusReceived/statusSent/statusDeclined, and buttonVersion/buttonCount have all been removed, replaced with viewerRole (buyer/seller) + dealState (received/sent/declined/expired) + isNew plus a handful of amount/timestamp props; the two lines of text and the hover button group are now both computed internally by the component from a spec table, rather than hand-written free text. An Expired state has been added (StatusChip has correspondingly gained an expired style, gray background with dark gray text — this is not a Figma-verified value).'
     },
     OfferCardGallery: {
-      name: 'Offer Card — All States', group: '卡片视图 (Card View)', order: 41, def: OfferCardGallery,
+      name: 'Offer Card — All States', group: 'Card View', order: 41, def: OfferCardGallery,
       controls: {},
       mocks: {},
-      notes: '不是 Figma 来源的组件,是你直接要求做的一个 QA/文档用途的"总览页":把 OfferCard 在 buyer/seller 两种视角下各自 5 种合法的"类型×状态"组合同时铺出来,每张卡片上方标一句话说明这是什么状态,顶部有 Buyer/Seller 切换。方便一次性对照检查所有状态的文案/芯片/按钮是否符合 "Offer card — content & interaction spec",不用在 OfferCard 自己的 Playground 页面里一个个切换 Mock 示例来看。\n\n10 个场景直接复用 OfferCard/mock.js 里已经建好的数据(和 OfferCard 自己 Playground 页面里的 10 个 Mock 示例数值完全一致),没有重新编数据。每张卡片上方的说明文字是照你举的例子("买家刚发offer等待卖家回复")这个思路写的中文短句,不是规范文档原文。顶部 Buyer/Seller 切换按钮复用了 OfferDashboard 视图切换按钮已经验证过的同一套 pill 分段控件视觉,卡片上方的小灰字标签样式是照你发的截图目测的,不是核实数值。\n\n待确认:1. 5种状态的排列顺序按"进行中→已结束"排的,不是规范文档规定的顺序。2. 这个新组件目前放在"卡片视图"分组里 order 41(紧跟 OfferCard 的 order 40),如果你想要别的位置请告知。'
+      notes: 'This is not a component sourced from Figma — it\'s a QA/documentation "overview page" you directly asked for: it lays out OfferCard\'s 5 valid "type × state" combinations for both the buyer and seller perspectives all at once, with a short caption above each card explaining what state it\'s in, and a Buyer/Seller toggle at the top. This makes it easy to check, in one pass, whether the text/chips/buttons for every state match the "Offer card — content & interaction spec," instead of having to switch through Mock examples one at a time on OfferCard\'s own Playground page.\n\nThe 10 scenarios directly reuse the data already built in OfferCard/mock.js (matching exactly the values of the 10 Mock examples on OfferCard\'s own Playground page) — no data was re-authored. The caption above each card is a short phrase written in the spirit of the example you gave ("buyer just sent an offer, waiting on seller"), not verbatim text from the spec document. The Buyer/Seller toggle at the top reuses the same already-verified pill segmented-control visuals as the OfferDashboard view-toggle buttons; the small gray label style above each card was eyeballed from a screenshot you sent, not a verified value.\n\nTo confirm: 1. The 5 states are ordered "in progress → closed," which is not an order mandated by the spec document. 2. This new component currently sits in the "Card View" group at order 41 (right after OfferCard\'s order 40) — let me know if you\'d like it placed elsewhere.'
     },
     InformationDialog: {
-      name: 'Information Dialog', group: '卡片视图 (Card View)', order: 42, def: InformationDialog,
+      name: 'Information Dialog', group: 'Card View', order: 42, def: InformationDialog,
       controls: {
-        modelValue: { type: 'boolean', label: 'Open (modelValue / v-model)', default: true },
-        photoUrl: { type: 'text', label: 'Vehicle photo URL (photoUrl)', default: 'assets/vehicle-photos/2018-ford-focus-rs.jpg' },
-        vehicleTitle: { type: 'text', label: 'Vehicle title (vehicleTitle)', default: '2018 Ford Focus RS' },
-        vin: { type: 'text', label: 'VIN (vin)', default: '884523' },
-        mileage: { type: 'text', label: 'Odometer (mileage)', default: '32,450 miles' },
-        auctionId: { type: 'text', label: 'Auction ID (auctionId)', default: '452161' },
-        offerType: { type: 'select', label: 'Deal type (offerType)', options: [
+        modelValue: { type: 'boolean', label: 'Open', default: true },
+        photoUrl: { type: 'text', label: 'Vehicle photo URL', default: 'assets/vehicle-photos/2018-ford-focus-rs.jpg' },
+        vehicleTitle: { type: 'text', label: 'Vehicle title', default: '2018 Ford Focus RS' },
+        vin: { type: 'text', label: 'VIN', default: '884523' },
+        mileage: { type: 'text', label: 'Odometer', default: '32,450 miles' },
+        auctionId: { type: 'text', label: 'Auction ID', default: '452161' },
+        offerType: { type: 'select', label: 'Deal type', options: [
           { value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }
         ], default: 'in-negotiation' },
-        viewerRole: { type: 'select', label: 'Viewer role (viewerRole)', options: [
+        viewerRole: { type: 'select', label: 'Viewer role', options: [
           { value: 'buyer', label: 'Buyer' }, { value: 'seller', label: 'Seller' }
         ], default: 'buyer' },
-        dealState: { type: 'select', label: 'Deal state (dealState)', options: [
+        dealState: { type: 'select', label: 'Deal state', options: [
           { value: 'received', label: 'Received' }, { value: 'sent', label: 'Sent' },
           { value: 'declined', label: 'Declined' }, { value: 'expired', label: 'Expired' }
         ], default: 'received' },
-        isNew: { type: 'boolean', label: 'New flag (isNew)', default: true },
-        counterpartyAmount: { type: 'text', label: "Counterparty's amount (counterpartyAmount)", default: '$4,500' },
-        ownAmount: { type: 'text', label: 'Your own amount (ownAmount)', default: '$3,800' },
-        reservePrice: { type: 'text', label: 'Reserve Price (reservePrice)', default: '$4,800' },
-        acvEstimate: { type: 'text', label: 'ACV Estimate (acvEstimate)', default: '$4,600' },
-        reportUrl: { type: 'text', label: '"View Report" link (reportUrl)', default: '#' },
-        timeLeft: { type: 'text', label: 'Countdown text (timeLeft)', default: '45m Left' },
-        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h (timeLeftUrgent)', default: true }
+        isNew: { type: 'boolean', label: 'New flag', default: true },
+        counterpartyAmount: { type: 'text', label: "Counterparty's amount", default: '$4,500' },
+        ownAmount: { type: 'text', label: 'Your own amount', default: '$3,800' },
+        reservePrice: { type: 'text', label: 'Reserve Price', default: '$4,800' },
+        acvEstimate: { type: 'text', label: 'ACV Estimate', default: '$4,600' },
+        reportUrl: { type: 'text', label: '"View Report" link', default: '#' },
+        timeLeft: { type: 'text', label: 'Countdown text', default: '45m Left' },
+        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h', default: true }
       },
       mocks: {
         // 2026-09-01:这 5 个 mock 是 fragments/OfferCard/mock.js 里对应
@@ -2590,33 +2812,50 @@
           { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 03:40 PM' }
         ] }
       },
-      notes: '不是独立新组件,是给已经存在的 fragments/InformationDialog/InformationDialog.vue（点 OfferCard 上任意 hover CTA 打开的那个弹窗）单独建的一个 Playground 页面,方便像 OfferCard 一样单独调 Controls/切换 Mock 查看,不用每次都跑去 OfferCard 页面 hover+点按钮才能看到。\n\n没有改动其它任何组件——OfferCard 页面本身的 Controls/Mock/hover 打开 dialog 的行为和之前完全一样,这里只是多加了一个可以直接摆弄 InformationDialog 本身 props 的独立页面。\n\n因为这个组件靠 v-model(modelValue) 控制显示/隐藏,不像其它组件挂载了就直接可见,这里的 modelValue 控制默认给了 true,方便一进这个页面就能看到弹窗;想看"关闭"时是什么样(即什么都不显示)可以把这个控制关掉。\n\n5 个 Mock 覆盖 buyer/seller × in-negotiation/make-offer 的几个关键组合(Received 的两种输入面板形态、Make Offer 的 Sent/Received、一个 Declined 的关闭态),不是 OfferCard 那 10 个 Mock 的完整复刻——这个页面的重点是核对 Dialog 自己的内容/交互规则(金额区/历史气泡/输入面板/Footer),不是覆盖 OfferCard 那份状态矩阵,如果需要补全另外 5 种组合请告知。详细的 Figma 核实记录、"这里刻意不照抄 Figma 这个具体帧"的几处决定、还没有逐一核实的 9/10 状态,都记在 fragments/InformationDialog/notes.md,这里不重复。'
+      notes: 'This is not a standalone new component — it\'s a Playground page built specifically for the already-existing fragments/InformationDialog/InformationDialog.vue (the dialog that opens when you click any hover CTA on OfferCard), so it can have its own Controls/Mock switching just like OfferCard, instead of having to go to the OfferCard page and hover-then-click a button every time just to see it.\n\nNo other component has been changed — the OfferCard page\'s own Controls/Mocks and its hover-to-open-dialog behavior are exactly the same as before; this just adds an extra standalone page where InformationDialog\'s own props can be tweaked directly.\n\nBecause this component relies on v-model (modelValue) to control show/hide, unlike other components that are visible as soon as they mount, the modelValue control here defaults to true so the dialog is visible as soon as you land on the page; to see what it looks like "closed" (i.e. nothing shown), turn this control off.\n\nThe 5 Mocks cover a handful of key combinations across buyer/seller × in-negotiation/make-offer (the two input-panel shapes for Received, Sent/Received for Make Offer, and one Declined closed state) — this is not a full replica of OfferCard\'s 10 Mocks. This page\'s focus is checking the Dialog\'s own content/interaction rules (the amount area/history bubbles/input panel/Footer), not covering OfferCard\'s full state matrix — let me know if the other 5 combinations need to be filled in. The detailed Figma verification records, the handful of decisions where "this specific Figma frame was deliberately not copied directly," and the 9 out of 10 states that have not yet been individually verified are all recorded in fragments/InformationDialog/notes.md and not repeated here.'
     },
     OfferDashboard: {
-      name: 'Offer Dashboard（整页组装）', group: '页面组装 (Page Assembly)', order: 90, def: OfferDashboard,
+      name: 'Offer Dashboard', group: 'Page Assembly', order: 90, def: OfferDashboard,
       controls: {
         reset: { type: 'button', label: 'Reset dashboard' },
-        cardVersion: { type: 'segmented', label: 'Tile view card version (cardVersion, OfferCard)', options: [
+        // 2026-09-02 按你的要求挪到 reset 按钮正下方(配合下面 CSS 里
+        // 新加的 pg-control-field--switch,switcher 直接贴在 "Multi-dealer"
+        // 这行文字右边,一行放完)
+        isMultiDealer: { type: 'boolean', label: 'Multi-dealer', default: true },
+        cardVersion: { type: 'segmented', label: 'Tile view card version', options: [
           { value: 'v1', label: 'V1 — mileage line, optional gap', shortLabel: 'V1' },
           { value: 'v2', label: 'V2 — auction ID line, latest-move timestamp + gap', shortLabel: 'V2' }
         ], default: 'v2' },
-        isMultiDealer: { type: 'boolean', label: 'Multi-dealer account (isMultiDealer)', default: true },
-        buyingVehicleCount: { type: 'number', label: 'Vehicles shown on Buying (buyingVehicleCount, 1-5)', min: 1, max: 5, step: 1, default: 5 },
-        sellingVehicleCount: { type: 'number', label: 'Vehicles shown on Selling (sellingVehicleCount, 1-5)', min: 1, max: 5, step: 1, default: 5 },
+        // 2026-09-02 按 PM 反馈新增:In Negotiation 徽标之前不够明显
+        // (Make Offer 有描边、对比更强),PM 选定了"加一圈白色描边+投影"
+        // 这个方向,只透传给 tile 视图的 OfferCard,细节见
+        // fragments/OfferCard/OfferCard.vue 的 badgeStyle prop 注释。
+        cardBadgeStyle: { type: 'segmented', label: 'In Negotiation badge style', options: [
+          { value: 'default', label: 'Current', shortLabel: 'Current' },
+          { value: 'ring', label: 'Ring', shortLabel: 'Ring' }
+        ], default: 'default' },
+        // 2026-09-02 按你的要求新增:InformationDialog 的 v1/v2 切换,细节见
+        // fragments/InformationDialog/notes.md
+        dialogVersion: { type: 'segmented', label: 'Information Dialog version', options: [
+          { value: 'v1', label: 'V1 — badge on vehicle title', shortLabel: 'V1' },
+          { value: 'v2', label: 'V2 — badge on status row + info tooltip', shortLabel: 'V2' }
+        ], default: 'v1' },
+        buyingVehicleCount: { type: 'number', label: 'Vehicles shown on Buying', min: 1, max: 5, step: 1, default: 5 },
+        sellingVehicleCount: { type: 'number', label: 'Vehicles shown on Selling', min: 1, max: 5, step: 1, default: 5 },
         // 2026-08 按你的要求新增:只在 Offer Dashboard 才出现的 screensize
         // 滑块,模拟任意屏幕宽度看响应式效果,不用真的去拖浏览器窗口或者
         // 切全屏。这个不是传给组件的真实 prop(OfferDashboard 没有叫
         // screenWidth 的 prop),Harness 单独处理成 .pg-stage__resize-frame
         // 的宽度,渲染前会从要 v-bind 给组件的 props 里过滤掉,不会变成
         // 组件根元素上一个奇怪的 DOM attribute
-        screenWidth: { type: 'range', label: 'Screen width (screenWidth, px)', min: 768, max: 2560, step: 10, default: 1422, uiOnly: true }
+        screenWidth: { type: 'range', label: 'Screen width', min: 768, max: 2560, step: 10, default: 1422, uiOnly: true }
       },
       mocks: {
         defaultExample: { isMultiDealer: true, buyingVehicleCount: 5, sellingVehicleCount: 5 },
         singleDealerExample: { isMultiDealer: false, buyingVehicleCount: 5, sellingVehicleCount: 5 },
         fewVehiclesExample: { isMultiDealer: true, buyingVehicleCount: 3, sellingVehicleCount: 3 }
       },
-      notes: '这是整页的组装，不是任务清单里 order 10-34 要求的独立"模具"组件，是把前面这些已经核实过的 fragment（AppHeader/Breadcrumb/SidebarNav/OfferTabs/SearchInput/FilterChipGroup/OfferTableHeader/OfferTableRow/StatusChip/OfferTypeBadge/Pagination）按 Figma 主 "Offers" 页面的真实布局拼在一起，方便先看整体效果。\n\n2026-08 新增 vehicleCount（数字输入，1~12）：你要求"需要有一个显示多少vehicle的control"，加了这个 control 控制 table/tile 实际显示 12 条 mock 行里的前几条（`rowsLimited = rows.slice(0, vehicleCount)`），不是真实分页。SidebarNav 的 "Offers" 数量、OfferTabs 的 Buying 数量、FilterChipGroup 各 chip 的数量全部跟着 rowsLimited 动态变化（不受下面的 filter chip/Dealership 筛选影响，见下一段）。这是纯 UI 演示用途，不代表真实业务里"车辆数量"和这些字段有这样的计算关系。\n\n2026-08 按你的要求：点 filter chip / Dealership 下拉要真的过滤 table/tile 内容，不只是自己变色。FilterChipGroup 新增 filter-change 事件把选中状态 emit 出来存进 chipFilter；DealershipFilterDropdown 的 Apply/Reset 都会 emit apply（Reset emit 空数组），存进 dealerFilter，重新打开下拉时用 pre-selected 把当前状态带回去。真正渲染的 visibleRows 在 rowsLimited 基础上再套一层 matchesFilters：Dealership 是 AND；In negotiation/Make Offer 是 OR（两个都能选，命中任一个 offerType 就算数，这是 Figma 标注"多选"的自然结果）；New/Received/Sent 互斥单选对应行上的字段；Declined 目前没有任何行数据能匹配，选中后必然是空列表（是正确结果不是漏做）。筛选结果为空时会显示 "No vehicles match the current filters." 提示，不是空白一片。FilterChipGroup 自己 chip 上的数量故意没有跟着这个筛选结果联动。\n\n2026-08 按你的要求新增了两个 controls：1. Reset dashboard（按钮型控件，在面板最上方）——点击会让这个组件重新挂载一次，回到默认状态（Dealership 下拉收起、排序清空，子组件自己维护的状态比如搜索框文字/筛选 chip 选中态也一起重置）。2. isMultiDealer（布尔开关）——对照单经销商参照帧6837:16538核实后，现在统一透传给三处：FilterChipGroup（不显示Dealership chip）、OfferTableHeader（第二列标题变Auction ID、无排序）、每一行OfferTableRow（第二列主标题直接显示Auction ID，不显示Dealer Name）。点击"Dealership"chip仍会展开DealershipFilterDropdown（order 23），但单经销商模式下这颗chip本身已经不显示。[2026-08 已解决，见下一段] DealershipFilterDropdown 展开后的布局之前是紧贴筛选行下方往下排，现在已经改成参照真实原型做的真正悬浮浮层。\n\n2026-08 按你的要求，参照真实原型（本地文件 My-ACV--Dealer-filter-main/index.html，你说只看它的 V1 web 版本 dealership filter 部分，其他都是老旧内容）重做了 Dealership 弹层 + 交互：FilterChipGroup 用 ref="filterChipGroupRef" 暴露出 Dealership 按钮的真实 DOM 节点，这边用 getBoundingClientRect() 算出 dealerPopoverStyle（position:fixed + top/left）让浮层真正悬浮在按钮下方（对齐方向从原型的右对齐改成了左对齐，因为我们的按钮在筛选行最左边，右对齐会超出视口）。点击浮层外部（mousedown）、按 Escape 都会关闭，滚动/resize 时如果还开着会重新定位——这三个全局监听照抄原型的对应逻辑。应用后会在筛选行下面出现一个 .offer-dashboard__dealer-chip 摘要（浅蓝底描边，照抄原型 .dfc-chip），文字是"按字母排序第一个+逗号+N"，点击×只清空经销商筛选，不牵连其他 filter chip。DealershipFilterDropdown 组件本身也换了经销商名单（原型给的10个真实名字，之前 Figma 稿"Apple Chevrolet"重复两次已确认是设计稿遗留错误）、checkbox 画法（CSS方框+::after画勾，不再是SVG资源）、"Select all"⇄"Deselect all"切换、Apply Filter渐变（linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%)，原型CSS里的确切值），细节见该组件自己的notes.md。\n\n布局本身待你确认：1. Sidebar 和右侧内容区之间要不要一条竖向分隔线——Figma metadata 里没有看到对应的 divider 节点，没有加。2. 整页空白区域的背景色没有单独核实过，用了白色。3. 每个子组件各自的"待确认"项没有在这里重复列出，请分别切到各自的条目查看 Notes。\n\n2026-08 新增 tile version（对照 node 7432:68669/7432:69394）：内部加了 viewMode（\'table\'|\'tile\'，纯UI状态，默认table，不是外部prop）。搜索筛选那一行在两种视图下完全不变（Figma里表格版6837:16129和卡片版7432:68713共享同一个搜索筛选区节点，不是我猜的），只是下面表格/卡片网格部分切换。tile模式下按node 7432:70555核实的样子改成"Viewing N results"文字，卡片网格3列gap16px（来自两张卡片x坐标差363.33/16px反推），**没有**底部Pagination——tile版Figma帧本身就没有这个区域。视图切换的两个图标按钮（真实核实自node 7432:70565）本来只在tile版Figma帧里见过，为了让用户能在两个视图间来回切换，同样的按钮也放进了表格视图的顶部工具条——这一步是为了交互闭环做的合理推断，没有单独核实过表格视图顶部本来就有这个控件，待确认。rowsAsCards把已核实的表格行数据原样映射进OfferCard，primaryMessage/secondaryMessage现有mock没有真实数据不编造，直接留空。\n\n2026-08 按你的要求：去掉筛选chip下面的横线+重新核实整页垂直间距。对照新节点7448:9826（hidden=false，App Bar到表格的完整一页）重新量了从上到下每一段的真实间距：App Bar→Breadcrumb 24px、Breadcrumb→Tabs 14px、Tabs→搜索框 24px、搜索框→筛选chip行 16px、筛选chip行→Private Lane/Pagination行 20px纯留白（之前是16px+一条border-top分割线，这条线在Figma里根本不存在，已删掉改成margin-top:20px）、Private Lane/Pagination行→表头 16px（通过.offer-dashboard__table-top的padding-bottom实现，不是额外的空div）。已用getBoundingClientRect()实测浏览器渲染结果逐项核对，六个数值全部吻合，横线确认已消失。'
+      notes: 'This is the full-page assembly, not one of the standalone "mold" components required at order 10-34 in the task list — it\'s these already-verified fragments (AppHeader/Breadcrumb/SidebarNav/OfferTabs/SearchInput/FilterChipGroup/OfferTableHeader/OfferTableRow/StatusChip/OfferTypeBadge/Pagination) put together per the real layout of Figma\'s main "Offers" page, so the overall effect can be seen up front.\n\n2026-08 added vehicleCount (a number input, 1-12): you asked for "a control to show how many vehicles are displayed," so this control was added to control how many of the front rows out of the 12 mock rows are actually shown in table/tile (`rowsLimited = rows.slice(0, vehicleCount)`) — this is not real pagination. SidebarNav\'s "Offers" count, OfferTabs\' Buying count, and each FilterChipGroup chip\'s count all update dynamically along with rowsLimited (unaffected by the filter chip/Dealership filtering below — see the next paragraph). This is purely for UI demo purposes and does not represent any such real computed relationship between "vehicle count" and these fields in the actual business logic.\n\n2026-08 per your request: clicking a filter chip / the Dealership dropdown now actually filters the table/tile content, not just changing its own color. FilterChipGroup gained a filter-change event that emits the selected state, stored into chipFilter; DealershipFilterDropdown\'s Apply/Reset both emit apply (Reset emits an empty array), stored into dealerFilter, and re-opening the dropdown carries the current state back in via pre-selected. The actually-rendered visibleRows applies a further matchesFilters layer on top of rowsLimited: Dealership is AND; In negotiation/Make Offer is OR (both can be selected, and matching either offerType counts — this is the natural result of Figma\'s "multi-select" annotation); New/Received/Sent are mutually exclusive single-select against the corresponding row field; Declined currently has no row data that can match it, so selecting it necessarily yields an empty list (this is a correct result, not something left unimplemented). When the filtered result is empty, a "No vehicles match the current filters." message is shown instead of a blank area. The counts on FilterChipGroup\'s own chips were deliberately left not linked to this filtered result.\n\n2026-08 added two controls at your request: 1. Reset dashboard (a button-type control at the top of the panel) — clicking it remounts this component, returning it to its default state (Dealership dropdown collapsed, sorting cleared, and state maintained by child components themselves, such as the search box text/selected filter chips, is also reset). 2. isMultiDealer (a boolean toggle) — verified against the single-dealer reference frame 6837:16538, and now uniformly passed through to three places: FilterChipGroup (hides the Dealership chip), OfferTableHeader (second column title becomes Auction ID, no sorting), and every OfferTableRow (second column\'s main title shows Auction ID directly, no Dealer Name shown). Clicking the "Dealership" chip still expands DealershipFilterDropdown (order 23), but in single-dealer mode that chip itself is no longer shown. [Resolved as of 2026-08, see the next paragraph] The layout of the expanded DealershipFilterDropdown used to push content down directly below the filter row; it has now been changed to a genuine floating overlay modeled on the real prototype.\n\n2026-08 per your request, rebuilt the Dealership popover + interaction against the real prototype (the local files My-ACV--Dealer-filter-main/index.html — you said to reference only its V1 web dealership filter section, with everything else being outdated content): FilterChipGroup exposes the Dealership button\'s real DOM node via ref="filterChipGroupRef", and getBoundingClientRect() is used here to compute dealerPopoverStyle (position:fixed + top/left) so the overlay genuinely floats below the button (the alignment direction was changed from the prototype\'s right-aligned to left-aligned, because our button sits at the far left of the filter row and right-aligning would overflow the viewport). Clicking outside the overlay (mousedown) or pressing Escape both close it, and if it\'s still open during scroll/resize it repositions itself — these three global listeners are copied directly from the prototype\'s corresponding logic. Once applied, a .offer-dashboard__dealer-chip summary appears below the filter row (light-blue background with a border, copied from the prototype\'s .dfc-chip), with text reading "first name alphabetically + comma + N"; clicking × clears only the dealership filter, without affecting the other filter chips. The DealershipFilterDropdown component itself also changed its dealership list (the prototype\'s 10 real names — the earlier Figma mock\'s duplicate "Apple Chevrolet" has now been confirmed as a leftover design-file error), its checkbox rendering (a CSS box + a checkmark drawn with ::after, no longer an SVG asset), the "Select all" ⇄ "Deselect all" toggle, and the Apply Filter gradient (linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%), the exact value from the prototype\'s CSS) — see that component\'s own notes.md for details.\n\nFor you to confirm about the layout itself: 1. Whether there should be a vertical divider between the Sidebar and the right-hand content area — no corresponding divider node was seen in the Figma metadata, so none was added. 2. The background color of the page\'s empty areas was not independently verified; white was used. 3. Each sub-component\'s own "to confirm" items are not repeated here — please switch to each one\'s own entry to view its Notes.\n\n2026-08 added the tile version (verified against node 7432:68669/7432:69394): a viewMode (\'table\'|\'tile\', purely internal UI state, default table, not an external prop) was added internally. The search/filter row is completely unchanged between the two views (in Figma, the table version\'s 6837:16129 and the card version\'s 7432:68713 share the same search/filter-area node — this is not a guess on my part); only the table/card-grid section below switches. In tile mode, the "Viewing N results" text follows what was verified against node 7432:70555, the card grid is 3 columns with 16px gap (derived by working backward from the 363.33px x-coordinate difference between two cards, divided by 16px), and there is **no** Pagination at the bottom — the tile-version Figma frame simply doesn\'t have that area at all. The two view-toggle icon buttons (genuinely verified from node 7432:70565) were originally only ever seen in the tile-version Figma frame; to let the user switch back and forth between the two views, the same buttons were also placed into the table view\'s top toolbar — this step is a reasonable inference made to close the interaction loop, and it has not been independently verified that the table view\'s top originally had this control — still to confirm. rowsAsCards maps the already-verified table row data directly into OfferCard as-is; since the current mocks have no real data for primaryMessage/secondaryMessage, nothing was fabricated — they are simply left blank.\n\n2026-08 per your request: removed the horizontal line below the filter chips and re-verified the page\'s vertical spacing throughout. Against the new node 7448:9826 (hidden=false, a complete page from the App Bar down to the table), every gap from top to bottom was re-measured for real: App Bar → Breadcrumb 24px, Breadcrumb → Tabs 14px, Tabs → search box 24px, search box → filter chip row 16px, filter chip row → Private Lane/Pagination row 20px of pure whitespace (previously 16px plus a border-top divider line — that line simply doesn\'t exist in Figma, and has been removed in favor of margin-top:20px), Private Lane/Pagination row → table header 16px (implemented via .offer-dashboard__table-top\'s padding-bottom, not an extra empty div). This has all been checked item by item against actual measurements of the rendered browser output using getBoundingClientRect() — all six values match, and the horizontal line is confirmed gone.'
     }
   };
 
@@ -2817,7 +3056,7 @@
       '{{ fullscreenOpen ? \'✕ Exit full page\' : \'⛶ Expand to full page\' }}</button>' +
       '<div class="pg-header"><h1>{{ current.name }}</h1><span class="pg-header__meta">{{ current.group }} · order {{ current.order }}</span></div>' +
       '<div class="pg-mocks" v-if="Object.keys(current.mocks || {}).length">' +
-      '<span class="pg-mocks__label">Mock 示例：</span>' +
+      '<span class="pg-mocks__label">Mock examples:</span>' +
       '<button v-for="(mockObj, mockKey) in current.mocks" :key="mockKey" type="button" class="pg-mock-btn" @click="applyMock(mockObj)">{{ mockKey }}</button>' +
       '</div>' +
       '<div class="pg-workspace">' +
@@ -2830,7 +3069,7 @@
       '<aside class="pg-controls" :class="{ \'pg-controls--collapsed\': !controlsOpen }">' +
       '<div class="pg-controls__inner">' +
       '<div class="pg-controls__title">Controls</div>' +
-      '<div v-for="(def, key) in current.controls" :key="key" class="pg-control-field">' +
+      '<div v-for="(def, key) in current.controls" :key="key" class="pg-control-field" :class="{ \'pg-control-field--switch\': def.type === \'boolean\' }">' +
       '<button v-if="def.type === \'button\'" type="button" class="pg-control-button" @click="handleControlButton(key)">{{ def.label || key }}</button>' +
       '<template v-else>' +
       '<label>{{ def.label || key }}</label>' +
@@ -2851,10 +3090,10 @@
       '</template>' +
       '</div></div></aside>' +
       '</template>' +
-      '<p v-else class="pg-no-controls">这个组件没有可调的 controls（详见 Notes）。</p>' +
+      '<p v-else class="pg-no-controls">This component has no adjustable controls (see Notes for details).</p>' +
       '</div>' +
       '<details class="pg-notes" open>' +
-      '<summary>Notes / 待确认事项</summary>' +
+      '<summary>Notes / Open Questions</summary>' +
       '<pre>{{ current.notes }}</pre>' +
       '</details>' +
       '</main></div>'

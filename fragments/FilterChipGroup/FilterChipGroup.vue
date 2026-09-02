@@ -123,7 +123,7 @@
     <button type="button" class="filter-chip" :disabled="sentCount === 0" :class="{ 'filter-chip--selected': singleSelected === 'sent' }" @click="toggleSingleSelect('sent')">
       Sent{{ sentCount ? ` (${sentCount})` : '' }}
     </button>
-    <button type="button" class="filter-chip" :disabled="declinedCount === 0" :class="{ 'filter-chip--selected': singleSelected === 'declined' }" @click="toggleSingleSelect('declined')">
+    <button v-if="showDeclined" type="button" class="filter-chip" :disabled="declinedCount === 0" :class="{ 'filter-chip--selected': singleSelected === 'declined' }" @click="toggleSingleSelect('declined')">
       Declined{{ declinedCount ? ` (${declinedCount})` : '' }}
     </button>
 
@@ -158,7 +158,12 @@ const props = defineProps({
   sentCount: { type: [String, Number], default: 0 },
   sentSelected: { type: Boolean, default: false },
   declinedCount: { type: [String, Number], default: 0 },
-  declinedSelected: { type: Boolean, default: false }
+  declinedSelected: { type: Boolean, default: false },
+  // 2026-09-02 按你的要求新增:Selling tab 不应该有 Declined 这个筛选项
+  // (Buying 保持不变),默认 true 不影响任何已有用法——OfferDashboard 按
+  // 当前 tab 传 false 进来才会隐藏,不是靠 declinedCount===0 的 disabled
+  // 态(disabled 态还是灰着显示在那里,这次是要求整个隐藏,不是禁用)。
+  showDeclined: { type: Boolean, default: true }
 })
 const emit = defineEmits(['toggle-dealership', 'clear', 'filter-change', 'clear-dealer'])
 
@@ -191,6 +196,10 @@ watch(() => props.newCount, (v) => { if (Number(v) === 0 && singleSelected.value
 watch(() => props.receivedCount, (v) => { if (Number(v) === 0 && singleSelected.value === 'received') singleSelected.value = null })
 watch(() => props.sentCount, (v) => { if (Number(v) === 0 && singleSelected.value === 'sent') singleSelected.value = null })
 watch(() => props.declinedCount, (v) => { if (Number(v) === 0 && singleSelected.value === 'declined') singleSelected.value = null })
+// 2026-09-02 同样的防御:Declined chip 整个隐藏时(showDeclined变false,
+// 比如切到 Selling tab),如果它当时还是选中态,一起清掉,不然切回 Buying
+// tab 时会莫名其妙发现 Declined 还是选中的
+watch(() => props.showDeclined, (v) => { if (!v && singleSelected.value === 'declined') singleSelected.value = null })
 
 function handleClear() {
   negotiationSelectedLocal.value = false

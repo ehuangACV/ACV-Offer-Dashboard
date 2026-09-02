@@ -152,12 +152,15 @@ defineEmits(['update:viewMode', 'prev', 'next'])
    18px 贴着几乎撑满整个按钮,左右只剩約7px。这个节点量出来每个按钮是
    `padding: 10px 12px`(不是固定宽高),图标还是 18×18px 没变,整组
    两个按钮的真实尺寸是 100×36px。改成 padding 驱动尺寸(不再写死
-   width/height),让左右/上下留白对得上这个节点的数值。 */
+   width/height),让左右/上下留白对得上这个节点的数值。
+   【2026-09-02 再次更正】你要求左右 padding 再加 4px,从 12px 改成
+   16px——不再是 Figma 核实的数值,是你直接给的覆盖,上下 padding
+   (10px)没有变,只加宽了左右留白。 */
 .results-toolbar__view-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 12px;
+  padding: 10px 16px;
   background: #FFFFFF;
   border: 1px solid #D1D3D6;
   border-radius: 0;

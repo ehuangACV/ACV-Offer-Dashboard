@@ -1,5 +1,26 @@
 # InformationDialog — Notes
 
+## 2026-09-02 新增:两侧 Previous/Next + 车辆信息行的类型徽标
+对照 Figma node 7597:112866("Offers"整页 + 打开的 Dialog + 两侧的
+Previous/Next)新增两块内容,细节和取舍(为什么按钮贴视口边缘不是照抄
+Figma 像素、为什么文字改深色、为什么徽标用 ring 样式)都写在
+`InformationDialog.vue` 自己的 METADATA 和对应 CSS/computed 旁边的注释
+里,这里只记接口设计:
+
+- `hasPrev`/`hasNext`(布尔,默认 false)+ `prev`/`next` emit——"根据是否
+  有其他 deal 决定要不要显示"拆成两个独立方向的判断,不是"有列表就都
+  显示"。这个组件本身只负责"给了 true 就画按钮、点了就 emit",不知道
+  "列表"这个概念——真正算"排第几个""点了切到哪一条"这些逻辑在
+  [OfferDashboard](../OfferDashboard/notes.md),这个组件只是被动接收
+  结果。
+- 车辆信息行右上角新增类型徽标,复用 [ImageBadge](../ImageBadge/notes.md)
+  (和 OfferCard 图片上的徽标同一个组件),In Negotiation 用 ring 样式——
+  这正好是 Figma 这个节点里量到的真实样式(深色底+白色描边),不是为了
+  "统一"硬套,是这个节点本来就长这样。
+- 两个新按钮只在 `!inline` 时渲染,原因和整个弹层机制本身在 inline 模式
+  下被跳过一样(inline 是 Playground 专用,避免固定定位的元素挡住
+  Controls 面板)。
+
 ## 2026-09 整个组件按你给的参考模板重写(不再以 Figma 为准)
 你给了 `Information Dialog Template.html`(手写静态参考页,不是 Figma
 导出)+ `Offer States Logic for CC.md`(状态逻辑文档),原话:"Copy its
@@ -194,3 +215,158 @@ Figma 里有单独的帧,需要回来对照检查。
 跨组件文件生效,直接引用OfferCard的class名在这个组件里不会有任何样式,
 所以必须在这个组件自己的 `<style>` 里重复一份。如果以后 OfferCard 的
 按钮视觉改了,这里也要手动同步改一次。
+
+## 2026-09-02 追加:徽标去 ring、Previous/Next 改成贴对话框卡片本身
+
+**徽标不再传 `ring`。** 你反馈"in negotiation badge 在 dialog 上不需要
+shadow 和 stroke",而 `ring`(见 [ImageBadge](../ImageBadge/ImageBadge.vue))
+本身就是"深色底+白色描边"+ Card 场景下额外带投影的那个变体——直接不传
+`ring`(默认 `false`)就是最简单的做法,徽标退回默认的纯深色底样式,
+没有描边也没有投影,不需要在 `ImageBadge` 里加新变体。
+
+**Previous/Next 改成相对对话框卡片本身定位。** 最初(见上面
+"Previous/Next 按钮"那条记录)按钮是贴**视口**左右边缘(`left/right:
+24px`,在 `.info-dialog-overlay` 这个铺满全屏的容器上),理由是"不管
+对话框多宽、屏幕多大都不会跟对话框重叠"。你反馈"距离dialog太远",
+问题就出在这——视口边缘锚定的按钮离对话框卡片本身的距离取决于屏幕宽度,
+屏幕越宽,实际看到的间距越大,不是一个稳定的视觉间距。
+
+改法:新加一层 `.info-dialog__stage`(`position:relative;
+display:inline-flex`),只包住 `.info-dialog` 卡片本身(不包 overlay 的
+padding),把两个 nav 按钮也挪进这层里。按钮定位从 `left/right:24px`
+(相对 overlay/视口)改成 `right:100%`/`left:100%` + `margin-right:16px`/
+`margin-left:16px`(相对 `.info-dialog__stage`,因为 stage 收缩到刚好
+包住对话框卡片,`100%` 就等于卡片的左右边缘)——这样按钮永远紧贴对话框
+卡片外侧 16px,不再受视口宽度影响,也不用再单独担心"够不够宽不会撞到
+对话框"(反正就是贴着卡片边缘往外扩)。
+
+## 2026-09-02 追加:圆形底色改白、文字改 14px
+按你的要求:`.info-dialog__nav-circle` 背景从 `#E8E9EB`(浅灰)改成
+`#FFFFFF`(纯白);`.info-dialog__nav-label` 的 `font-size` 从 16px 改成
+14px。顺带把这行文字的 `line-height` 从 24px 调成 20px——保持和字号
+大致同一个比例(原来 24/16=1.5),不是你提的要求,是字号变小后行高
+跟着等比例收一点,纯排版上的顺手调整,如果不需要这个联动可以告诉我
+单独改回 24px。
+
+## 2026-09-02 追加:overlay 背板加深
+按你的要求,`.info-dialog-overlay` 的 `background` 从
+`rgba(0, 0, 0, 0.25)` 改成 `rgba(0, 0, 0, 0.5)`——只改了这一个数值,没有
+连带改别的东西。之前选 25% 是"背后页面内容大部分还看得见"这个考虑(见
+上面 Previous/Next 按钮那条记录里的说明),这次你直接要求加深,没有再
+纠结这个取舍,50% 只是一个"明显更深但还没到完全遮住背后内容"的居中
+数值,不是照抄哪个 Figma 帧量出来的精确值——如果你有具体想要的深浅
+程度,告诉我可以再调。
+
+## 2026-09-02 新增 dialogVersion('v1'/'v2'):徽标挪到状态行 + info 图标 + 说明弹层
+
+按你的要求新增一个 `dialogVersion` prop(默认 `'v1'`,不影响任何现有
+用法),由 `OfferDashboard` 的 Controls 统一切换,往下透传给
+`OfferCard.vue`/`OfferTableRow.vue`(它们自己不关心这个版本,只是转手
+传给各自嵌的 `InformationDialog`)。
+
+**v1(默认,现有样子不变)**:徽标(In Negotiation/Make Offer)贴在车辆
+标题区右上角(`.info-dialog__type-badge`),状态行(New/Received/...)
+维持原样,没有 info 图标。
+
+**v2**:
+1. 车辆标题区右上角**不再**渲染徽标(`v-if` 加了 `dialogVersion !== 'v2'`
+   这个条件)。
+2. 同一个徽标(还是复用 `ImageBadge`,颜色/变体逻辑完全不变)搬到状态行
+   `.info-dialog__chips` 最前面,排在 New/Received 等状态 chip 之前。
+3. 徽标内新增一个 info 图标按钮——`ImageBadge` 组件为此加了一个默认
+   `<slot />`(见 [ImageBadge/notes.md](../ImageBadge/notes.md)),点这个
+   图标(`@click.stop`,不会连带触发别的点击)会展开一张说明卡片
+   (`.info-dialog__type-guide`)。
+4. **说明卡片内容/样式和 dashboard 表格表头完全一样**(你明确要求"用
+   dashboard table 上的同样的tooltip")——参照的是
+   `OfferTableHeader.vue` 里点"Type"信息图标弹出的那张卡片:标题
+   "Type"、两个 section 各配一个 `OfferTypeBadge`(In Negotiation/Make
+   Offer)+ 两段说明文字("(6h limit) High bidder..."/"(24h limit)
+   Post-auction offer..."各自配一行 **Actions:** 文案)、右下角一个
+   "Got it" 按钮。因为 Vue SFC 的 `<style scoped>` 不会跨组件文件生效,
+   这里把 `.offer-table-header__guide*` 那套 CSS(背景 `#F5FBFF`、圆角
+   16px、三层阴影、20px padding/gap 等)原样复制成了
+   `.info-dialog__type-guide*`,不是重新设计——唯一变的是定位的绝对
+   数值(`top:calc(100% + 10px)`/箭头 `left:12px`),因为这次贴的锚点
+   (24px 高的徽标)和表头那个 20×20 的信息图标尺寸、出现位置不一样,
+   贴合到新锚点需要重新算,不代表卡片本身设计变了。点外部/按 Escape 关闭
+   的逻辑也是照抄 `OfferTableHeader.vue` 同一套 `mousedown`+`keydown`
+   监听惯例。
+5. **状态 chip 高度改成和徽标一致**——你要求"status chip match to type
+   badge 的高度",徽标(`ImageBadge`)高度是 24px,这几个状态 chip 原来
+   是 22px(`.info-dialog__chip` 的 `height:22px`)。新增了一个只在 v2
+   生效的 `.info-dialog__chip--v2` 修饰类,把 padding 从 `4px 8px` 改成
+   `5px 8px`(22px + 2px = 24px),不是直接改 `.info-dialog__chip` 本身
+   ——v1 的状态 chip 还是原来的 22px,不受影响。
+
+`.info-dialog__type-guide` 用的两段"Actions"说明文字和图标颜色数值都是
+从 `OfferTableHeader.vue` 已核实的真实文案照抄的(细节见该文件自己的
+METADATA),这里没有重新核实,只是换了个容器复用。
+
+**2026-09-02 追加:info 图标改成黑白**——最初直接照抄了
+`OfferTableHeader.vue` 那个蓝底白"i"的图标画法,你反馈"用黑白的,用你
+觉得合适的"。没有照搬"黑白"字面意思做纯黑/纯白两色,而是画了一个更简单
+的纯描边圆圈+实心"i"(一个小圆点当"i"的点,一个小圆角矩形当"i"的
+竖),`stroke`/`fill` 都用 `currentColor`——好处是图标颜色自动跟着徽标
+自己的文字颜色走:In Negotiation 徽标文字是白色,图标就是白色;Make
+Offer 徽标文字是深色,图标跟着变深色,不需要为两种徽标背景各自写一份
+颜色。这是我自己的设计判断,不是照抄哪个 Figma 节点的图标。
+
+实测发现 `currentColor` 一开始没生效,图标一直是黑色而不是徽标的白色/
+深色文字——原因是 `<button>` 元素浏览器默认不继承祖先的 `color`(有自己
+的 UA 默认文字色),给 `.info-dialog__type-info-btn` 补了一条显式
+`color: inherit`,实测确认之后图标颜色正确跟着徽标文字色变化了。
+
+## 2026-09-02 追加:Accept 按钮去掉"✓"、核实按钮字号
+按你的要求"把 Accept button 前面的 check 去掉":`.info-dialog__btn--filled`
+那个 Accept 按钮模板文字从 `✓ Accept {{ counterpartyAmount }}` 改成
+`Accept {{ counterpartyAmount }}`,不再带字面的"✓"字符。因为
+`OfferTableRow.vue` 的表格 hover CTA 里同一个 Accept 按钮当初是刻意
+照抄这里的"✓"写法(见该文件自己的注释),这次一并改掉,保持两处同步,
+不是只改了一半。`OfferCard.vue` 的 Accept 按钮本来就没有"✓"前缀,不用动。
+
+你还要求"所有 button 里的 font size 是 14px"——检查了这个组件里全部
+`<button>`(顶部关闭 ×、气泡下的 Accept/Decline、Footer 的 Close/Send
+Counter、新增的 Previous/Next、v2 徽标里的 info 图标按钮和说明弹层的
+Got it/关闭按钮),凡是有文字的都已经是 `font-size: 14px`,没有需要改的
+地方;图标按钮(顶部 ×、说明弹层的关闭 ×、v2 徽标内的 info 图标)本身
+没有文字,不受这条影响。同时确认了 `OfferCard.vue`/`OfferTableRow.vue`
+的 hover CTA 按钮也都已经是 14px。如果你看到某个具体按钮渲染出来不是
+14px,麻烦告诉我具体是哪一个,我再单独查。
+
+## 2026-09-02 追加:Previous/Next 文字颜色改回白色
+背板加深之后你反馈"previous 和 next font 太深,颜色也是白色"——
+`.info-dialog__nav-label` 的 `color` 从 `#212121` 改回 `#FFFFFF`。这正好
+和 Figma node 7597:112866 原本的白色文字一致,之前改成深色纯粹是因为
+当时背板只有 25% 黑、白字对比度不够(见上面第一次加 Previous/Next 按钮
+那条记录),现在背板已经加深到 50% 黑,白字不再有这个问题,所以直接
+改回去,不是重新核实 Figma 才改的。圆形按钮本身(`.info-dialog__nav-circle`)
+背景还是白色、图标还是深色 `#212121`,这两个没有变——用户这次反馈的
+"字体颜色"指的是圆形下方的文字标签("Previous"/"Next"这两个词),
+不是圆形按钮或箭头图标本身。
+
+## 2026-09-02 更正：In Negotiation 允许连续出价（不用等对方回复）
+你发了一张截图（卖家视角，dealState=sent，Buyer High Bid $14,500 /
+Seller Counter $15,500，历史里只有一条自己刚发的 Counter: $15,500
+气泡，没有输入面板），指出 In Negotiation 里买卖双方应该可以连续出多次
+price，只要遵守price rule（price rule就是"自己这次的出价要比自己上一次
+更靠近对方"——买家更高、卖家更低），不需要等对方先回复。之前的实现
+（inputPanel computed）只在 dealState==='received'（轮到你响应）时才显示
+Counter 输入面板，dealState==='sent'（等对方回复）时 In Negotiation
+完全没有输入面板——这是一个业务规则理解错误，不是这次改动之前的Figma
+核实差异。
+
+改法：inputPanel 简化成"只要不是 Make Offer，received/sent 都返回
+'counter'"。之所以不需要另外写一套"连续出价"的价格校验逻辑——
+"Between {{buyerAmount}} and {{sellerAmount}}"这条提示本来就是取"买家
+当前最新数字"到"卖家当前最新数字"之间，这两个 computed 只看
+viewerRole+ownAmount/counterpartyAmount，不看dealState是received还是
+sent，所以连续出价时这个范围天然就是"比自己上一次更靠近对方"，是同一套
+逻辑，不用重复写。Make Offer 完全不受影响：Received（卖家视角）还是
+只能Accept/Decline，Sent只有buyer能再抬价（"Raise Your Offer"），规则
+没有变。
+
+Split The Difference（showSplitDifference）跟着放宽：原来第3个条件是
+"dealState==='received'"，现在改成直接复用`inputPanel.value==='counter'`
+（等价于"是 In Negotiation 并且当前在走 counter 流程"，覆盖了新增的
+sent 场景），不再单独判断dealState。

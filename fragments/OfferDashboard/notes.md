@@ -1,5 +1,42 @@
 # OfferDashboard — Notes
 
+## 2026-09-02(第四次)新增 Dialog 两侧 Previous/Next 的跨行导航
+对照 Figma node 7597:112866,[InformationDialog](../InformationDialog/notes.md)
+新增了两侧的 Previous/Next 按钮 + `hasPrev`/`hasNext`/`prev`/`next` 这套
+接口,[OfferCard](../OfferCard/notes.md)/[OfferTableRow](../OfferTableRow/notes.md)
+把这套接口原样转发成自己的 `hasPrevDeal`/`hasNextDeal`/`prev-deal`/
+`next-deal`。真正"这是列表里第几个""点了切到哪一条"的逻辑只能在这里
+算——这是唯一同时知道"当前可见列表"(`rowsWithDealerMode`/`rowsAsCards`)
+和"每一行/张卡自己的 dialog 开关"的地方。
+
+- "根据是否有其他 deal 决定要不要显示"拆成两个独立方向:
+  `hasPrevDeal="i > 0"`、`hasNextDeal="i < 列表长度 - 1"`——排第一个时
+  没有 Previous、排最后一个时没有 Next,不是"有列表就两个都显示、没
+  列表就都不显示"。这是我按 UX best practice 做的判断,不是 Figma
+  或你直接给的规则,常见 lightbox/邮件详情页的上一条下一条都是这么做的。
+- `OfferTableRow.vue`/`OfferCard.vue` 用 `defineExpose({ openDialog,
+  closeDialog })` 露出两个方法(它们自己的 `dialogOpen` ref 本身没有
+  暴露给外面)。这边用 v-for 里的函数式 ref(`:ref="(el) =>
+  setTableRowRef(el, i)"`)把每个实例按当前渲染下标存进
+  `tableRowRefs`/`cardRefs` 两个数组——用函数式而不是普通字符串 ref,
+  是因为这两个列表长度会随筛选/搜索变化,函数式写法能在每次重新渲染时
+  把数组内容跟着刷新,不会留着筛选前的旧实例。
+- 点 Previous/Next 的处理是"关掉当前这一行的对话框 → `nextTick` →
+  打开相邻那一行的对话框"(`handleTablePrev`/`handleTableNext`/
+  `handleCardPrev`/`handleCardNext`),不是"同一个对话框直接换内容"——
+  后者需要把 `dialogOpen` 这个状态整个提到这一层,牵动面更大;"关了再开"
+  这个方案改动范围只在这三个文件内,效果上使用者感觉不到明显差异(两次
+  开关动画几乎连续播放)。
+
+## 2026-09-02(第三次)新增 cardBadgeStyle,透传 In Negotiation 徽标样式
+PM 反馈 In Negotiation 徽标不够明显,在 Playground 里出过两个概念稿后你
+选定了"Ring"(深色底+白色描边+投影),已经加进
+[OfferCard](../OfferCard/notes.md) 的真实 `badgeStyle` prop。这里新增
+`cardBadgeStyle` prop(默认 `'default'`),和 `cardVersion` 一样只透传给
+`rowsAsCards` 里每一张 tile 视图的 `OfferCard`,Controls 面板新增了对应
+的 "In Negotiation badge style" 分段控件。table 视图(`OfferTableRow`)
+没有改动。
+
 ## 2026-09-02(第二次)把工具条抽成独立组件 ResultsToolbar
 你给了 tile 视图("Viewing 5 results" + 切换按钮)和 table 视图
 ("🔑 Private Lane" + Pagination + 切换按钮)两张截图,指出这条工具条
@@ -459,3 +496,19 @@ Selling=seller),`dealState` 由表格行原有的4个布尔值折算,
 2. 整页空白区域的背景色没有单独核实过,用了白色。
 3. 每个子组件各自的"待确认"项没有在这里重复列出,请分别看各自的
    notes.md。
+
+## 2026-09-02 追加:新增 dialogVersion Controls 切换
+按你的要求新增 InformationDialog 的 v1/v2 切换 control(Controls 面板
+"Information Dialog version"),同时传给 table 视图(OfferTableRow)和
+tile 视图(OfferCard)里各自嵌的 InformationDialog,两种视图切出来的
+弹窗版本保持一致。细节(v2 具体改了什么)见
+[InformationDialog/notes.md](../InformationDialog/notes.md)。
+
+## 2026-09-02 追加：Selling tab 隐藏 Declined 筛选 chip
+按你的要求给 FilterChipGroup 新增了 showDeclined prop，传
+`activeMainTab !== 'selling'`——Buying tab 不变（还是原来的行为，包括
+declinedCount 目前固定是 0 这个已知限制），Selling tab 不再显示这个
+chip。细节见 [FilterChipGroup/notes.md](../FilterChipGroup/notes.md)。
+
+## 2026-09-02 Controls panel cleanup: concise labels, blue switches, reordered Multi-dealer
+Per your request, simplified every control label across the whole Playground by dropping the trailing "(propName, ComponentName)" annotations (e.g. "Tile view card version (cardVersion, OfferCard)" -> "Tile view card version") - this only affects component-playground.html's own REGISTRY/GROUPS UI text, not any real component prop names. Boolean toggle switches changed from orange (#F26522) to blue (#2F5BFF, matching the segmented-button active color already used in this Harness). Boolean fields now render label and switch on the same row (label left, switch right) via a new pg-control-field--switch modifier class, applied automatically whenever a control's type is 'boolean' - not just Multi-dealer. On this page specifically, isMultiDealer was moved to right after the reset button (was previously near the bottom of the list) and its label shortened from "Multi-dealer account" to just "Multi-dealer". The .pg-controls__title ("Controls" heading) was left untouched per your instruction; every other control label's font-weight went from 600 to 400 and font-size from 14px to 12px.

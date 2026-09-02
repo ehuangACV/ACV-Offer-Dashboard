@@ -127,10 +127,11 @@
     并给了 Figma node 1:21166(fileKey 4z7FK34Fgit7Fi9UxZu0za,"Offers -
     Negotiation" 文件)作为 CTA 具体样式的参照。这个节点真实渲染出来是
     一条 hover 态的表格行:Update 列的 StatusChip/日期被换成
-    "Counter"(outlined)+ "✓ Accept $26,000"(filled,渐变,字面的"✓"
-    字符,和 InformationDialog 的 Accept 按钮同一个写法)+ 一条 1px 分割
+    "Counter"(outlined)+ "Accept $26,000"(filled,渐变)+ 一条 1px 分割
     线 + 纯文字链接 "More Info"(颜色 #0061A5,和本项目已核实过的链接色
-    一致,不是 Figma token 给的 #004E7D)。
+    一致,不是 Figma token 给的 #004E7D)。【2026-09-02 更正】Accept 按钮
+    最初带了字面的"✓"字符前缀(和 InformationDialog 的 Accept 按钮同一个
+    写法),你直接要求去掉,现在两处都只是纯文字"Accept $X",不再有勾。
     - 哪个状态显示哪些按钮,直接复用 OfferCard 的 `hoverButtons` 状态表
       (buyer/seller × received/sent/declined,同一套 viewerRole+
       dealState 判断,新增了 `viewerRole` prop,由 `OfferDashboard.vue`
@@ -224,9 +225,10 @@
       <!-- 2026-09-02 按你的要求,参照 Figma node 1:21166(fileKey
            4z7FK34Fgit7Fi9UxZu0za,"Offers - Negotiation" 文件)新增:
            hover 这一行时,Update 列的 StatusChip/日期换成这一组 CTA——
-           小号 pill 按钮(outlined secondary + filled primary,filled
-           按钮带字面的 "✓" 字符,和 InformationDialog 的 Accept 按钮
-           同一个写法)+ 一条 1px 分割线 + 纯文字链接"More Info"。按钮组的
+           小号 pill 按钮(outlined secondary + filled primary)+ 一条
+           1px 分割线 + 纯文字链接"More Info"(filled 按钮最初带字面的
+           "✓" 字符前缀,和 InformationDialog 的 Accept 按钮同一个写法,
+           2026-09-02 你直接要求去掉,两处都改成纯文字)。按钮组的
            内容(哪个状态显示哪些按钮)直接复用 OfferCard 的 hoverButtons
            状态表(见下面 script,同一套 viewerRole+dealState 判断),
            只是这里按 Figma 参照的样子换成小号横排 pill,不是卡片那套
@@ -271,6 +273,11 @@
       :time-left="timeRemaining ? `${timeRemaining} Left` : ''"
       :time-left-urgent="timeLeftUrgent"
       :history="history"
+      :has-prev="hasPrevDeal"
+      :has-next="hasNextDeal"
+      :dialog-version="dialogVersion"
+      @prev="$emit('prev-deal')"
+      @next="$emit('next-deal')"
     />
   </div>
 </template>
@@ -325,14 +332,34 @@ const props = defineProps({
   viewerRole: { type: String, default: 'buyer' },
   reservePrice: { type: String, default: '$27,000' },
   reportUrl: { type: String, default: '#' },
-  history: { type: Array, default: () => [] }
+  history: { type: Array, default: () => [] },
+  // 2026-09-02 按 Figma node 7597:112866 新增,透传给 InformationDialog
+  // 的 hasPrev/hasNext——这一行是不是列表里第一/最后一行,OfferTableRow
+  // 自己不知道(只认识自己这一行),由外层(OfferDashboard 的
+  // rowsWithDealerMode)按当前行在可见列表里的位置算好了传进来。默认都是
+  // false,不传就是"没有其他 deal 可以切",不影响任何已有用法。
+  hasPrevDeal: { type: Boolean, default: false },
+  hasNextDeal: { type: Boolean, default: false },
+  // 2026-09-02 按你的要求新增,原样透传给 InformationDialog 的
+  // dialogVersion,细节见 fragments/InformationDialog/notes.md。
+  dialogVersion: { type: String, default: 'v1' }
 })
+// 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
+// Previous/Next 之后,原样往上 emit,交给真正维护列表的 OfferDashboard 处理
+defineEmits(['prev-deal', 'next-deal'])
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'
 )
 
 const dialogOpen = ref(false)
+// 2026-09-02 按 Figma node 7597:112866 新增,同 OfferCard.vue 的道理:
+// OfferDashboard 需要能"关掉这一行的对话框、打开相邻那一行的对话框",
+// 露出这两个方法作为唯一的外部控制入口,不直接暴露 dialogOpen 这个 ref。
+defineExpose({
+  openDialog: () => { dialogOpen.value = true },
+  closeDialog: () => { dialogOpen.value = false }
+})
 const isBuyer = computed(() => props.viewerRole === 'buyer')
 const isMakeOffer = computed(() => props.offerType === 'make-offer')
 // 表格行没有 statusExpired 这个字段(过期这个概念目前只在 OfferCard 的
@@ -376,7 +403,7 @@ const hoverButtons = computed(() => {
       return {
         buttons: [
           { label: 'Counter', style: 'outlined' },
-          { label: `✓ Accept ${props.receivedAmount}`, style: 'filled' }
+          { label: `Accept ${props.receivedAmount}`, style: 'filled' }
         ],
         infoLink: 'More Info'
       }

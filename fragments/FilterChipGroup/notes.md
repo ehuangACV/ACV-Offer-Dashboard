@@ -66,3 +66,15 @@ makeOfferSelectedLocal/singleSelected)任何一个变化都会 emit 一次
 3. 之前误把 hidden=true 的 "Counter Sent"(6847:49403)、"Declined"
    (6847:49404 hidden 版本)当成候选数据——现已确认它们是这两个可见 chip
    的旧版本,没有采用。
+
+## 2026-09-02 新增 showDeclined prop:Selling tab 不显示 Declined 筛选项
+按你的要求"selling 没有declined filter, buying 保持不变"新增
+showDeclined(默认 true,不影响任何已有用法)。之前 Declined chip 一直
+渲染,只是靠 declinedCount===0 变成灰色 disabled 态(见上面几条记录)——
+这次是"整个不显示",不是"禁用",所以在 Declined 按钮外层加了
+v-if="showDeclined"，不是复用 disabled 逻辑。OfferDashboard 按
+activeMainTab !== 'selling' 算这个值传进来，细节见
+[OfferDashboard/notes.md](../OfferDashboard/notes.md)。顺带补了一条
+watch：showDeclined 变 false 时如果 Declined 当时还是选中态（比如在
+Buying tab 选了 Declined 再切到 Selling），一起清掉选中态，跟已有的
+declinedCount===0 那条 watch 是同一个防御逻辑。
