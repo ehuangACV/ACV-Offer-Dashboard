@@ -477,3 +477,9 @@ Remove" 才 emit remove-from-list，由 OfferDashboard 接住真正过滤掉这�
 行）。其余 hover 按钮（Accept/Decline/Counter/View Details/Manage
 Offer/Raise Your Offer）行为完全没变，还是统一打开 InformationDialog。
 细节见 [RemoveFromListDialog/notes.md](../RemoveFromListDialog/notes.md)。
+
+## 2026-09-02 追加：新增 viewed 事件
+点 VDP 图片链接、或点任何一个会打开 InformationDialog 的 hover 按钮
+（Remove From List 除外），都 emit viewed 事件，由 OfferDashboard 接住
+标记这一张卡"看过了"，New 徽标/Buying-Selling/Offers 数字会跟着调整，
+细节见 [OfferDashboard/notes.md](../OfferDashboard/notes.md)。

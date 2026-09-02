@@ -301,6 +301,7 @@
               @prev-deal="handleTablePrev(i)"
               @next-deal="handleTableNext(i)"
               @remove-from-list="handleRemoveFromList(row.auctionId)"
+              @viewed="markSeen(row.auctionId)"
             />
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
               No vehicles match the current filters.
@@ -324,6 +325,7 @@
                 @prev-deal="handleCardPrev(i)"
                 @next-deal="handleCardNext(i)"
                 @remove-from-list="handleRemoveFromList(card.auctionId)"
+                @viewed="markSeen(card.auctionId)"
               />
             </div>
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
@@ -470,8 +472,10 @@ const header = {
 // buyingVehicleCount/sellingVehicleCount 演示用的截取数量影响),因为
 // 现实里"还有几个新的没处理"这个提醒不应该因为你在Playground里调小了
 // 演示行数就跟着变少。
-const buyingNewCount = computed(() => buyingRows.filter((r) => r.statusNew).length)
-const sellingNewCount = computed(() => sellingRows.filter((r) => r.statusNew).length)
+// 2026-09-02 按你的要求改成 isRowNew(r)(= statusNew 且没被标记"看过"),
+// 不再直接读 r.statusNew——看过的 deal 不该继续算在这两个数字里
+const buyingNewCount = computed(() => buyingRows.filter(isRowNew).length)
+const sellingNewCount = computed(() => sellingRows.filter(isRowNew).length)
 
 // 2026-08 按你的要求新增,对照节点 7432:69595 核实:"My ACV" nav tab 旁
 // 边的红点,只要 Buying/Selling 任意一边有 New 状态的 deal 就显示,复用
@@ -566,6 +570,23 @@ function handleRemoveFromList(auctionId) {
   removedAuctionIds.value = [...removedAuctionIds.value, auctionId]
 }
 
+// 2026-09-02 新增,按你的要求:点 VDP 图片链接、或打开 InformationDialog
+// (hover 按钮/Previous/Next 切到相邻那一行都算),都算"看过这笔 deal"
+// 了——New 标记应该消失,Buying/Selling tab 和 sidebar Offers 旁边的数字
+// 也要跟着减少。同 removedAuctionIds 一样,只是 session 内的本地状态
+// (按 auctionId 记,数组+整体替换让 ref 变化能被侵测到),不是真的改了
+// mock 数据里的 statusNew 字段——isRowNew() 是所有需要判断"这一行现在
+// 还算不算 New"的地方唯一的入口,不要绕开它直接读 row.statusNew。
+const seenAuctionIds = ref([])
+function markSeen(auctionId) {
+  if (!seenAuctionIds.value.includes(auctionId)) {
+    seenAuctionIds.value = [...seenAuctionIds.value, auctionId]
+  }
+}
+function isRowNew(row) {
+  return row.statusNew && !seenAuctionIds.value.includes(row.auctionId)
+}
+
 // In negotiation / Make Offer 是可以同时选中的(见 FilterChipGroup 的
 // Figma 标注:两者多选),选中任一个就要求 offerType 匹配其中之一;
 // New/Received/Sent 互斥单选,直接对应行上的字段;Declined 这几行 mock
@@ -646,8 +667,16 @@ const visibleRows = computed(() => rowsLimited.value.filter(matchesFilters))
 // "对应的 data 和 interaction 都是一样的",两边必须拿到同一个 viewerRole
 // (按当前 Buying/Selling tab 决定),不能各算各的。
 const viewerRoleValue = computed(() => (activeMainTab.value === 'selling' ? 'seller' : 'buyer'))
+// 2026-09-02 按你的要求,statusNew 这里跟着 isRowNew() 覆盖一次——点开过
+// 这一行(VDP/InformationDialog/Previous/Next)之后,表格 Update 列的
+// New chip 应该跟着消失,不能继续用 mock 数据里原始的 statusNew
 const rowsWithDealerMode = computed(() =>
-  visibleRows.value.map((row) => ({ ...row, isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value }))
+  visibleRows.value.map((row) => ({
+    ...row,
+    isMultiDealer: props.isMultiDealer,
+    viewerRole: viewerRoleValue.value,
+    statusNew: isRowNew(row)
+  }))
 )
 
 // 2026-09-02 按 Figma node 7597:112866 新增:InformationDialog 两侧的
@@ -676,20 +705,27 @@ function setCardRef(el, i) {
 // 那样需要把 dialogOpen 这个状态整个提到 OfferDashboard 层,牵动面更大,
 // 现在这个"关了再开"的方案改动范围只在这三个文件内,效果上使用者感觉不到
 // 明显差异(两次动画几乎连续播放)。
+// 2026-09-02 按你的要求,切到相邻这一行/张也算"看过"了,补一句
+// markSeen(用 rowsWithDealerMode/rowsAsCards 里对应下标的 auctionId,
+// 跟点击 hover 按钮打开 dialog 是同一个"看过"概念,不是分开的规则)
 function handleTablePrev(i) {
   tableRowRefs.value[i]?.closeDialog()
+  markSeen(rowsWithDealerMode.value[i - 1]?.auctionId)
   nextTick(() => tableRowRefs.value[i - 1]?.openDialog())
 }
 function handleTableNext(i) {
   tableRowRefs.value[i]?.closeDialog()
+  markSeen(rowsWithDealerMode.value[i + 1]?.auctionId)
   nextTick(() => tableRowRefs.value[i + 1]?.openDialog())
 }
 function handleCardPrev(i) {
   cardRefs.value[i]?.closeDialog()
+  markSeen(rowsAsCards.value[i - 1]?.auctionId)
   nextTick(() => cardRefs.value[i - 1]?.openDialog())
 }
 function handleCardNext(i) {
   cardRefs.value[i]?.closeDialog()
+  markSeen(rowsAsCards.value[i + 1]?.auctionId)
   nextTick(() => cardRefs.value[i + 1]?.openDialog())
 }
 
@@ -740,7 +776,9 @@ const rowsAsCards = computed(() => {
       timeLeftUrgent: rowTimeLeftUrgent(row.timeRemaining),
       viewerRole: role,
       dealState: rowToDealState(row),
-      isNew: row.statusNew,
+      // 2026-09-02 按你的要求改成 isRowNew(row),同 rowsWithDealerMode
+      // 的道理——点开过这张卡之后 New 徽标应该消失
+      isNew: isRowNew(row),
       counterpartyAmount: counterparty,
       ownAmount: own,
       ownTimestamp: row.updateDate,

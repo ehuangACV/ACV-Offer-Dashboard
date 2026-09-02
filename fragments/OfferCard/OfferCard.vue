@@ -290,6 +290,7 @@
       target="_blank"
       rel="noopener"
       class="offer-card__image"
+      @click="$emit('viewed')"
     >
       <img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">
       <div class="offer-card__image-badges">
@@ -414,11 +415,17 @@ const dialogOpen = ref(false)
 // 2026-09-02 新增,配合 "Remove From List" 按钮的二次确认框,细节见
 // fragments/RemoveFromListDialog/notes.md
 const removeDialogOpen = ref(false)
+// 2026-09-02 按你的要求:点 VDP 图片链接、或点任何一个会打开
+// InformationDialog 的 hover 按钮,都算"看过这笔 deal"了,emit 一个
+// viewed 事件,让 OfferDashboard 把这一行的 New 标记清掉(细节见
+// fragments/OfferDashboard/notes.md)。"Remove From List" 走的是另一个
+// 确认框,不算"看过",不 emit viewed。
 function handleHoverButtonClick(label) {
   if (label === 'Remove From List') {
     removeDialogOpen.value = true
   } else {
     dialogOpen.value = true
+    emit('viewed')
   }
 }
 // 2026-09-02 按 Figma node 7597:112866 新增:配合 InformationDialog 的
@@ -537,7 +544,7 @@ const props = defineProps({
 // 不再和其它按钮一样打开 InformationDialog,改成先弹这个二次确认框,
 // 点 "Yes, Remove" 才 emit 这个事件,由 OfferDashboard 接住真正做移除,
 // 细节见 fragments/RemoveFromListDialog/notes.md
-defineEmits(['prev-deal', 'next-deal', 'remove-from-list'])
+const emit = defineEmits(['prev-deal', 'next-deal', 'remove-from-list', 'viewed'])
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'

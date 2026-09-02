@@ -524,3 +524,27 @@ rows/mock.js 删数据，是显示层面的过滤，和 dealerFilter/chipFilter 
 是同一套机制。"Reset dashboard" 按钮本来就是让整个组件重新挂载，
 removedAuctionIds 这个本地 ref 会跟着自动清空，不需要单独处理。细节见
 [RemoveFromListDialog/notes.md](../RemoveFromListDialog/notes.md)。
+
+## 2026-09-02 追加：table Update 列的状态改成和 card 一致
+你发现 table 的 Update 列显示的状态和 card 上不符——原因是 Update 列
+之前直接把 statusNew/statusReceived/statusSent/statusDeclined 四个布尔
+值各自渲染成一个 StatusChip（同一行数据如果多个布尔值同时为 true，会
+同时冒出好几个chip），而 OfferCard 只认 dealState 这一个值（同一时间
+只显示一个状态chip）+ isNew。以 card 为准，改成和 OfferCard.vue 完全
+一样的 showNewChip/stateChipLabel 计算方式，都是从已有的 dealState
+（declined优先，再sent，再默认received）派生，不再让四个布尔值各自
+独立展示。细节见 [OfferTableRow.vue](../OfferTableRow/OfferTableRow.vue)
+对应 computed 旁边的注释。
+
+## 2026-09-02 新增：看过的deal，New 标记消失
+按你的要求：点 VDP 图片链接、或者打开 InformationDialog（hover 按钮，
+或用 Previous/Next 切到相邻一行/张），都算"看过"了，New 标记应该
+消失，Buying/Selling tab 和 sidebar "Offers" 旁边的数字也要跟着减少。
+新增 seenAuctionIds（session 内本地状态，按 auctionId 记，"Reset
+dashboard" 会跟着清空，逻辑和 removedAuctionIds 是同一套）+
+isRowNew(row) 这个唯一入口（= statusNew 且没被标记"看过"）。
+buyingNewCount/sellingNewCount、rowsWithDealerMode 的 statusNew、
+rowsAsCards 的 isNew 都改成读 isRowNew()，不再直接读 mock 数据里原始的
+statusNew。**没有改**FilterChipGroup 筛选行 New chip 旁边的数字
+（newCount）——你只提到 Buying/Selling 和 Offers tab 这两处，筛选行的
+数字如果也需要一起联动，请告诉我。

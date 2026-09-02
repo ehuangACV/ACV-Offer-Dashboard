@@ -172,6 +172,7 @@
       target="_blank"
       rel="noopener"
       class="offer-table-row__cell offer-table-row__cell--photo"
+      @click="$emit('viewed')"
     >
       <img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo">
     </a>
@@ -214,11 +215,9 @@
 
     <div class="offer-table-row__cell offer-table-row__cell--update">
       <div class="offer-table-row__update-default">
-        <div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">
-          <StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />
-          <StatusChip v-if="statusReceived" status="received" label="Received" />
-          <StatusChip v-if="statusSent" status="sent" label="Sent" />
-          <StatusChip v-if="statusDeclined" status="declined" label="Declined" />
+        <div class="offer-table-row__status-pills">
+          <StatusChip v-if="showNewChip" status="new" label="New" :show-icon="false" />
+          <StatusChip :status="dealState" :label="stateChipLabel" />
         </div>
         <div class="offer-table-row__update-date">{{ updateDate }}</div>
       </div>
@@ -251,7 +250,7 @@
           v-if="hoverButtons.infoLink"
           type="button"
           class="offer-table-row__cta-link"
-          @click="dialogOpen = true"
+          @click="handleHoverButtonClick(hoverButtons.infoLink)"
         >{{ hoverButtons.infoLink }}</button>
       </div>
     </div>
@@ -353,7 +352,7 @@ const props = defineProps({
 // Previous/Next 之后,原样往上 emit,交给真正维护列表的 OfferDashboard 处理
 // 2026-09-02 新增 remove-from-list,同 OfferCard.vue 的道理,细节见
 // fragments/RemoveFromListDialog/notes.md
-defineEmits(['prev-deal', 'next-deal', 'remove-from-list'])
+const emit = defineEmits(['prev-deal', 'next-deal', 'remove-from-list', 'viewed'])
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'
@@ -361,11 +360,15 @@ const offerTypeLabel = computed(() =>
 
 const dialogOpen = ref(false)
 const removeDialogOpen = ref(false)
+// 2026-09-02 按你的要求,同 OfferCard.vue 的道理:点 VDP 图片链接、或点
+// 任何一个会打开 InformationDialog 的 hover 按钮都算"看过"了,细节见
+// fragments/OfferDashboard/notes.md
 function handleHoverButtonClick(label) {
   if (label === 'Remove From List') {
     removeDialogOpen.value = true
   } else {
     dialogOpen.value = true
+    emit('viewed')
   }
 }
 // 2026-09-02 按 Figma node 7597:112866 新增,同 OfferCard.vue 的道理:
@@ -385,6 +388,21 @@ const dealState = computed(() => {
   if (props.statusDeclined) return 'declined'
   if (props.statusSent) return 'sent'
   return 'received'
+})
+// 2026-09-02 按你的要求:Update 列之前直接把 statusNew/statusReceived/
+// statusSent/statusDeclined 四个布尔值各自渲染成一个 StatusChip,同一行
+// 数据(比如 statusNew+statusReceived+statusSent 三个都是 true)会同时
+// 冒出三个 chip,和卡片视图(只认 dealState 这一个值,同一时间只显示一个
+// 状态chip)完全不一样,导致 table/card 看起来是两种不同的状态。以 card
+// 上的内容为准,这里改成和 OfferCard.vue 一模一样的 showNewChip/
+// stateChipLabel 计算方式(New 只能和 received/declined 搭配,状态本身
+// 永远只显示 dealState 对应的这一个 chip,不是四个布尔值各自独立展示)。
+const showNewChip = computed(() =>
+  props.statusNew && (dealState.value === 'received' || dealState.value === 'declined')
+)
+const stateChipLabel = computed(() => {
+  const labels = { received: 'Received', sent: 'Sent', declined: 'Declined' }
+  return labels[dealState.value] || ''
 })
 const timeLeftUrgent = computed(() =>
   !!props.timeRemaining && !/[hd]/.test(props.timeRemaining) && /m/.test(props.timeRemaining)

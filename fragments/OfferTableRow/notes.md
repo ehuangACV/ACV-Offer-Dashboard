@@ -331,3 +331,25 @@ history 数组最后一条事件的时间（比如 rowWithNewAndReceived 用卖�
 
 ## 2026-09-02 追加：Remove From List 按钮改接新的确认框
 同 OfferCard，细节见 [RemoveFromListDialog/notes.md](../RemoveFromListDialog/notes.md)。
+
+## 2026-09-02 追加：Update 列状态改成和 card 一致 + viewed 事件
+1. Update 列的状态chip改成用 showNewChip/stateChipLabel（从已有的
+   dealState 派生，和 OfferCard.vue 完全同一套逻辑），不再是
+   statusNew/statusReceived/statusSent/statusDeclined 四个布尔值各自
+   独立渲染——原来的写法在同一行多个布尔值同时为 true 时会同时显示
+   好几个chip，和 card（同一时间只显示一个状态chip）不一致。细节见
+   [OfferDashboard/notes.md](../OfferDashboard/notes.md)。
+2. 新增 viewed emit：点 VDP 图片链接、或点任何一个会打开
+   InformationDialog 的 hover 按钮（Remove From List 除外，它走另一个
+   确认框），都 emit 这个事件，由 OfferDashboard 接住标记"看过"，细节
+   同上。
+
+## 2026-09-02 修了一个真实bug：More Info 链接没有跟着 emit viewed
+加 viewed 事件时,只改了 hoverButtons.buttons 那个 v-for 循环里的按钮
+点击处理(改成 handleHoverButtonClick(btn.label)),漏了旁边单独一个的
+"More Info" 文字链接按钮——它有自己独立的 @click="dialogOpen = true",
+没有走 handleHoverButtonClick,点了不会 emit viewed。用浏览器实测"点开
+InformationDialog后New应该消失"这条功能时发现数字/chip 都没变才抓到
+这个漏洞。已经改成 handleHoverButtonClick(hoverButtons.infoLink)（这个
+label 永远是"More Info"，不会等于'Remove From List'，走的还是原来的
+dialogOpen=true 分支，只是多了 emit('viewed') 这一步）。

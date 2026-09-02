@@ -1606,10 +1606,10 @@
       hasNextDeal: { type: Boolean, default: false },
       dialogVersion: { type: String, default: 'v1' }
     },
-    emits: ['prev-deal', 'next-deal', 'remove-from-list'],
+    emits: ['prev-deal', 'next-deal', 'remove-from-list', 'viewed'],
     template:
       '<div class="offer-table-row">' +
-      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
+      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo" @click="$emit(\'viewed\')"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
       '<div class="offer-table-row__cell offer-table-row__cell--dealer">' +
       '<template v-if="isMultiDealer">' +
       '<div class="offer-table-row__dealer-name">{{ dealerName }}</div>' +
@@ -1635,18 +1635,16 @@
       '<div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>' +
       '<div class="offer-table-row__cell offer-table-row__cell--update">' +
       '<div class="offer-table-row__update-default">' +
-      '<div v-if="statusNew || statusReceived || statusSent || statusDeclined" class="offer-table-row__status-pills">' +
-      '<StatusChip v-if="statusNew" status="new" label="New" :show-icon="false" />' +
-      '<StatusChip v-if="statusReceived" status="received" label="Received" />' +
-      '<StatusChip v-if="statusSent" status="sent" label="Sent" />' +
-      '<StatusChip v-if="statusDeclined" status="declined" label="Declined" />' +
+      '<div class="offer-table-row__status-pills">' +
+      '<StatusChip v-if="showNewChip" status="new" label="New" :show-icon="false" />' +
+      '<StatusChip :status="dealState" :label="stateChipLabel" />' +
       '</div>' +
       '<div class="offer-table-row__update-date">{{ updateDate }}</div>' +
       '</div>' +
       '<div class="offer-table-row__ctas">' +
       '<button v-for="(btn, i) in hoverButtons.buttons" :key="i" type="button" class="offer-table-row__cta-btn" :class="`offer-table-row__cta-btn--${btn.style}`" @click="handleHoverButtonClick(btn.label)">{{ btn.label }}</button>' +
       '<span v-if="hoverButtons.infoLink" class="offer-table-row__cta-divider"></span>' +
-      '<button v-if="hoverButtons.infoLink" type="button" class="offer-table-row__cta-link" @click="dialogOpen = true">{{ hoverButtons.infoLink }}</button>' +
+      '<button v-if="hoverButtons.infoLink" type="button" class="offer-table-row__cta-link" @click="handleHoverButtonClick(hoverButtons.infoLink)">{{ hoverButtons.infoLink }}</button>' +
       '</div>' +
       '</div>' +
       '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" ' +
@@ -1660,7 +1658,7 @@
       var removeDialogOpen = ref(false);
       function handleHoverButtonClick(label) {
         if (label === 'Remove From List') { removeDialogOpen.value = true; }
-        else { dialogOpen.value = true; }
+        else { dialogOpen.value = true; ctx.emit('viewed'); }
       }
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
@@ -1672,6 +1670,15 @@
         if (props.statusDeclined) return 'declined';
         if (props.statusSent) return 'sent';
         return 'received';
+      });
+      // 2026-09-02 按你的要求,以 card 为准统一状态chip的显示规则,细节见
+      // 真实文件 fragments/OfferTableRow/OfferTableRow.vue 同名 computed 注释
+      var showNewChip = computed(function () {
+        return props.statusNew && (dealState.value === 'received' || dealState.value === 'declined');
+      });
+      var stateChipLabel = computed(function () {
+        var labels = { received: 'Received', sent: 'Sent', declined: 'Declined' };
+        return labels[dealState.value] || '';
       });
       var timeLeftUrgent = computed(function () {
         return !!props.timeRemaining && !/[hd]/.test(props.timeRemaining) && /m/.test(props.timeRemaining);
@@ -1711,7 +1718,8 @@
       return Object.assign({}, refs, {
         offerTypeLabel: offerTypeLabel, dialogOpen: dialogOpen, dealState: dealState,
         timeLeftUrgent: timeLeftUrgent, hoverButtons: hoverButtons,
-        removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick
+        removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick,
+        showNewChip: showNewChip, stateChipLabel: stateChipLabel
       });
     }
   });
@@ -1758,10 +1766,10 @@
       hasNextDeal: { type: Boolean, default: false },
       dialogVersion: { type: String, default: 'v1' }
     },
-    emits: ['prev-deal', 'next-deal', 'remove-from-list'],
+    emits: ['prev-deal', 'next-deal', 'remove-from-list', 'viewed'],
     template:
       '<div class="offer-card" :class="{ \'offer-card--v1\': hoverButtons.length > 0, \'offer-card--v1-btn-1\': hoverButtons.length === 1, \'offer-card--v1-btn-2\': hoverButtons.length === 2, \'offer-card--v1-btn-3\': hoverButtons.length === 3 }">' +
-      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
+      '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image" @click="$emit(\'viewed\')"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
       '<div class="offer-card__image-badges">' +
       '<ImageBadge v-if="offerType !== \'none\'" :variant="offerType" :label="offerTypeLabel" :ring="offerType === \'in-negotiation\' && badgeStyle === \'ring\'" />' +
       '<ImageBadge v-if="dealerName" variant="dealer" :label="dealerName" />' +
@@ -1807,7 +1815,7 @@
       var removeDialogOpen = ref(false);
       function handleHoverButtonClick(label) {
         if (label === 'Remove From List') { removeDialogOpen.value = true; }
-        else { dialogOpen.value = true; }
+        else { dialogOpen.value = true; ctx.emit('viewed'); }
       }
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
@@ -2202,14 +2210,14 @@
       '<template v-if="viewMode === \'table\'">' +
       '<OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
       '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
-      ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" :dialog-version="dialogVersion" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" />' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" :dialog-version="dialogVersion" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" @viewed="markSeen(row.auctionId)" />' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="visibleRows.length" :total-count="visibleRows.length" /></div>' +
       '</template>' +
       '<template v-else>' +
       '<div class="offer-dashboard__card-grid" :style="cardGridStyle">' +
       '<OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" :ref="function (el) { setCardRef(el, i); }" ' +
-      ':has-prev-deal="i > 0" :has-next-deal="i < rowsAsCards.length - 1" :dialog-version="dialogVersion" @prev-deal="handleCardPrev(i)" @next-deal="handleCardNext(i)" @remove-from-list="handleRemoveFromList(card.auctionId)" />' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsAsCards.length - 1" :dialog-version="dialogVersion" @prev-deal="handleCardPrev(i)" @next-deal="handleCardNext(i)" @remove-from-list="handleRemoveFromList(card.auctionId)" @viewed="markSeen(card.auctionId)" />' +
       '</div>' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '</template>' +
@@ -2309,8 +2317,8 @@
       // 2026-08 按你的要求更正:tab红点数字/sidebar Offers badge 不是
       // "总共几条",是"还有几个New(未处理)的",统计全部6条不受
       // buyingVehicleCount/sellingVehicleCount 演示用截取数量影响
-      var buyingNewCount = computed(function () { return buyingRows.filter(function (r) { return r.statusNew; }).length; });
-      var sellingNewCount = computed(function () { return sellingRows.filter(function (r) { return r.statusNew; }).length; });
+      var buyingNewCount = computed(function () { return buyingRows.filter(isRowNew).length; });
+      var sellingNewCount = computed(function () { return sellingRows.filter(isRowNew).length; });
       var hasAnyNewDeal = computed(function () { return buyingNewCount.value + sellingNewCount.value > 0; });
       var sidebar = computed(function () { return { activeItem: 'offers', offersCount: buyingNewCount.value + sellingNewCount.value }; });
       var tabs = computed(function () { return { activeTab: activeMainTab.value, buyingCount: buyingNewCount.value, sellingCount: sellingNewCount.value }; });
@@ -2358,6 +2366,18 @@
       function handleRemoveFromList(auctionId) {
         removedAuctionIds.value = removedAuctionIds.value.concat([auctionId]);
       }
+      // 2026-09-02 新增,按你的要求:看过(VDP/InformationDialog/
+      // Previous/Next)的 deal,New 标记要消失,细节见
+      // fragments/OfferDashboard/notes.md
+      var seenAuctionIds = ref([]);
+      function markSeen(auctionId) {
+        if (seenAuctionIds.value.indexOf(auctionId) === -1) {
+          seenAuctionIds.value = seenAuctionIds.value.concat([auctionId]);
+        }
+      }
+      function isRowNew(row) {
+        return row.statusNew && seenAuctionIds.value.indexOf(row.auctionId) === -1;
+      }
       function matchesFilters(row) {
         if (removedAuctionIds.value.indexOf(row.auctionId) !== -1) return false;
         if (dealerFilter.value.length && dealerFilter.value.indexOf(row.dealerName) === -1) return false;
@@ -2384,7 +2404,7 @@
       var viewerRoleValue = computed(function () { return activeMainTab.value === 'selling' ? 'seller' : 'buyer'; });
       var rowsWithDealerMode = computed(function () {
         return visibleRows.value.map(function (row) {
-          return Object.assign({}, row, { isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value });
+          return Object.assign({}, row, { isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value, statusNew: isRowNew(row) });
         });
       });
       // 2026-09-02 Figma 7597:112866 的 dialog Previous/Next 按钮需要跨
@@ -2400,18 +2420,22 @@
       }
       function handleTablePrev(i) {
         if (tableRowRefs.value[i]) tableRowRefs.value[i].closeDialog();
+        if (rowsWithDealerMode.value[i - 1]) markSeen(rowsWithDealerMode.value[i - 1].auctionId);
         nextTick(function () { if (tableRowRefs.value[i - 1]) tableRowRefs.value[i - 1].openDialog(); });
       }
       function handleTableNext(i) {
         if (tableRowRefs.value[i]) tableRowRefs.value[i].closeDialog();
+        if (rowsWithDealerMode.value[i + 1]) markSeen(rowsWithDealerMode.value[i + 1].auctionId);
         nextTick(function () { if (tableRowRefs.value[i + 1]) tableRowRefs.value[i + 1].openDialog(); });
       }
       function handleCardPrev(i) {
         if (cardRefs.value[i]) cardRefs.value[i].closeDialog();
+        if (rowsAsCards.value[i - 1]) markSeen(rowsAsCards.value[i - 1].auctionId);
         nextTick(function () { if (cardRefs.value[i - 1]) cardRefs.value[i - 1].openDialog(); });
       }
       function handleCardNext(i) {
         if (cardRefs.value[i]) cardRefs.value[i].closeDialog();
+        if (rowsAsCards.value[i + 1]) markSeen(rowsAsCards.value[i + 1].auctionId);
         nextTick(function () { if (cardRefs.value[i + 1]) cardRefs.value[i + 1].openDialog(); });
       }
       // tile 视图卡片:直接复用已核实的表格行数据,字段名对得上的原样映射。
@@ -2449,7 +2473,7 @@
             timeLeftUrgent: rowTimeLeftUrgent(row.timeRemaining),
             viewerRole: role,
             dealState: rowToDealState(row),
-            isNew: row.statusNew,
+            isNew: isRowNew(row),
             counterpartyAmount: counterparty,
             ownAmount: own,
             ownTimestamp: row.updateDate,
@@ -2489,7 +2513,7 @@
         setTableRowRef: setTableRowRef, setCardRef: setCardRef,
         handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
         handleCardPrev: handleCardPrev, handleCardNext: handleCardNext,
-        handleRemoveFromList: handleRemoveFromList
+        handleRemoveFromList: handleRemoveFromList, markSeen: markSeen
       };
     }
   });
