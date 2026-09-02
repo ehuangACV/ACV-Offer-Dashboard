@@ -360,18 +360,20 @@
         type="button"
         class="offer-card__hover-btn"
         :class="`offer-card__hover-btn--${btn.style}`"
-        @click="dialogOpen = true"
+        @click="handleHoverButtonClick(btn.label)"
       >{{ btn.label }}</button>
     </div>
 
     <!-- 2026-08 按你的要求:点卡片上任意一个 hover 按钮(不管是 Accept/
-         Decline/Counter/View Details/Manage Offer/Raise Your Offer/
-         Remove From List 哪一个)都打开这同一个 Information Dialog——
-         你明确说"我知道这不合理,先这样做,之后会调整",所以这里没有按
-         点了哪个按钮去区分打开不同内容,统一用 dialogOpen 这一个开关。
-         Dialog 内容(金额区/历史/输入面板/按钮)另外按 viewerRole+
-         offerType+dealState 算,和卡片是同一套模型,细节见
-         fragments/InformationDialog/notes.md。 -->
+         Decline/Counter/View Details/Manage Offer/Raise Your Offer)都
+         打开这同一个 Information Dialog——你明确说"我知道这不合理,先这样
+         做,之后会调整",所以这里没有按点了哪个按钮去区分打开不同内容,
+         统一用 dialogOpen 这一个开关。Dialog 内容(金额区/历史/输入面板/
+         按钮)另外按 viewerRole+offerType+dealState 算,和卡片是同一套
+         模型,细节见 fragments/InformationDialog/notes.md。
+         【2026-09-02 例外】"Remove From List" 已经从这条统一规则里单独
+         拆出来,不再打开这个 Dialog,细节见
+         fragments/RemoveFromListDialog/notes.md。 -->
     <InformationDialog
       v-model="dialogOpen"
       :photo-url="photoUrl"
@@ -397,6 +399,7 @@
       @prev="$emit('prev-deal')"
       @next="$emit('next-deal')"
     />
+    <RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit('remove-from-list')" />
   </div>
 </template>
 
@@ -405,8 +408,19 @@ import { ref, computed } from 'vue'
 import StatusChip from '../StatusChip/StatusChip.vue'
 import InformationDialog from '../InformationDialog/InformationDialog.vue'
 import ImageBadge from '../ImageBadge/ImageBadge.vue'
+import RemoveFromListDialog from '../RemoveFromListDialog/RemoveFromListDialog.vue'
 
 const dialogOpen = ref(false)
+// 2026-09-02 新增,配合 "Remove From List" 按钮的二次确认框,细节见
+// fragments/RemoveFromListDialog/notes.md
+const removeDialogOpen = ref(false)
+function handleHoverButtonClick(label) {
+  if (label === 'Remove From List') {
+    removeDialogOpen.value = true
+  } else {
+    dialogOpen.value = true
+  }
+}
 // 2026-09-02 按 Figma node 7597:112866 新增:配合 InformationDialog 的
 // Previous/Next,OfferDashboard 需要能"关掉这张卡的对话框、打开相邻那张
 // 卡的对话框",但 dialogOpen 这个 ref 本身没有对外暴露(只在这个组件内部
@@ -519,7 +533,11 @@ const props = defineProps({
 // 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
 // Previous/Next 之后,OfferCard 自己不知道"上一张/下一张是哪张卡",只是
 // 把这个意图原样往上 emit,交给真正维护列表的 OfferDashboard 处理
-defineEmits(['prev-deal', 'next-deal'])
+// 2026-09-02 新增 remove-from-list:"Remove From List" 这个 hover 按钮
+// 不再和其它按钮一样打开 InformationDialog,改成先弹这个二次确认框,
+// 点 "Yes, Remove" 才 emit 这个事件,由 OfferDashboard 接住真正做移除,
+// 细节见 fragments/RemoveFromListDialog/notes.md
+defineEmits(['prev-deal', 'next-deal', 'remove-from-list'])
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'

@@ -469,3 +469,11 @@ v1 只是保留下来对比用的旧版本，不该继续是默认值。这个�
 "没有人显式传 cardVersion"的场景（standalone Offer Card 页面 +
 OfferCardGallery），OfferDashboard 已经显式传值，不受影响，符合你说的
 "offer dashboard 里是对的先不做调整"。
+
+## 2026-09-02 追加：Remove From List 按钮改接新的确认框
+"Remove From List" 这个 hover 按钮不再和其它按钮一样打开
+InformationDialog，改成先弹 RemoveFromListDialog 二次确认（"Yes,
+Remove" 才 emit remove-from-list，由 OfferDashboard 接住真正过滤掉这一
+行）。其余 hover 按钮（Accept/Decline/Counter/View Details/Manage
+Offer/Raise Your Offer）行为完全没变，还是统一打开 InformationDialog。
+细节见 [RemoveFromListDialog/notes.md](../RemoveFromListDialog/notes.md)。

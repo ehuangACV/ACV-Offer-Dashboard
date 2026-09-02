@@ -512,3 +512,15 @@ chip。细节见 [FilterChipGroup/notes.md](../FilterChipGroup/notes.md)。
 
 ## 2026-09-02 Controls panel cleanup: concise labels, blue switches, reordered Multi-dealer
 Per your request, simplified every control label across the whole Playground by dropping the trailing "(propName, ComponentName)" annotations (e.g. "Tile view card version (cardVersion, OfferCard)" -> "Tile view card version") - this only affects component-playground.html's own REGISTRY/GROUPS UI text, not any real component prop names. Boolean toggle switches changed from orange (#F26522) to blue (#2F5BFF, matching the segmented-button active color already used in this Harness). Boolean fields now render label and switch on the same row (label left, switch right) via a new pg-control-field--switch modifier class, applied automatically whenever a control's type is 'boolean' - not just Multi-dealer. On this page specifically, isMultiDealer was moved to right after the reset button (was previously near the bottom of the list) and its label shortened from "Multi-dealer account" to just "Multi-dealer". The .pg-controls__title ("Controls" heading) was left untouched per your instruction; every other control label's font-weight went from 600 to 400 and font-size from 14px to 12px.
+
+## 2026-09-02 新增：Remove From List 二次确认 + 真正的移除逻辑
+按你的要求把 Figma 节点 1:31040 做成独立组件 RemoveFromListDialog，接线
+到 OfferCard/OfferTableRow 的 "Remove From List" 按钮上（只在
+Declined/Expired 状态出现，之前这个按钮和其它 hover 按钮一样统一打开
+InformationDialog，现在单独拆出来）。点 "Yes, Remove" 才真的
+@remove-from-list 到这一层，按 auctionId（每行唯一）记进新增的
+removedAuctionIds 数组，matchesFilters 里过滤掉——不是真的从
+rows/mock.js 删数据，是显示层面的过滤，和 dealerFilter/chipFilter 走的
+是同一套机制。"Reset dashboard" 按钮本来就是让整个组件重新挂载，
+removedAuctionIds 这个本地 ref 会跟着自动清空，不需要单独处理。细节见
+[RemoveFromListDialog/notes.md](../RemoveFromListDialog/notes.md)。

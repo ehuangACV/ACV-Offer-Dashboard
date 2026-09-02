@@ -300,6 +300,7 @@
               :dialog-version="dialogVersion"
               @prev-deal="handleTablePrev(i)"
               @next-deal="handleTableNext(i)"
+              @remove-from-list="handleRemoveFromList(row.auctionId)"
             />
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
               No vehicles match the current filters.
@@ -322,6 +323,7 @@
                 :dialog-version="dialogVersion"
                 @prev-deal="handleCardPrev(i)"
                 @next-deal="handleCardNext(i)"
+                @remove-from-list="handleRemoveFromList(card.auctionId)"
               />
             </div>
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
@@ -554,11 +556,22 @@ function handleClearFilters() {
   chipFilter.value = { negotiation: false, makeOffer: false, single: null }
 }
 
+// 2026-09-02 新增,配合 OfferCard/OfferTableRow 的 "Remove From List" 二次
+// 确认框(点 "Yes, Remove" 才会走到这里)——按 auctionId(每一行唯一)记住
+// 被移除的行,在 matchesFilters 里过滤掉,不需要真的从 rows/mock 数据里
+// 删除元素。用数组 + 整体替换(不是 Set.add 原地修改)是为了让 ref 的
+// 变化能被 Vue 侵测到,细节见 fragments/RemoveFromListDialog/notes.md。
+const removedAuctionIds = ref([])
+function handleRemoveFromList(auctionId) {
+  removedAuctionIds.value = [...removedAuctionIds.value, auctionId]
+}
+
 // In negotiation / Make Offer 是可以同时选中的(见 FilterChipGroup 的
 // Figma 标注:两者多选),选中任一个就要求 offerType 匹配其中之一;
 // New/Received/Sent 互斥单选,直接对应行上的字段;Declined 这几行 mock
 // 数据里没有对应字段,选中后必然没有匹配行(空列表是正确结果,不是bug)。
 function matchesFilters(row) {
+  if (removedAuctionIds.value.includes(row.auctionId)) return false
   if (dealerFilter.value.length && !dealerFilter.value.includes(row.dealerName)) {
     return false
   }

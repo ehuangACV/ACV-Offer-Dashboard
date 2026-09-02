@@ -520,6 +520,17 @@
      Logic for CC.md" 重写,不再以 Figma 为准) -- */
   .info-dialog-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 40px 16px; box-sizing: border-box; z-index: 1000; }
   .info-dialog-inline-shell { display: flex; justify-content: center; padding: 24px 0; }
+  .remove-list-dialog-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 40px 16px; box-sizing: border-box; z-index: 1000; }
+  .remove-list-dialog-inline-shell { display: flex; justify-content: center; padding: 24px 0; }
+  .remove-list-dialog { display: flex; flex-direction: column; width: 560px; flex-shrink: 0; border-radius: 16px; background: #FFFFFF; box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14); font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  .remove-list-dialog__header { display: flex; align-items: center; justify-content: space-between; height: 54px; padding: 0 24px; box-sizing: border-box; }
+  .remove-list-dialog__title { font-size: 20px; font-weight: 500; line-height: 30px; letter-spacing: 0.15px; color: #212121; }
+  .remove-list-dialog__close { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: none; background: none; color: #212121; cursor: pointer; }
+  .remove-list-dialog__body { padding: 16px 24px 0; }
+  .remove-list-dialog__desc { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.15px; color: #545454; }
+  .remove-list-dialog__footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 24px; }
+  .remove-list-dialog__keep-btn { display: flex; align-items: center; justify-content: center; height: 34px; padding: 0 16px; border: none; background: none; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #0061A5; white-space: nowrap; cursor: pointer; }
+  .remove-list-dialog__remove-btn { display: flex; align-items: center; justify-content: center; height: 46px; padding: 0 20px; border: none; border-radius: 100px; background: #BA1A1A; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #FFFFFF; white-space: nowrap; cursor: pointer; }
   .info-dialog { display: flex; flex-direction: column; gap: 14px; width: 520px; flex-shrink: 0; padding: 20px 22px 18px; border-radius: 12px; background: #FFFFFF; box-shadow: 0 0 0 1px #E8E9EB, 0 8px 10px rgba(0, 0, 0, 0.14), 0 3px 14px rgba(0, 0, 0, 0.12), 0 5px 5px rgba(0, 0, 0, 0.20); font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   .info-dialog__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .info-dialog__title { font-size: 20px; font-weight: 500; line-height: 28px; letter-spacing: 0.1px; color: #0E0E0F; }
@@ -1515,6 +1526,42 @@
     }
   });
 
+  // ---------- RemoveFromListDialog (order 43) ----------
+  // 2026-09-02 新增:OfferCard/OfferTableRow 都要用它,所以定义在它们
+  // 前面(同一个 var-hoisting 理由,见下面 OfferTableRow 挪位置的注释)。
+  var RemoveFromListDialog = defineComponent({
+    name: 'RemoveFromListDialog',
+    props: {
+      modelValue: { type: Boolean, default: false },
+      inline: { type: Boolean, default: false }
+    },
+    emits: ['update:modelValue', 'close', 'keep', 'remove'],
+    template:
+      '<teleport to="body" :disabled="inline">' +
+      '<div v-if="modelValue" :class="inline ? \'remove-list-dialog-inline-shell\' : \'remove-list-dialog-overlay\'" @click.self="handleOverlayClick">' +
+      '<div class="remove-list-dialog" role="dialog" aria-label="Remove From List">' +
+      '<div class="remove-list-dialog__header"><span class="remove-list-dialog__title">Remove From List?</span>' +
+      '<button type="button" class="remove-list-dialog__close" aria-label="Close" @click="handleClose">' +
+      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" /></svg>' +
+      '</button></div>' +
+      '<div class="remove-list-dialog__body"><p class="remove-list-dialog__desc">You will no longer see this auction in your list.</p></div>' +
+      '<div class="remove-list-dialog__footer">' +
+      '<button type="button" class="remove-list-dialog__keep-btn" @click="handleKeep">No, Keep It</button>' +
+      '<button type="button" class="remove-list-dialog__remove-btn" @click="handleRemove">Yes, Remove</button>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</teleport>',
+    setup: function (props, ctx) {
+      var emit = ctx.emit;
+      function handleClose() { emit('update:modelValue', false); emit('close'); }
+      function handleOverlayClick() { if (!props.inline) handleClose(); }
+      function handleKeep() { emit('update:modelValue', false); emit('keep'); }
+      function handleRemove() { emit('update:modelValue', false); emit('remove'); }
+      return { handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleKeep: handleKeep, handleRemove: handleRemove };
+    }
+  });
+
   // ---------- OfferTableRow (order 31) ----------
   // 2026-09-02:这个组件现在也用到 InformationDialog(见下面 hover CTA
   // 部分),所以整块挪到了 InformationDialog 定义之后——静态镜像文件里
@@ -1526,7 +1573,7 @@
   // 只是让 OfferTableRow 也满足同样的顺序要求,不是随意挪动。
   var OfferTableRow = defineComponent({
     name: 'OfferTableRow',
-    components: { StatusChip: StatusChip, OfferTypeBadge: OfferTypeBadge, InformationDialog: InformationDialog },
+    components: { StatusChip: StatusChip, OfferTypeBadge: OfferTypeBadge, InformationDialog: InformationDialog, RemoveFromListDialog: RemoveFromListDialog },
     props: {
       isMultiDealer: { type: Boolean, default: true },
       photoUrl: { type: String, default: '' },
@@ -1559,7 +1606,7 @@
       hasNextDeal: { type: Boolean, default: false },
       dialogVersion: { type: String, default: 'v1' }
     },
-    emits: ['prev-deal', 'next-deal'],
+    emits: ['prev-deal', 'next-deal', 'remove-from-list'],
     template:
       '<div class="offer-table-row">' +
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
@@ -1597,7 +1644,7 @@
       '<div class="offer-table-row__update-date">{{ updateDate }}</div>' +
       '</div>' +
       '<div class="offer-table-row__ctas">' +
-      '<button v-for="(btn, i) in hoverButtons.buttons" :key="i" type="button" class="offer-table-row__cta-btn" :class="`offer-table-row__cta-btn--${btn.style}`" @click="dialogOpen = true">{{ btn.label }}</button>' +
+      '<button v-for="(btn, i) in hoverButtons.buttons" :key="i" type="button" class="offer-table-row__cta-btn" :class="`offer-table-row__cta-btn--${btn.style}`" @click="handleHoverButtonClick(btn.label)">{{ btn.label }}</button>' +
       '<span v-if="hoverButtons.infoLink" class="offer-table-row__cta-divider"></span>' +
       '<button v-if="hoverButtons.infoLink" type="button" class="offer-table-row__cta-link" @click="dialogOpen = true">{{ hoverButtons.infoLink }}</button>' +
       '</div>' +
@@ -1607,8 +1654,14 @@
       ':counterparty-amount="receivedAmount" :own-amount="sentAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" ' +
       ':report-url="reportUrl" :time-left="timeRemaining ? `${timeRemaining} Left` : \'\'" :time-left-urgent="timeLeftUrgent" :history="history" ' +
       ':has-prev="hasPrevDeal" :has-next="hasNextDeal" :dialog-version="dialogVersion" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
+      '<RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit(\'remove-from-list\')" />' +
       '</div>',
     setup: function (props, ctx) {
+      var removeDialogOpen = ref(false);
+      function handleHoverButtonClick(label) {
+        if (label === 'Remove From List') { removeDialogOpen.value = true; }
+        else { dialogOpen.value = true; }
+      }
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
       });
@@ -1657,14 +1710,15 @@
       var refs = toRefs(props);
       return Object.assign({}, refs, {
         offerTypeLabel: offerTypeLabel, dialogOpen: dialogOpen, dealState: dealState,
-        timeLeftUrgent: timeLeftUrgent, hoverButtons: hoverButtons
+        timeLeftUrgent: timeLeftUrgent, hoverButtons: hoverButtons,
+        removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick
       });
     }
   });
 
   var OfferCard = defineComponent({
     name: 'OfferCard',
-    components: { StatusChip: StatusChip, InformationDialog: InformationDialog, ImageBadge: ImageBadge },
+    components: { StatusChip: StatusChip, InformationDialog: InformationDialog, ImageBadge: ImageBadge, RemoveFromListDialog: RemoveFromListDialog },
     props: {
       photoUrl: { type: String, default: '' },
       offerType: { type: String, default: 'in-negotiation' },
@@ -1704,7 +1758,7 @@
       hasNextDeal: { type: Boolean, default: false },
       dialogVersion: { type: String, default: 'v1' }
     },
-    emits: ['prev-deal', 'next-deal'],
+    emits: ['prev-deal', 'next-deal', 'remove-from-list'],
     template:
       '<div class="offer-card" :class="{ \'offer-card--v1\': hoverButtons.length > 0, \'offer-card--v1-btn-1\': hoverButtons.length === 1, \'offer-card--v1-btn-2\': hoverButtons.length === 2, \'offer-card--v1-btn-3\': hoverButtons.length === 3 }">' +
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
@@ -1743,12 +1797,18 @@
       '</div>' +
       '</div>' +
       '<div v-if="hoverButtons.length" class="offer-card__hover-buttons">' +
-      '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="dialogOpen = true">{{ btn.label }}</button>' +
+      '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="handleHoverButtonClick(btn.label)">{{ btn.label }}</button>' +
       '</div>' +
       '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" :dialog-version="dialogVersion" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
+      '<RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit(\'remove-from-list\')" />' +
       '</div>',
     setup: function (props, ctx) {
       var dialogOpen = ref(false);
+      var removeDialogOpen = ref(false);
+      function handleHoverButtonClick(label) {
+        if (label === 'Remove From List') { removeDialogOpen.value = true; }
+        else { dialogOpen.value = true; }
+      }
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
       });
@@ -1884,7 +1944,7 @@
       });
       var refs = toRefs(props);
       return Object.assign({}, refs, {
-        dialogOpen: dialogOpen,
+        dialogOpen: dialogOpen, removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick,
         offerTypeLabel: offerTypeLabel, hasCountdown: hasCountdown, hasStateChip: hasStateChip,
         showNewChip: showNewChip, stateChipLabel: stateChipLabel, messageLine1: messageLine1,
         messageLine1Timestamp: messageLine1Timestamp,
@@ -2142,14 +2202,14 @@
       '<template v-if="viewMode === \'table\'">' +
       '<OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
       '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
-      ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" :dialog-version="dialogVersion" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" />' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" :dialog-version="dialogVersion" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" />' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="visibleRows.length" :total-count="visibleRows.length" /></div>' +
       '</template>' +
       '<template v-else>' +
       '<div class="offer-dashboard__card-grid" :style="cardGridStyle">' +
       '<OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" :ref="function (el) { setCardRef(el, i); }" ' +
-      ':has-prev-deal="i > 0" :has-next-deal="i < rowsAsCards.length - 1" :dialog-version="dialogVersion" @prev-deal="handleCardPrev(i)" @next-deal="handleCardNext(i)" />' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsAsCards.length - 1" :dialog-version="dialogVersion" @prev-deal="handleCardPrev(i)" @next-deal="handleCardNext(i)" @remove-from-list="handleRemoveFromList(card.auctionId)" />' +
       '</div>' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '</template>' +
@@ -2292,7 +2352,14 @@
         dealerFilter.value = [];
         chipFilter.value = { negotiation: false, makeOffer: false, single: null };
       }
+      // 2026-09-02 新增,配合 Remove From List 二次确认框,细节见
+      // fragments/RemoveFromListDialog/notes.md
+      var removedAuctionIds = ref([]);
+      function handleRemoveFromList(auctionId) {
+        removedAuctionIds.value = removedAuctionIds.value.concat([auctionId]);
+      }
       function matchesFilters(row) {
+        if (removedAuctionIds.value.indexOf(row.auctionId) !== -1) return false;
         if (dealerFilter.value.length && dealerFilter.value.indexOf(row.dealerName) === -1) return false;
         var negotiation = chipFilter.value.negotiation, makeOffer = chipFilter.value.makeOffer, single = chipFilter.value.single;
         if (negotiation || makeOffer) {
@@ -2421,7 +2488,8 @@
         hasAnyNewDeal: hasAnyNewDeal,
         setTableRowRef: setTableRowRef, setCardRef: setCardRef,
         handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
-        handleCardPrev: handleCardPrev, handleCardNext: handleCardNext
+        handleCardPrev: handleCardPrev, handleCardNext: handleCardNext,
+        handleRemoveFromList: handleRemoveFromList
       };
     }
   });
@@ -2453,7 +2521,8 @@
       { key: 'ImageBadge', order: 39, name: 'Image Badge' },
       { key: 'OfferCard', order: 40, name: 'Offer Card' },
       { key: 'OfferCardGallery', order: 41, name: 'Offer Card — All States' },
-      { key: 'InformationDialog', order: 42, name: 'Information Dialog' }
+      { key: 'InformationDialog', order: 42, name: 'Information Dialog' },
+      { key: 'RemoveFromListDialog', order: 43, name: 'Remove From List Dialog' }
     ]},
     { title: 'Page Assembly', items: [
       { key: 'OfferDashboard', order: 90, name: 'Offer Dashboard' }
@@ -2813,6 +2882,14 @@
         ] }
       },
       notes: 'This is not a standalone new component — it\'s a Playground page built specifically for the already-existing fragments/InformationDialog/InformationDialog.vue (the dialog that opens when you click any hover CTA on OfferCard), so it can have its own Controls/Mock switching just like OfferCard, instead of having to go to the OfferCard page and hover-then-click a button every time just to see it.\n\nNo other component has been changed — the OfferCard page\'s own Controls/Mocks and its hover-to-open-dialog behavior are exactly the same as before; this just adds an extra standalone page where InformationDialog\'s own props can be tweaked directly.\n\nBecause this component relies on v-model (modelValue) to control show/hide, unlike other components that are visible as soon as they mount, the modelValue control here defaults to true so the dialog is visible as soon as you land on the page; to see what it looks like "closed" (i.e. nothing shown), turn this control off.\n\nThe 5 Mocks cover a handful of key combinations across buyer/seller × in-negotiation/make-offer (the two input-panel shapes for Received, Sent/Received for Make Offer, and one Declined closed state) — this is not a full replica of OfferCard\'s 10 Mocks. This page\'s focus is checking the Dialog\'s own content/interaction rules (the amount area/history bubbles/input panel/Footer), not covering OfferCard\'s full state matrix — let me know if the other 5 combinations need to be filled in. The detailed Figma verification records, the handful of decisions where "this specific Figma frame was deliberately not copied directly," and the 9 out of 10 states that have not yet been individually verified are all recorded in fragments/InformationDialog/notes.md and not repeated here.'
+    },
+    RemoveFromListDialog: {
+      name: 'Remove From List Dialog', group: 'Card View', order: 43, def: RemoveFromListDialog,
+      controls: {
+        modelValue: { type: 'boolean', label: 'Open', default: true }
+      },
+      mocks: {},
+      notes: 'New 2026-09-02: built from Figma node 1:31040 ("Dialog", file "Offers - Negotiation") as its own component. Opens when you click "Remove From List" on OfferCard or OfferTableRow (only shows up in the Declined/Expired closed states) — "Yes, Remove" actually filters the row out of the list, "No, Keep It" or the top-right × both just cancel with no change.\n\nBefore this, "Remove From List" behaved exactly like every other hover button (Accept/Decline/Counter/View Details/Manage Offer/Raise Your Offer) — clicking any of them opened the same InformationDialog (see the "you said this isn\'t right, do it this way for now" note in OfferCard/OfferTableRow\'s own notes.md). This is the one exception carved out of that rule; every other button\'s behavior is unchanged.\n\nWiring: OfferCard.vue/OfferTableRow.vue each got a local removeDialogOpen state plus a remove-from-list emit. The hover button click handler branches on btn.label === \'Remove From List\'; if it matches, it opens removeDialogOpen instead of the shared dialogOpen. This new dialog\'s @remove event is forwarded as the component\'s own remove-from-list emit, which OfferDashboard listens for and uses to actually filter that row out (by auctionId, added to a removedAuctionIds list checked inside matchesFilters) — see OfferDashboard\'s own notes for detail.\n\nColor/asset notes: the close icon reuses the exact same stroke-X path already used by InformationDialog\'s close button (viewBox 0 0 24 24, path "M6 6l12 12M18 6L6 18"), just at 24×24 instead of 20×20 (this node\'s icon container size). "No, Keep It" uses this project\'s already-established link color #0061A5 rather than the raw Figma token (#004E7D) — consistent with every other link/text button in this codebase that has made the same substitution. The overlay backdrop was not verified against this specific node (it only contains the card itself, no backdrop reference) — it directly reuses InformationDialog\'s current 50%-black backdrop for visual consistency across the app\'s modals, not a separately verified value.'
     },
     OfferDashboard: {
       name: 'Offer Dashboard', group: 'Page Assembly', order: 90, def: OfferDashboard,

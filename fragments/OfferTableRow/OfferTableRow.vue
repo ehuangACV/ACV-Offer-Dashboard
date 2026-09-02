@@ -234,7 +234,9 @@
            只是这里按 Figma 参照的样子换成小号横排 pill,不是卡片那套
            竖排大按钮——两种视图密度不同,不代表数据/交互不同,点任意一个
            都打开同一个 InformationDialog,用的是同一行数据,和卡片视图
-           点 hover CTA 打开的效果完全对应。 -->
+           点 hover CTA 打开的效果完全对应。【2026-09-02 例外】"Remove
+           From List" 已经单独拆出来,不再打开这个 Dialog,改成先弹二次
+           确认框,细节见 fragments/RemoveFromListDialog/notes.md。 -->
       <div class="offer-table-row__ctas">
         <button
           v-for="(btn, i) in hoverButtons.buttons"
@@ -242,7 +244,7 @@
           type="button"
           class="offer-table-row__cta-btn"
           :class="`offer-table-row__cta-btn--${btn.style}`"
-          @click="dialogOpen = true"
+          @click="handleHoverButtonClick(btn.label)"
         >{{ btn.label }}</button>
         <span v-if="hoverButtons.infoLink" class="offer-table-row__cta-divider" />
         <button
@@ -279,6 +281,7 @@
       @prev="$emit('prev-deal')"
       @next="$emit('next-deal')"
     />
+    <RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit('remove-from-list')" />
   </div>
 </template>
 
@@ -287,6 +290,7 @@ import { ref, computed } from 'vue'
 import StatusChip from '../StatusChip/StatusChip.vue'
 import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
 import InformationDialog from '../InformationDialog/InformationDialog.vue'
+import RemoveFromListDialog from '../RemoveFromListDialog/RemoveFromListDialog.vue'
 
 const props = defineProps({
   // 单经销商账号时不显示 dealerName,第二列改用 auctionId 做主标题
@@ -347,13 +351,23 @@ const props = defineProps({
 })
 // 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
 // Previous/Next 之后,原样往上 emit,交给真正维护列表的 OfferDashboard 处理
-defineEmits(['prev-deal', 'next-deal'])
+// 2026-09-02 新增 remove-from-list,同 OfferCard.vue 的道理,细节见
+// fragments/RemoveFromListDialog/notes.md
+defineEmits(['prev-deal', 'next-deal', 'remove-from-list'])
 
 const offerTypeLabel = computed(() =>
   props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation'
 )
 
 const dialogOpen = ref(false)
+const removeDialogOpen = ref(false)
+function handleHoverButtonClick(label) {
+  if (label === 'Remove From List') {
+    removeDialogOpen.value = true
+  } else {
+    dialogOpen.value = true
+  }
+}
 // 2026-09-02 按 Figma node 7597:112866 新增,同 OfferCard.vue 的道理:
 // OfferDashboard 需要能"关掉这一行的对话框、打开相邻那一行的对话框",
 // 露出这两个方法作为唯一的外部控制入口,不直接暴露 dialogOpen 这个 ref。

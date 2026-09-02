@@ -328,3 +328,6 @@ history 数组最后一条事件的时间（比如 rowWithNewAndReceived 用卖�
 "Today, 04:00 PM"，但实际上这笔单子是上个月的事，不是今天）。这不是
 这次改动本身要处理的问题，是这一行数据本来就有的日期不一致，需要你
 确认 updateDate 到底该写"Mon, Aug 24"还是别的值，我没有擅自改。
+
+## 2026-09-02 追加：Remove From List 按钮改接新的确认框
+同 OfferCard，细节见 [RemoveFromListDialog/notes.md](../RemoveFromListDialog/notes.md)。
