@@ -77,6 +77,6 @@ export default {
   updateDate: {
     type: 'text',
     label: 'Update column date (updateDate)',
-    default: 'Today'
+    default: 'Today, 08:45 AM'
   }
 }

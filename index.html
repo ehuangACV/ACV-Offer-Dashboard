@@ -449,9 +449,9 @@
   .results-toolbar__view-toggle-btn--active { background: #F5F5F5; }
 
   /* -- ImageBadge -- */
-  .image-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; border-radius: 4px; box-sizing: border-box; }
+  .image-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; border-radius: 8px; box-sizing: border-box; }
   .image-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; padding: 3px 6px; }
-  .image-badge--in-negotiation-ring { border: 1px solid #FFFFFF; padding: 2px 5px; }
+  .image-badge--in-negotiation-ring { padding: 3px 6px; outline: 1px solid #FFFFFF; outline-offset: 0; }
   .image-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; padding: 2px 6px; }
   .image-badge--dealer { backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; text-align: right; padding: 3px 10px; }
 
@@ -1544,7 +1544,7 @@
       statusReceived: { type: Boolean, default: true },
       statusSent: { type: Boolean, default: false },
       statusDeclined: { type: Boolean, default: false },
-      updateDate: { type: String, default: 'Today' },
+      updateDate: { type: String, default: 'Today, 08:45 AM' },
       // 默认值要和 sentAmount/receivedAmount 的默认值($26,000/$26,800,
       // 抄自 rowWithNewAndReceived 这行 Buying tab 的真实数据)保持同一个
       // 视角,否则默认打开的 Dialog 会显示反过来,细节见
@@ -1691,7 +1691,7 @@
       // 2026-09 按你的要求新增 "card 版本",v1 是原有行为,v2 是新给的
       // 规则(去掉mileage行用auctionId顶替+两行文案新规则),细节见
       // fragments/OfferCard/notes.md
-      cardVersion: { type: String, default: 'v1' },
+      cardVersion: { type: String, default: 'v2' },
       counterpartyTimestamp: { type: String, default: '' },
       // 2026-09-02 按 PM 反馈新增(正式功能,不再是 Playground 专用概念
       // 稿)——'default'/'ring',只影响 offerType==='in-negotiation' 时
@@ -1915,16 +1915,16 @@
       // 没有真正的 import,只能手动内联同一份数值——按同一份 Number rules
       // 重新生成同步过,细节见 OfferCard/mock.js 文件头注释。
       var buyerItems = [
-        { label: 'In Negotiation · Received — seller just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM' } },
+        { label: 'In Negotiation · Received — seller just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM', counterpartyTimestamp: 'Yesterday, 06:30 PM' } },
         { label: 'In Negotiation · Sent — you just countered, waiting on seller', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM' } },
         { label: 'Make Offer · Sent — you just sent an offer, waiting on seller', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM' } },
         { label: 'Declined — seller declined your offer, closed', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000' } },
         { label: 'Expired — timed out with no action, closed', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '' } }
       ];
       var sellerItems = [
-        { label: 'In Negotiation · Received — buyer just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM' } },
+        { label: 'In Negotiation · Received — buyer just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM', counterpartyTimestamp: 'Today, 08:12 AM' } },
         { label: 'In Negotiation · Sent — you just countered, waiting on buyer', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM' } },
-        { label: 'Make Offer · Received — buyer just sent an offer, waiting on you', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000' } },
+        { label: 'Make Offer · Received — buyer just sent an offer, waiting on you', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000', counterpartyTimestamp: 'Today, 12:15 PM' } },
         { label: 'Declined — you declined the buyer\'s offer, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200' } },
         { label: 'Expired — timed out with no action, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '' } }
       ];
@@ -1945,7 +1945,7 @@
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '264578', offerType: 'in-negotiation',
       vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '3h 15m',
       acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$26,800',
-      statusNew: true, statusReceived: true, updateDate: 'Today',
+      statusNew: true, statusReceived: true, updateDate: 'Today, 09:00 AM',
       reservePrice: '$27,000', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'bid', amount: '$26,000', timestamp: 'Yesterday, 03:00 PM' },
         { speaker: 'seller', kind: 'counter', amount: '$26,800', timestamp: 'Today, 09:00 AM' }
@@ -1959,7 +1959,7 @@
       // 不变——这就是你给的原话例子(reserve $5,500 / Highest Bid $4,500
       // / Seller Counter $5,000)。
       acvEstimate: '$4,700', sentAmount: '$4,500', receivedAmount: '$5,000',
-      statusNew: false, statusReceived: false, updateDate: 'Today',
+      statusNew: false, statusReceived: false, updateDate: 'Today, 08:00 AM',
       reservePrice: '$5,500', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'bid', amount: '$4,500', timestamp: 'Yesterday, 10:00 AM' },
         { speaker: 'seller', kind: 'counter', amount: '$5,000', timestamp: 'Today, 08:00 AM' }
@@ -1982,7 +1982,7 @@
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/hyundai-kona.jpg', dealerName: 'Classic Honda', auctionId: '118845', offerType: 'in-negotiation',
       vehicleTitle: '2022 Hyundai Kona', mileage: '9,870 miles', vin: '118845', timeRemaining: '3h 55m',
       acvEstimate: '$19,600', sentAmount: '$19,200', receivedAmount: '$19,800',
-      statusNew: true, statusReceived: true, updateDate: 'Today',
+      statusNew: true, statusReceived: true, updateDate: 'Today, 07:00 AM',
       reservePrice: '$20,000', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'bid', amount: '$19,200', timestamp: 'Yesterday, 09:00 AM' },
         { speaker: 'seller', kind: 'counter', amount: '$19,800', timestamp: 'Today, 07:00 AM' }
@@ -1994,7 +1994,7 @@
       acvEstimate: '$28,000', sentAmount: '$28,300', receivedAmount: '--',
       // 2026-09 修正+补状态多样性:receivedAmount 是'--'(对方还没回复),
       // 标 statusReceived 和数据矛盾,改成 statusSent(见 OfferTableRow/notes.md)
-      statusNew: false, statusReceived: false, statusSent: true, updateDate: 'Today',
+      statusNew: false, statusReceived: false, statusSent: true, updateDate: 'Today, 11:00 AM',
       reservePrice: '$29,500', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'offer', amount: '$28,300', timestamp: 'Today, 11:00 AM' }
       ]
@@ -2003,7 +2003,7 @@
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/toyota-matrix.jpg', dealerName: 'DriveTime Denver', auctionId: '348852', offerType: 'in-negotiation',
       vehicleTitle: '2010 Toyota Matrix', mileage: '121,760 miles', vin: '348852', timeRemaining: '4h 50m',
       acvEstimate: '$4,800', sentAmount: '$5,200', receivedAmount: '$5,000',
-      statusNew: true, statusReceived: false, updateDate: 'Today',
+      statusNew: true, statusReceived: false, updateDate: 'Today, 07:00 AM',
       reservePrice: '$5,400', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'bid', amount: '$4,800', timestamp: 'Yesterday, 08:00 AM' },
         { speaker: 'seller', kind: 'counter', amount: '$5,200', timestamp: 'Today, 06:30 AM' },
@@ -2014,7 +2014,7 @@
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/ford-escape-titanium-red.jpg', dealerName: 'Baxter Auto Mall', auctionId: '615729', offerType: 'make-offer',
       vehicleTitle: '2014 Ford Escape Titanium', mileage: '88,410 miles', vin: '615729', timeRemaining: '9h 15m',
       acvEstimate: '$11,000', sentAmount: '--', receivedAmount: '$10,200',
-      statusNew: false, statusReceived: true, updateDate: 'Today',
+      statusNew: false, statusReceived: true, updateDate: 'Today, 06:00 AM',
       reservePrice: '$11,000', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'offer', amount: '$10,200', timestamp: 'Today, 06:00 AM' }
       ]
@@ -2027,7 +2027,7 @@
       // $1,000但整体离reserve更远。
       acvEstimate: '$15,200', sentAmount: '$15,500', receivedAmount: '$14,500',
       // 2026-08 按你的要求:单独演示 New/Received/Sent 三个状态同时出现
-      statusNew: true, statusReceived: true, statusSent: true, statusDeclined: false, updateDate: 'Today',
+      statusNew: true, statusReceived: true, statusSent: true, statusDeclined: false, updateDate: 'Today, 08:00 AM',
       reservePrice: '$18,000', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'bid', amount: '$14,500', timestamp: 'Yesterday, 02:00 PM' },
         { speaker: 'seller', kind: 'counter', amount: '$15,500', timestamp: 'Today, 08:00 AM' }
@@ -2037,7 +2037,7 @@
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/dodge-charger-sxt.jpg', dealerName: 'Asbury Automotive Group', auctionId: '837465', offerType: 'make-offer',
       vehicleTitle: '2016 Dodge Charger SXT', mileage: '96,200 miles', vin: '837465', timeRemaining: '18h 5m',
       acvEstimate: '$12,500', sentAmount: '--', receivedAmount: '$11,400',
-      statusNew: false, statusReceived: false, updateDate: 'Today',
+      statusNew: false, statusReceived: false, updateDate: 'Today, 05:00 AM',
       reservePrice: '$12,500', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'offer', amount: '$11,400', timestamp: 'Today, 05:00 AM' }
       ]
@@ -2051,7 +2051,7 @@
       // 2026-09 修正(同 rowJeepWrangler 的道理):receivedAmount 之前是
       // '--',statusReceived/statusSent 都是false会落到默认'received',
       // 和"卖家已经报价、还没等到买家回复"这个数据矛盾,改成statusSent
-      statusNew: true, statusReceived: false, statusSent: true, updateDate: 'Today',
+      statusNew: true, statusReceived: false, statusSent: true, updateDate: 'Today, 08:00 AM',
       reservePrice: '$9,500', reportUrl: '#', history: [
         { speaker: 'buyer', kind: 'bid', amount: '$8,000', timestamp: 'Yesterday, 03:00 PM' },
         { speaker: 'seller', kind: 'counter', amount: '$8,700', timestamp: 'Today, 08:00 AM' }
@@ -2063,7 +2063,7 @@
       isMultiDealer: false, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '264578', offerType: 'in-negotiation',
       vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', timeRemaining: '3h 15m',
       acvEstimate: '$25,000', sentAmount: '$26,000', receivedAmount: '$26,800',
-      statusNew: true, statusReceived: true, updateDate: 'Today'
+      statusNew: true, statusReceived: true, updateDate: 'Today, 09:00 AM'
     }
   };
   var VIEW_TOGGLE_LIST_ICON =
@@ -2582,7 +2582,7 @@
         receivedAmount: { type: 'text', label: 'Received amount, can be "--"', default: '$26,800' },
         statusNew: { type: 'boolean', label: 'Show New in Update column', default: true },
         statusReceived: { type: 'boolean', label: 'Show Received in Update column', default: true },
-        updateDate: { type: 'text', label: 'Update column date', default: 'Today' }
+        updateDate: { type: 'text', label: 'Update column date', default: 'Today, 08:45 AM' }
       },
       mocks: rowMocks,
       notes: 'Verified (hidden=false, checked against three real row instances): the photo is 80px (the image itself is 64x64, corner radius wasn\'t obtained from Figma as a specific pixel value, padding 8px); Dealer Name (200px) has a name at 14px/21, letter-spacing .25px, color #0E0E0F, and an ID at 12px/18, letter-spacing .4px, color #55575C, with the ID and the OfferTypeBadge below it sitting side by side horizontally on the same line (gap 8px, corrected 2026-08 based on new Figma frame 7403:4653 — previously mistakenly laid out as three stacked rows); Vehicle (195px, centered); Sent/Received can show the literal value "--" to mean not yet initiated; the Update column stacks StatusChips (0 to 2) plus a date.\n\nImportant finding: while building this component, checking against the second row of real data revealed that the "Make Offer" badge, in real usage, is wrapped in a parent container with a border (#8D9199) — this corrects the earlier OfferTypeBadge conclusion of "no border."\n\nFor you to confirm: 1. The vehicle thumbnail\'s specific corner-radius value was not obtained from Figma. 2. The photo assets in the three example rows look like they were exported as two overlapping layers of the same image; the component only uses a single photoUrl. 3. Only cases with 0/1/2 stacked StatusChips in the Update column have been observed; the trigger threshold for the "+N overflow" logic has not been verified.\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account the second column does not show dealerName, using auctionId as the main title instead (with the original dealer-name\'s font size/color), with the OfferTypeBadge pinned to the left on its own and auctionId not repeated elsewhere.'
@@ -2653,7 +2653,7 @@
         makeOfferExample: { variant: 'make-offer', label: 'Make Offer' },
         dealerExample: { variant: 'dealer', label: 'Apple Chevrolet' }
       },
-      notes: '2026-09-02 addition: a standalone component extracted out of OfferCard — you pointed out that the three badges in the photo\'s bottom-left corner (In Negotiation/Make Offer/dealer name) should use the same component, rather than three separately hand-written <span> elements with their own classes. The color/border values were carried over as-is with no visual change — this just merges the four rules that used to be scattered across OfferCard.vue (.offer-card__type-badge--in-negotiation / --make-offer / --in-negotiation-ring / .offer-card__lane-badge) into a single component with a variant (\'in-negotiation\'/\'make-offer\'/\'dealer\') plus a ring boolean (only takes effect when variant=\'in-negotiation\').\n\nHeight (24px) and corner radius (4px) are the two shared base-style geometry properties; only the background/text color/border/horizontal padding differ per variant — these two values were settled gradually over several earlier rounds of changes (standardized around Make Offer\'s height as the baseline, then reduced by 2px top and bottom, with the corner radius standardized per your point that "Make Offer is clearly 4px") — the reasoning behind that is recorded in fragments/OfferCard/notes.md and not repeated here.\n\nThere is currently no separate comparison against a table version — the OfferTypeBadge component in the table (order 33) is a completely separate component whose values genuinely differ from this one; the two have not been merged this time, nor did you ask for them to be merged — this is just a reminder that these are two different components and shouldn\'t be confused.'
+      notes: '2026-09-02 addition: a standalone component extracted out of OfferCard — you pointed out that the three badges in the photo\'s bottom-left corner (In Negotiation/Make Offer/dealer name) should use the same component, rather than three separately hand-written <span> elements with their own classes. The color/border values were carried over as-is with no visual change — this just merges the four rules that used to be scattered across OfferCard.vue (.offer-card__type-badge--in-negotiation / --make-offer / --in-negotiation-ring / .offer-card__lane-badge) into a single component with a variant (\'in-negotiation\'/\'make-offer\'/\'dealer\') plus a ring boolean (only takes effect when variant=\'in-negotiation\').\n\nHeight (24px) and corner radius (4px) are the two shared base-style geometry properties; only the background/text color/border/horizontal padding differ per variant — these two values were settled gradually over several earlier rounds of changes (standardized around Make Offer\'s height as the baseline, then reduced by 2px top and bottom, with the corner radius standardized per your point that "Make Offer is clearly 4px") — the reasoning behind that is recorded in fragments/OfferCard/notes.md and not repeated here.\n\nThere is currently no separate comparison against a table version — the OfferTypeBadge component in the table (order 33) is a completely separate component whose values genuinely differ from this one; the two have not been merged this time, nor did you ask for them to be merged — this is just a reminder that these are two different components and shouldn\'t be confused.\n\n2026-09-02 update: corner radius changed from 4px to 8px (applied uniformly to all three variants), and the ring style\'s stroke changed from an inset border to an outside outline (outline-offset: 0) per your request. Because outline sits outside the box model instead of eating into it, the ring variant\'s padding no longer needs to be shrunk to compensate — it now matches the default in-negotiation padding (3px 6px) exactly, instead of the previous 2px 5px.'
     },
     OfferCard: {
       name: 'Offer Card', group: 'Card View', order: 40, def: OfferCard,
@@ -2661,7 +2661,7 @@
         cardVersion: { type: 'segmented', label: 'Card version', options: [
           { value: 'v1', label: 'V1 — mileage line, optional gap', shortLabel: 'V1' },
           { value: 'v2', label: 'V2 — auction ID line, latest-move timestamp + gap', shortLabel: 'V2' }
-        ], default: 'v1' },
+        ], default: 'v2' },
         // 2026-09-02 按 PM 反馈新增的正式功能(不再是概念稿)——PM 觉得
         // In Negotiation 徽标不够明显,选定了"加一圈白色描边+投影"这个
         // 方向,已经放进真实组件 fragments/OfferCard/OfferCard.vue。
@@ -2751,7 +2751,7 @@
           { speaker: 'buyer', kind: 'offer', amount: '$25,800', timestamp: 'Mon, Aug 17, 10:05 AM' }
         ] }
       },
-      notes: 'This is the card from the tile version (Figma node 7432:68669), matching the general ACV Auction Card structure (the acv-auction-cards skill): an image area (with dealer/lane badge + status badge overlaid) + a Vehicle Detail area (title / mileage・VIN / Auction ID, with field order kept per the skill\'s requirements) + a Flexible area (countdown + New/Received StatusChip + divider + a one-line message). This component will later be reused with different data across different scenarios, so every field besides title/mileage/VIN/Auction ID has been made optional (not rendered if omitted or passed as an empty string).\n\nVerified (node 7432:69394, hidden=false): the card container has a white background, border #E8E9EB, corner radius 12px; the image area is 210px tall; the status badge in the image\'s bottom-left corner — In Negotiation has background #1C1D1F, white text, corner radius 8px, no border (note this differs from the table version\'s OfferTypeBadge, which is corner radius 3px with a white border — these are two independently verified sets of values that have not been forced to merge); Make Offer (verified from 7441:5248/5254) has an outer 1px border #8D9199, corner radius 3px, white inner background, exactly matching the table version; the dealer/lane badge has background rgba(0,0,0,.4) + blur(.75px), white text, corner radius 8px.\n\nVehicle Detail area: the title is 16px/24 Medium, color #0E0E0F; mileage・VIN plus a copy icon (a genuinely downloaded SVG that copies the VIN to the clipboard on click) at 14px/21, color #55575C; Auction ID uses the same color. Flexible area: a Clock icon (genuinely downloaded) plus countdown text at 14px/20 Medium, color #CC433A; New/Received directly reuse the already-verified StatusChip colors; the divider is #EBEBEB; the message block\'s primary/secondary text is 14px.\n\nTo confirm: 1. The vehicleTitle example text is literally "Year Make Model," which looks like a placeholder the designer never replaced — this is not fabricated fake data, it has been kept as-is. 2. The row of action icons in the image area\'s top-right corner (watchlist/hide/note/more, 4 total, node 7432:69398) is hidden=true and has not been implemented. 3. Whether the countdown/status chip/message block appear on every scenario\'s card is unknown, since only this one example has been seen — they have been made optional pending confirmation from later scenario data.\n\n2026-08 rewrite per the "Offer card — content & interaction spec": the original free-text primaryMessage/secondaryMessage, the 4 separate booleans statusNew/statusReceived/statusSent/statusDeclined, and buttonVersion/buttonCount have all been removed, replaced with viewerRole (buyer/seller) + dealState (received/sent/declined/expired) + isNew plus a handful of amount/timestamp props; the two lines of text and the hover button group are now both computed internally by the component from a spec table, rather than hand-written free text. An Expired state has been added (StatusChip has correspondingly gained an expired style, gray background with dark gray text — this is not a Figma-verified value).'
+      notes: 'This is the card from the tile version (Figma node 7432:68669), matching the general ACV Auction Card structure (the acv-auction-cards skill): an image area (with dealer/lane badge + status badge overlaid) + a Vehicle Detail area (title / mileage・VIN / Auction ID, with field order kept per the skill\'s requirements) + a Flexible area (countdown + New/Received StatusChip + divider + a one-line message). This component will later be reused with different data across different scenarios, so every field besides title/mileage/VIN/Auction ID has been made optional (not rendered if omitted or passed as an empty string).\n\nVerified (node 7432:69394, hidden=false): the card container has a white background, border #E8E9EB, corner radius 12px; the image area is 210px tall; the status badge in the image\'s bottom-left corner — In Negotiation has background #1C1D1F, white text, corner radius 8px, no border (note this differs from the table version\'s OfferTypeBadge, which is corner radius 3px with a white border — these are two independently verified sets of values that have not been forced to merge); Make Offer (verified from 7441:5248/5254) has an outer 1px border #8D9199, corner radius 3px, white inner background, exactly matching the table version; the dealer/lane badge has background rgba(0,0,0,.4) + blur(.75px), white text, corner radius 8px.\n\nVehicle Detail area: the title is 16px/24 Medium, color #0E0E0F; mileage・VIN plus a copy icon (a genuinely downloaded SVG that copies the VIN to the clipboard on click) at 14px/21, color #55575C; Auction ID uses the same color. Flexible area: a Clock icon (genuinely downloaded) plus countdown text at 14px/20 Medium, color #CC433A; New/Received directly reuse the already-verified StatusChip colors; the divider is #EBEBEB; the message block\'s primary/secondary text is 14px.\n\nTo confirm: 1. The vehicleTitle example text is literally "Year Make Model," which looks like a placeholder the designer never replaced — this is not fabricated fake data, it has been kept as-is. 2. The row of action icons in the image area\'s top-right corner (watchlist/hide/note/more, 4 total, node 7432:69398) is hidden=true and has not been implemented. 3. Whether the countdown/status chip/message block appear on every scenario\'s card is unknown, since only this one example has been seen — they have been made optional pending confirmation from later scenario data.\n\n2026-08 rewrite per the "Offer card — content & interaction spec": the original free-text primaryMessage/secondaryMessage, the 4 separate booleans statusNew/statusReceived/statusSent/statusDeclined, and buttonVersion/buttonCount have all been removed, replaced with viewerRole (buyer/seller) + dealState (received/sent/declined/expired) + isNew plus a handful of amount/timestamp props; the two lines of text and the hover button group are now both computed internally by the component from a spec table, rather than hand-written free text. An Expired state has been added (StatusChip has correspondingly gained an expired style, gray background with dark gray text — this is not a Figma-verified value).\n\n2026-09-02 correction: the cardVersion prop\'s default changed from v1 to v2. You flagged that the standalone "Offer Card" and "Offer Card — All States" pages weren\'t showing the "latest movement\'s timestamp on line1, right-aligned" rule — that rule was already implemented (v2\'s messageLine1Timestamp), the problem was that cardVersion still defaulted to v1 (the old behavior, where the timestamp is always folded into line2). OfferDashboard passes \'v2\' explicitly so it was already correct; this default-value fix only changes what standalone OfferCard and OfferCardGallery show when nobody passes cardVersion at all.'
     },
     OfferCardGallery: {
       name: 'Offer Card — All States', group: 'Card View', order: 41, def: OfferCardGallery,

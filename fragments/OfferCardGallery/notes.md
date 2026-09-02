@@ -48,3 +48,6 @@
 2. 这个组件目前只在 `fragments/` 目录建了文件,还没有决定要不要在
    Playground 侧边栏给它单独建一个导航项——如果需要请告知具体要放在
    "卡片视图 (Card View)" 分组里的什么位置。
+
+## 2026-09-02 mirror sync fix: added missing counterpartyTimestamp
+While fixing OfferCard's cardVersion default (see OfferCard/notes.md), found that component-playground.html's hand-duplicated buyerItems/sellerItems arrays for this gallery were missing the counterpartyTimestamp field on all three "Received" entries (the real .vue file does not have this gap since it spreads the actual mock objects directly via props: buyerReceivedExample etc.). Added the matching values from fragments/OfferCard/mock.js so the v2 line1-timestamp now renders correctly here too.

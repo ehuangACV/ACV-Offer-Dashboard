@@ -313,3 +313,18 @@ Selling 里另外两个 Make Offer 状态的行(`rowFordEscapeTitanium` 9h15m /
 ## 2026-09-02 追加:新增 dialogVersion prop 透传
 同 OfferCard,原样透传给内部嵌的 InformationDialog,细节见
 [InformationDialog/notes.md](../InformationDialog/notes.md)。
+
+## 2026-09-02 追加：所有 Today 都补上具体时间
+按你的要求，"Today"旁边都要写具体时间。把 mock.js 里 9 行
+updateDate:'Today'（原来是裸的日期，没有时间）改成对应那一行
+history 数组最后一条事件的时间（比如 rowWithNewAndReceived 用卖家
+还价的 09:00 AM），不是随便配的数字。组件本身的 prop 默认值
+（OfferTableRow.vue）和 controls.js 的默认值也一起从 'Today' 改成
+'Today, 08:45 AM'（跟 OfferCard 那边 ownTimestamp 的默认值保持一致）。
+
+**有一行没有改，需要你确认**：rowLexusES 的 updateDate 还是裸的
+'Today'——它的 history 最后一条事件时间戳是"Mon, Aug 24, 04:00 PM"，
+不是今天，直接在"Today"后面补时间会变成一个错误的日期（比如
+"Today, 04:00 PM"，但实际上这笔单子是上个月的事，不是今天）。这不是
+这次改动本身要处理的问题，是这一行数据本来就有的日期不一致，需要你
+确认 updateDate 到底该写"Mon, Aug 24"还是别的值，我没有擅自改。

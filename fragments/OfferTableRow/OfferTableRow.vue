@@ -315,7 +315,8 @@ const props = defineProps({
   // 2026-08 按你的要求新增,见 METADATA 里记录的业务逻辑说明
   statusSent: { type: Boolean, default: false },
   statusDeclined: { type: Boolean, default: false },
-  updateDate: { type: String, default: 'Today' },
+  // 2026-09-02 按你的要求,所有"Today"都要带具体时间,默认值也跟着改
+  updateDate: { type: String, default: 'Today, 08:45 AM' },
   // 2026-09-02 新增,给 hover CTA + InformationDialog 用——table view 和
   // tile view(OfferCard)是同一笔 deal 的两种展示方式,这几个字段和
   // OfferCard 用的是同一套(viewerRole 由 OfferDashboard 按当前

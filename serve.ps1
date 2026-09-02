@@ -6,7 +6,7 @@ param(
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
-Write-Host "Serving '$Root' at http://localhost:$Port/component-playground.html"
+Write-Host "Serving '$Root' at http://localhost:$Port/index.html"
 Write-Host "Press Ctrl+C to stop."
 
 $mimeMap = @{
@@ -35,7 +35,7 @@ while ($listener.IsListening) {
   $response = $context.Response
   try {
     $urlPath = [System.Uri]::UnescapeDataString($request.Url.LocalPath)
-    if ($urlPath -eq "/") { $urlPath = "/component-playground.html" }
+    if ($urlPath -eq "/") { $urlPath = "/index.html" }
     $relative = $urlPath.TrimStart("/") -replace "/", [System.IO.Path]::DirectorySeparatorChar
     $filePath = Join-Path $Root $relative
     $fullRoot = (Resolve-Path $Root).Path

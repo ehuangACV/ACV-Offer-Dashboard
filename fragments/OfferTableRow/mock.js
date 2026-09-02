@@ -93,7 +93,9 @@ export const rowWithNewAndReceived = {
   statusReceived: true,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02 按你的要求,所有"Today"旁边都要写具体时间——用这一行
+  // history 最后一条事件的时间(卖家还价 09:00 AM),不是凑的数字
+  updateDate: 'Today, 09:00 AM',
   // reserve $27,000 > 卖家 $26,800 > 买家 $26,000,严格区间。买家开盘价
   // 是 reserve 的 96.3%,落在 85%–97% 区间内。gap $800 / split $26,400。
   reservePrice: '$27,000',
@@ -131,7 +133,8 @@ export const rowWithNoStatusChip = {
   statusReceived: false,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(卖家还价 08:00 AM)
+  updateDate: 'Today, 08:00 AM',
   // reserve $5,500 > 卖家 $5,000 > 买家 $4,500,严格区间。买家开盘价是
   // reserve 的 81.8%。gap $500 / split $4,750。
   reservePrice: '$5,500',
@@ -191,7 +194,8 @@ export const rowHyundaiKona = {
   statusReceived: true,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(卖家还价 07:00 AM)
+  updateDate: 'Today, 07:00 AM',
   // reserve $20,000 > 卖家 $19,800 > 买家 $19,200,严格区间。gap $600 /
   // split $19,500。
   reservePrice: '$20,000',
@@ -223,7 +227,8 @@ export const rowJeepWrangler = {
   statusReceived: false,
   statusSent: true,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(买家发 offer 11:00 AM)
+  updateDate: 'Today, 11:00 AM',
   reservePrice: '$29,500',
   reportUrl: '#',
   history: [
@@ -255,7 +260,8 @@ export const rowToyotaMatrix = {
   statusReceived: false,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(买家还价 07:00 AM)
+  updateDate: 'Today, 07:00 AM',
   reservePrice: '$5,400',
   reportUrl: '#',
   history: [
@@ -286,7 +292,8 @@ export const rowFordEscapeTitanium = {
   statusReceived: true,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(买家发 offer 06:00 AM)
+  updateDate: 'Today, 06:00 AM',
   reservePrice: '$11,000',
   reportUrl: '#',
   history: [
@@ -317,7 +324,8 @@ export const rowChevyMalibu = {
   statusReceived: true,
   statusSent: true,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(卖家还价 08:00 AM)
+  updateDate: 'Today, 08:00 AM',
   // reserve $18,000 > 卖家 $15,500 > 买家 $14,500,严格区间。买家开盘价
   // 是 reserve 的 80.6%。gap $1,000 / split $15,000。
   reservePrice: '$18,000',
@@ -347,7 +355,8 @@ export const rowDodgeCharger = {
   statusReceived: false,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(买家发 offer 05:00 AM)
+  updateDate: 'Today, 05:00 AM',
   reservePrice: '$12,500',
   reportUrl: '#',
   history: [
@@ -377,7 +386,8 @@ export const rowFordEscapeSE = {
   statusReceived: false,
   statusSent: true,
   statusDeclined: false,
-  updateDate: 'Today',
+  // 2026-09-02:同上,用 history 最后一条(卖家还价 08:00 AM)
+  updateDate: 'Today, 08:00 AM',
   // reserve $9,500 > 卖家(自己)$8,700 > 买家 $8,000,严格区间。买家
   // 开盘价是 reserve 的 84.2%。gap $700 / split $8,350。
   reservePrice: '$9,500',
@@ -411,7 +421,9 @@ export const rowSingleDealer = {
   statusReceived: true,
   statusSent: false,
   statusDeclined: false,
-  updateDate: 'Today'
+  // 2026-09-02:同上,这一行是 rowWithNewAndReceived 的同一笔单子(见上面
+  // 注释),用同一个时间(卖家还价 09:00 AM)
+  updateDate: 'Today, 09:00 AM'
 }
 
 export default {

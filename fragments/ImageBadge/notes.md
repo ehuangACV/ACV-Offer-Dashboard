@@ -43,6 +43,18 @@ Dialog v1 的徽标)没有任何视觉影响——只有一个文字节点的时
 [InformationDialog/notes.md](../InformationDialog/notes.md) 的 v2 那条
 记录。
 
+## 2026-09-02 追加:圆角改 8px、ring 描边改成 outside(outline)
+按你的要求:
+1. `.image-badge` 的圆角从 4px 改成 8px,三个 variant(in-negotiation/
+   make-offer/dealer)共用同一条基础规则,统一生效,不是只改了某一个。
+2. `.image-badge--in-negotiation-ring` 的描边从 `border` 改成
+   `outline`(`outline-offset: 0`)——`border` 是盒模型的一部分,会往内
+   挤占空间,之前为了不让徽标看起来变大,特地把 padding 从默认的
+   `3px 6px` 减到 `2px 5px` 去补偿描边占的空间;`outline` 只往外画、不
+   参与盒模型计算,所以现在 padding 直接跟默认的 `.image-badge--
+   in-negotiation` 保持一致(`3px 6px`),不需要再单独减。视觉上的效果
+   变化:描边现在贴着徽标外缘往外扩一圈,不会再"吃掉"内部一点空间。
+
 ## 2026-09-02 追加:`.image-badge--in-negotiation-ring` 去掉投影
 你反馈"Card 上 in negotiation badge 的 shadow 要去掉,stroke 保留"——
 把这个共用 class 里的 `box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45)` 删了,

@@ -44,7 +44,8 @@ defineProps({
 
 <style scoped>
 /* 三个 variant 共用的几何属性——高度(24px = 18px 行高 + 上下 padding)
-   和圆角(4px)统一,只有颜色/边框/水平 padding 各自不同 */
+   和圆角统一,只有颜色/边框/水平 padding 各自不同。2026-09-02 按你的要求
+   圆角从 4px 改成 8px,同样统一套用到三个 variant,不是只改其中一个。 */
 .image-badge {
   position: relative;
   display: inline-flex;
@@ -54,7 +55,7 @@ defineProps({
   line-height: 18px;
   letter-spacing: 0.4px;
   white-space: nowrap;
-  border-radius: 4px;
+  border-radius: 8px;
   box-sizing: border-box;
 }
 
@@ -65,14 +66,21 @@ defineProps({
 }
 
 /* PM 反馈"In Negotiation 徽标不够明显"之后定的第二种画法:不换主色调,
-   加一圈白色描边,靠"有清晰边缘"提升可辨识度。padding 比默认样式
-   少 1px(减掉描边占的空间),让最终外框高度还是 24px,不会看起来变大。
-   字重是 Regular,不单独设 font-weight。2026-09-02 按你的要求去掉了投影
-   (原来是 box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45)),只保留描边——
-   Card 上的图片叠层徽标现在是"白描边、无投影"。 */
+   加一圈白色描边,靠"有清晰边缘"提升可辨识度。字重是 Regular,不单独设
+   font-weight。2026-09-02 按你的要求去掉了投影(原来是 box-shadow: 0 1px
+   4px rgba(0, 0, 0, 0.45)),只保留描边——Card 上的图片叠层徽标现在是
+   "白描边、无投影"。
+   【2026-09-02 再次更正】你指出描边应该是"outside"(往外扩,不占用
+   徽标本身的空间)——原来用 border 画描边,border 是盒子自身的一部分,
+   会往内挤占空间,所以之前特地把 padding 从默认的 3px 6px 减到 2px 5px
+   (让描边+padding的和还是24px高,视觉上不会变大)。现在改用 outline
+   (只往外画,不参与盒模型计算,不影响元素自身尺寸),padding 直接跟
+   .image-badge--in-negotiation 保持一致(3px 6px),不用再刻意减掉描边
+   占的空间——outline-offset:0 让描边紧贴徽标外缘,不留额外间隙。 */
 .image-badge--in-negotiation-ring {
-  border: 1px solid #FFFFFF;
-  padding: 2px 5px;
+  padding: 3px 6px;
+  outline: 1px solid #FFFFFF;
+  outline-offset: 0;
 }
 
 .image-badge--make-offer {

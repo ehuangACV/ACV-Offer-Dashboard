@@ -451,3 +451,21 @@ grid`,`grid-template-columns: repeat(3, 1fr)` + `gap: 16px`)决定实际
 版本,只是原样透传给内部嵌的 InformationDialog,由 OfferDashboard 的
 Controls 统一控制。细节见
 [InformationDialog/notes.md](../InformationDialog/notes.md)。
+
+## 2026-09-02 更正：cardVersion 默认值从 v1 改成 v2
+你反馈"Offer Card"和"Offer Card — All States"这两个 Playground 页面
+没有跟着"latest movement 时间显示在第一行、右对齐"这条规则更新——
+检查后发现这条规则本来就已经实现了，就是 v2 的 messageLine1Timestamp
+（received 状态时贴在 line1 最右边；sent 状态"Waiting on the
+seller/buyer"本身没有时间点，时间还是在 line2，这条你确认是对的没有
+变）。问题是 cardVersion 这个 prop 默认值一直是 v1（旧版本，时间永远
+拼在 line2），OfferDashboard 自己显式传了 v2 所以是对的，但 standalone
+的 Offer Card 页面和不单独设置 cardVersion 的 OfferCardGallery
+（"Offer Card — All States"）都会落到这个旧默认值上，显示的时间位置
+是错的。
+
+改法：把这个 prop 的默认值从 v1 改成 v2——v2 才是"最新"的正确行为，
+v1 只是保留下来对比用的旧版本，不该继续是默认值。这个改动只影响
+"没有人显式传 cardVersion"的场景（standalone Offer Card 页面 +
+OfferCardGallery），OfferDashboard 已经显式传值，不受影响，符合你说的
+"offer dashboard 里是对的先不做调整"。

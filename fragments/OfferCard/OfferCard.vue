@@ -480,7 +480,14 @@ const props = defineProps({
   // messageLine2V2)。以后如果还有更多版本,往这个 'v1'/'v2'/... 的字符串
   // 集合里加新值即可,不用再破坏性改已有版本。默认 'v1',不传就完全是老
   // 行为——只有 OfferDashboard.vue 明确传 'v2'。
-  cardVersion: { type: String, default: 'v1' },
+  // 2026-09-02 按你的要求把默认值从 v1 改成 v2——v2 是"最新"的正确行为
+  // (received 状态 line1 带对方最新动作的时间、右对齐;sent 状态时间在
+  // line2,这条本来就没变),v1 只是保留下来对比用的旧版本,不该是默认值。
+  // OfferDashboard 本来就显式传 'v2' 不受影响;这次真正受益的是没有单独
+  // 传 cardVersion 的场景——standalone 的 Offer Card Playground 页面和
+  // OfferCardGallery("Offer Card — All States"),它们之前会落到旧默认值
+  // v1,显示的时间位置是错的,细节见 notes.md。
+  cardVersion: { type: String, default: 'v2' },
   // 2026-09 v2 专用:对方最近一次动作的时间点(比如"卖家countered"是什么
   // 时候发生的)。v1 没有这个字段的显示位置,只有v2 message line1 在
   // dealState 是 received 时会用到。默认空字符串,不传就不在line1追加
