@@ -732,6 +732,13 @@ const messageLine2 = computed(() => (props.cardVersion === 'v2' ? messageLine2V2
 // 2026-08 按规范第4节两张表(buyer/seller)查出来的 hover 按钮组——
 // label + style('filled'/'outlined'/'grey-outline'),数组长度决定
 // hover 时模糊覆盖范围(1/2/3 按钮对应 .offer-card--v1-btn-N,见 CSS)
+// 2026-09-03 按你的要求简化:除了 declined/expired(维持原来两个按钮
+// View Details + Remove From List 不变)之外,不管 buyer/seller、
+// received/sent 哪种组合,统一只显示一个按钮 "Manage Offer"——点击行为
+// 没变,还是走下面同一个 handleHoverButtonClick,打开同一个
+// InformationDialog。之前 buyer received 三个按钮(Accept/Counter/View
+// Details)、buyer sent 一到两个按钮、seller sent 的 View Details 这些
+// 区分全部去掉,不再按 role/dealState 拆分出不同的按钮组合。
 const hoverButtons = computed(() => {
   const s = props.dealState
   if (s === 'declined' || s === 'expired') {
@@ -740,27 +747,7 @@ const hoverButtons = computed(() => {
       { label: 'Remove From List', style: 'grey-outline' }
     ]
   }
-  if (isBuyer.value) {
-    if (s === 'received') {
-      return [
-        { label: `Accept ${props.counterpartyAmount}`, style: 'filled' },
-        { label: 'Counter', style: 'outlined' },
-        { label: 'View Details', style: 'outlined' }
-      ]
-    }
-    if (s === 'sent') {
-      return isMakeOffer.value
-        ? [
-            { label: 'Raise Your Offer', style: 'filled' },
-            { label: 'View Details', style: 'outlined' }
-          ]
-        : [{ label: 'View Details', style: 'filled' }]
-    }
-  } else {
-    if (s === 'received') return [{ label: 'Manage Offer', style: 'filled' }]
-    if (s === 'sent') return [{ label: 'View Details', style: 'filled' }]
-  }
-  return []
+  return [{ label: 'Manage Offer', style: 'filled' }]
 })
 
 function copyVin() {

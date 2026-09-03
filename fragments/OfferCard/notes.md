@@ -1,5 +1,32 @@
 # OfferCard 核实记录
 
+## 2026-09-03 hover 按钮简化成单一 "Manage Offer"
+你要求:"hover on 的interaction，除了decline or expired 这2种状态，其他
+的都改成一个button. manage offer. 点击后依旧打开infomation dialog"——
+和 [OfferTableRow](../OfferTableRow/notes.md) 同步改的,table/tile 是
+同一笔 deal 的两种展示,交互要对应。
+
+`hoverButtons` computed 简化成:
+- `declined`/`expired`:不变,还是两个按钮(`View Details` 描边 +
+  `Remove From List` 灰色描边)。
+- 其余任何 `viewerRole`×`dealState`×`offerType` 组合:统一只返回一个
+  按钮 `{ label: 'Manage Offer', style: 'filled' }`。之前 buyer
+  received 的 3 按钮(Accept/Counter/View Details)、buyer sent 的
+  Raise Your Offer/View Details、seller sent 的 View Details 这些区分
+  全部删掉,不再按角色/状态拆分按钮组合。
+
+点击行为没有变——还是走原来的 `handleHoverButtonClick`,除了
+"Remove From List" 走二次确认框之外,其余(现在就只有"Manage Offer"和
+declined/expired 的"View Details")都打开同一个 `InformationDialog`,
+也还是会 emit `viewed`。
+
+**副作用(不是刻意改的,是按钮数量变化的连带结果)**:hover 时模糊的范围
+由 `hoverButtons.length` 决定(`.offer-card--v1-btn-1/2/3`)——现在除
+declined/expired 之外的所有卡片按钮数量永远是1,会一直落在"只模糊车辆
+信息+倒计时/状态chip那一行"这条规则,不会再出现"3按钮模糊整个info区"
+的情况(因为不会再有3个按钮的组合了)。这不是这次单独调整的模糊规则,
+是按钮数量减少后自然的结果,如果这个模糊范围不对,需要另外说。
+
 ## 2026-09-02(第八次)新增 hasPrevDeal/hasNextDeal,透传给 InformationDialog
 配合 [InformationDialog](../InformationDialog/notes.md) 新增的两侧
 Previous/Next(对照 Figma node 7597:112866)。OfferCard 自己不知道"列表"

@@ -1,5 +1,26 @@
 # OfferTableRow — Notes
 
+## 2026-09-03 hover 按钮简化成单一 "Manage Offer"
+同 [OfferCard](../OfferCard/notes.md) 那边的改动,你要求 table/tile 两种
+视图一起改:除了 `declined` 状态(表格行没有 `statusExpired`,只会落到
+declined/sent/received 三种之一)之外,不管 buyer/seller、received/sent
+哪种组合,`hoverButtons` computed 统一只返回一个按钮
+`{ buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null }`
+——之前 buyer received 的 Counter+Accept+"More Info"链接、buyer sent 的
+Raise Your Offer+"More Info"、seller sent 的 View Details 这些区分全部
+删掉,`infoLink`(分割线右边单独的"More Info"链接)这个结构也不再触发
+(只有 declined 分支会走,而 declined 分支的 `infoLink` 本来就是
+`null`)。declined 状态保持不变,还是两个按钮
+(`View Details` 描边 + `Remove From List` 灰色描边)。
+
+点击行为没有变,还是走原来的 `handleHoverButtonClick`——"Remove From
+List" 走二次确认框,其余(现在就只有"Manage Offer"和 declined 的
+"View Details")打开同一个 `InformationDialog`,也还是会 emit `viewed`。
+
+原来只在 `hoverButtons` 里用到的 `isBuyer`/`isMakeOffer` 两个 computed
+现在没有别的地方用了,一起删掉了(不是遗漏,是确认过整个文件只有
+`hoverButtons` 引用过它们)。
+
 ## 2026-09-02(第三次)新增 hasPrevDeal/hasNextDeal,透传给 InformationDialog
 配合 [InformationDialog](../InformationDialog/notes.md) 新增的两侧
 Previous/Next(对照 Figma node 7597:112866)。做法和

@@ -1664,8 +1664,6 @@
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
       });
       var dialogOpen = ref(false);
-      var isBuyer = computed(function () { return props.viewerRole === 'buyer'; });
-      var isMakeOffer = computed(function () { return props.offerType === 'make-offer'; });
       var dealState = computed(function () {
         if (props.statusDeclined) return 'declined';
         if (props.statusSent) return 'sent';
@@ -1683,30 +1681,15 @@
       var timeLeftUrgent = computed(function () {
         return !!props.timeRemaining && !/[hd]/.test(props.timeRemaining) && /m/.test(props.timeRemaining);
       });
-      // 2026-09-02 按 Figma node 1:21166(fileKey 4z7FK34Fgit7Fi9UxZu0za)
-      // 新增,和 OfferCard 的 hoverButtons 是同一套 viewerRole+dealState
-      // 状态表,只是多拆出 infoLink(Figma 参照帧里 "More Info" 是分割线
-      // 右边单独的文字链接,不是第三个按钮),细节见
+      // 2026-09-03 按你的要求简化:除 declined 外统一只显示一个
+      // "Manage Offer" 按钮,细节见
       // fragments/OfferTableRow/OfferTableRow.vue 的同名 computed 注释。
       var hoverButtons = computed(function () {
         var s = dealState.value;
         if (s === 'declined') {
           return { buttons: [{ label: 'View Details', style: 'outlined' }, { label: 'Remove From List', style: 'grey-outline' }], infoLink: null };
         }
-        if (isBuyer.value) {
-          if (s === 'received') {
-            return { buttons: [{ label: 'Counter', style: 'outlined' }, { label: 'Accept ' + props.receivedAmount, style: 'filled' }], infoLink: 'More Info' };
-          }
-          if (s === 'sent') {
-            return isMakeOffer.value
-              ? { buttons: [{ label: 'Raise Your Offer', style: 'filled' }], infoLink: 'More Info' }
-              : { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null };
-          }
-        } else {
-          if (s === 'received') return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null };
-          if (s === 'sent') return { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null };
-        }
-        return { buttons: [], infoLink: null };
+        return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null };
       });
       // 2026-09-02 同 OfferCard,供 OfferDashboard 跨行控制 dialog,细节见
       // fragments/OfferDashboard/notes.md。
@@ -1924,6 +1907,9 @@
       });
       var messageLine1 = computed(function () { return props.cardVersion === 'v2' ? messageLine1V2.value : messageLine1V1.value; });
       var messageLine2 = computed(function () { return props.cardVersion === 'v2' ? messageLine2V2.value : messageLine2V1.value; });
+      // 2026-09-03 按你的要求简化:除 declined/expired 外统一只显示一个
+      // "Manage Offer" 按钮,细节见 fragments/OfferCard/OfferCard.vue 的
+      // 同名 computed 注释。
       var hoverButtons = computed(function () {
         var s = props.dealState;
         if (s === 'declined' || s === 'expired') {
@@ -1932,24 +1918,7 @@
             { label: 'Remove From List', style: 'grey-outline' }
           ];
         }
-        if (isBuyer.value) {
-          if (s === 'received') {
-            return [
-              { label: 'Accept ' + props.counterpartyAmount, style: 'filled' },
-              { label: 'Counter', style: 'outlined' },
-              { label: 'View Details', style: 'outlined' }
-            ];
-          }
-          if (s === 'sent') {
-            return isMakeOffer.value
-              ? [{ label: 'Raise Your Offer', style: 'filled' }, { label: 'View Details', style: 'outlined' }]
-              : [{ label: 'View Details', style: 'filled' }];
-          }
-        } else {
-          if (s === 'received') return [{ label: 'Manage Offer', style: 'filled' }];
-          if (s === 'sent') return [{ label: 'View Details', style: 'filled' }];
-        }
-        return [];
+        return [{ label: 'Manage Offer', style: 'filled' }];
       });
       function copyVin() {
         if (navigator.clipboard) { navigator.clipboard.writeText(props.vin).catch(function () {}); }

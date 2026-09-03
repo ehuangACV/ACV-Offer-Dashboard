@@ -378,8 +378,6 @@ defineExpose({
   openDialog: () => { dialogOpen.value = true },
   closeDialog: () => { dialogOpen.value = false }
 })
-const isBuyer = computed(() => props.viewerRole === 'buyer')
-const isMakeOffer = computed(() => props.offerType === 'make-offer')
 // 表格行没有 statusExpired 这个字段(过期这个概念目前只在 OfferCard 的
 // mock 里演示过),所以这里只会落到 declined/sent/received 三种之一,
 // 和 OfferDashboard.vue 里 rowsAsCards 用的 rowToDealState() 是同一套
@@ -420,6 +418,14 @@ const timeLeftUrgent = computed(() =>
 // 内容——这个简化和卡片是同一个已知的临时决定,不是这次新引入的。
 // declined 这个组合(两个按钮都不是"主操作",没有对应的分割线+链接
 // 结构可参照)保持原来两个平级按钮的样子,不套用这个新结构。
+// 2026-09-03 按你的要求简化,和 OfferCard.vue 的道理一样(table/tile 是
+// 同一笔 deal 的两种展示,交互要对应):除了 declined(表格行没有
+// expired 这个状态,维持原来两个按钮 View Details + Remove From List 不
+// 变)之外,不管 buyer/seller、received/sent 哪种组合,统一只显示一个
+// 按钮 "Manage Offer",不再有 Counter/Accept/Raise Your Offer/View
+// Details 这些区分,也不再拆出单独的 "More Info" 分割线链接——点这个唯一
+// 按钮的行为没变,还是走下面同一个 handleHoverButtonClick,打开同一个
+// InformationDialog。
 const hoverButtons = computed(() => {
   const s = dealState.value
   if (s === 'declined') {
@@ -431,26 +437,7 @@ const hoverButtons = computed(() => {
       infoLink: null
     }
   }
-  if (isBuyer.value) {
-    if (s === 'received') {
-      return {
-        buttons: [
-          { label: 'Counter', style: 'outlined' },
-          { label: `Accept ${props.receivedAmount}`, style: 'filled' }
-        ],
-        infoLink: 'More Info'
-      }
-    }
-    if (s === 'sent') {
-      return isMakeOffer.value
-        ? { buttons: [{ label: 'Raise Your Offer', style: 'filled' }], infoLink: 'More Info' }
-        : { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null }
-    }
-  } else {
-    if (s === 'received') return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null }
-    if (s === 'sent') return { buttons: [{ label: 'View Details', style: 'filled' }], infoLink: null }
-  }
-  return { buttons: [], infoLink: null }
+  return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null }
 })
 </script>
 
