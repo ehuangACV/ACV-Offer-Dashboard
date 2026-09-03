@@ -4,8 +4,8 @@
     {
       "name": "offer-dashboard-serve",
       "runtimeExecutable": "powershell",
-      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "serve.ps1", "-Port", "5188"],
-      "port": 5188
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "serve.ps1", "-Port", "5173"],
+      "port": 5173
     }
   ]
 }

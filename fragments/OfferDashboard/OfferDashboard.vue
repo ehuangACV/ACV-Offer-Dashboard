@@ -253,7 +253,7 @@
             ref="filterChipGroupRef"
             v-bind="filters"
             class="offer-dashboard__filters"
-            :is-multi-dealer="isMultiDealer"
+            :is-multi-dealer="effectiveMultiDealer"
             :dealership-open="dealershipDropdownOpen"
             :dealer-chip-label="dealerFilter.length ? dealerChipText : ''"
             :show-declined="activeMainTab !== 'selling'"
@@ -273,7 +273,7 @@
           :style="dealerPopoverStyle"
         >
           <DealershipFilterDropdown
-            :is-multi-dealer="isMultiDealer"
+            :is-multi-dealer="effectiveMultiDealer"
             :pre-selected="dealerFilter.join(',')"
             @apply="handleApplyDealerFilter"
           />
@@ -288,7 +288,7 @@
           />
 
           <template v-if="viewMode === 'table'">
-            <OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
+            <OfferTableHeader :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
 
             <OfferTableRow
               v-for="(row, i) in rowsWithDealerMode"
@@ -506,6 +506,21 @@ const tabs = computed(() => ({
   sellingCount: sellingNewCount.value
 }))
 
+// 2026-09-02 按你的要求新增:Dealership 筛选/Dealer Name 显示只在
+// "Selling tab + 账号本身是多经销商"这个组合下才有意义——Buying tab
+// 不管账号是不是多经销商都不显示(你的原话"buying 没有dealership
+// filter for both single and multi dealer"),对照 Figma node
+// 6837:16635/16636 核实:这个节点(表头 Auction ID/Type,行内容直接显示
+// Auction ID,没有 Dealer Name/Dealership 相关任何内容)和现有的
+// isMultiDealer=false 实现是同一个视觉效果,不是需要另外单独实现的新
+// 样式——所以这里不是新增一套"buying 专属"的展示逻辑,是让 Buying tab
+// 复用已经核实过的 isMultiDealer=false 这套渲染。真正的 isMultiDealer
+// 这个 prop(账号本身是不是多经销商)保留原样不变,新增
+// effectiveMultiDealer 这一个派生值,统一替换掉下面 FilterChipGroup/
+// DealershipFilterDropdown/OfferTableHeader/每一行/每张卡原来直接读
+// isMultiDealer 的地方。
+const effectiveMultiDealer = computed(() => props.isMultiDealer && activeMainTab.value === 'selling')
+
 // [2026-08 按你的要求更正] 之前这几个数字故意不跟着 dealerFilter/
 // chipFilter 联动,一直显示 rowsLimited(当前 tab 全部6条)算出来的
 // 总数——你指出选了 dealership 之后,筛选结果明明只剩1条,chip 旁边的
@@ -673,7 +688,7 @@ const viewerRoleValue = computed(() => (activeMainTab.value === 'selling' ? 'sel
 const rowsWithDealerMode = computed(() =>
   visibleRows.value.map((row) => ({
     ...row,
-    isMultiDealer: props.isMultiDealer,
+    isMultiDealer: effectiveMultiDealer.value,
     viewerRole: viewerRoleValue.value,
     statusNew: isRowNew(row)
   }))
@@ -767,6 +782,9 @@ const rowsAsCards = computed(() => {
     return {
       photoUrl: row.photoUrl,
       dealerName: row.dealerName,
+      // 2026-09-02 按你的要求新增,细节见 OfferCard.vue 的 isMultiDealer
+      // prop 注释和上面 effectiveMultiDealer 的注释
+      isMultiDealer: effectiveMultiDealer.value,
       offerType: row.offerType,
       vehicleTitle: row.vehicleTitle,
       mileage: row.mileage,

@@ -620,7 +620,7 @@
   .offer-card-gallery__toggle-btn:first-child { border-radius: 999px 0 0 999px; }
   .offer-card-gallery__toggle-btn:last-child { border-left: none; border-radius: 0 999px 999px 0; }
   .offer-card-gallery__toggle-btn--active { background: #F5F5F5; }
-  .offer-card-gallery__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .offer-card-gallery__grid { display: grid; grid-template-columns: repeat(auto-fill, 360px); gap: 16px; }
   .offer-card-gallery__item { display: flex; flex-direction: column; gap: 8px; }
   /* 截图上"小灰字标签贴在示例上方"的样式,照截图目测的,不是核实数值 */
   .offer-card-gallery__label { font-size: 12px; line-height: 16px; color: #757575; }
@@ -1731,6 +1731,7 @@
       photoUrl: { type: String, default: '' },
       offerType: { type: String, default: 'in-negotiation' },
       dealerName: { type: String, default: 'CarMax Boston' },
+      isMultiDealer: { type: Boolean, default: true },
       vehicleTitle: { type: String, default: 'Year Make Model' },
       mileage: { type: String, default: '250,000 miles' },
       vin: { type: String, default: '192211' },
@@ -1772,7 +1773,7 @@
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image" @click="$emit(\'viewed\')"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
       '<div class="offer-card__image-badges">' +
       '<ImageBadge v-if="offerType !== \'none\'" :variant="offerType" :label="offerTypeLabel" :ring="offerType === \'in-negotiation\' && badgeStyle === \'ring\'" />' +
-      '<ImageBadge v-if="dealerName" variant="dealer" :label="dealerName" />' +
+      '<ImageBadge v-if="dealerName && isMultiDealer" variant="dealer" :label="dealerName" />' +
       '</div></a>' +
       '<div class="offer-card__info">' +
       '<div class="offer-card__vehicle">' +
@@ -1874,7 +1875,11 @@
         var s = props.dealState;
         if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer';
         if (s === 'expired') return 'Time ran out' + (props.expiredAt ? ' · ' + props.expiredAt : '');
-        if (s === 'sent') return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer';
+        if (s === 'sent') {
+          if (isMakeOffer.value) return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer';
+          var whoSent = isBuyer.value ? 'Buyer' : 'Seller';
+          return whoSent + ' countered ' + props.ownAmount;
+        }
         if (s === 'received') {
           var who = isBuyer.value ? 'Seller' : 'Buyer';
           var verb1 = isBuyer.value ? 'countered' : (isMakeOffer.value ? 'offered' : 'countered');
@@ -1882,11 +1887,15 @@
         }
         return '';
       });
-      // 2026-09 line1 的时间不再拼进文案字符串,单独一个元素贴最右边
+      // 2026-09 line1 的时间不再拼进文案字符串,单独一个元素贴最右边。
+      // 2026-09-02 In Negotiation 的 sent 状态 line1 变成"你自己的最后
+      // 一个动作",时间(ownTimestamp)也要跟着显示,细节见真实文件
+      // fragments/OfferCard/OfferCard.vue 同名 computed 注释
       var messageLine1Timestamp = computed(function () {
         if (props.cardVersion !== 'v2') return '';
-        if (props.dealState !== 'received') return '';
-        return props.counterpartyTimestamp || '';
+        if (props.dealState === 'received') return props.counterpartyTimestamp || '';
+        if (props.dealState === 'sent' && !isMakeOffer.value) return props.ownTimestamp || '';
+        return '';
       });
       function gapBetween(a, b) {
         var na = Number(String(a).replace(/[^0-9.]/g, ''));
@@ -1900,8 +1909,10 @@
           return isBuyer.value ? ('Your offer ' + props.ownAmount) : ('Buyer offered ' + props.counterpartyAmount);
         }
         if (s === 'sent') {
-          var verb2 = isMakeOffer.value ? 'offer' : 'counter';
-          return 'Your ' + verb2 + ' ' + props.ownAmount + ' · ' + props.ownTimestamp;
+          if (isMakeOffer.value) return 'Your offer ' + props.ownAmount + ' · ' + props.ownTimestamp;
+          var whoSent2 = isBuyer.value ? 'Seller' : 'Buyer';
+          var gapSent = gapBetween(props.counterpartyAmount, props.ownAmount);
+          return gapSent ? (whoSent2 + ' countered ' + props.counterpartyAmount + ' · ' + gapSent + ' apart') : (whoSent2 + ' countered ' + props.counterpartyAmount);
         }
         if (s === 'received') {
           if (!isBuyer.value && isMakeOffer.value) return 'Your reserve ' + props.ownAmount;
@@ -1971,11 +1982,13 @@
       '<button type="button" class="offer-card-gallery__toggle-btn" :class="{ \'offer-card-gallery__toggle-btn--active\': role === \'buyer\' }" @click="role = \'buyer\'">Buyer</button>' +
       '<button type="button" class="offer-card-gallery__toggle-btn" :class="{ \'offer-card-gallery__toggle-btn--active\': role === \'seller\' }" @click="role = \'seller\'">Seller</button>' +
       '</div>' +
+      '<div v-for="group in activeGroups" :key="group.type" class="offer-card-gallery__group">' +
+      '<div class="offer-card-gallery__group-title">{{ group.title }}</div>' +
       '<div class="offer-card-gallery__grid">' +
-      '<div v-for="item in activeItems" :key="item.label" class="offer-card-gallery__item">' +
+      '<div v-for="item in group.items" :key="item.label" class="offer-card-gallery__item">' +
       '<div class="offer-card-gallery__label">{{ item.label }}</div>' +
       '<OfferCard v-bind="item.props" />' +
-      '</div></div></div>',
+      '</div></div></div></div>',
     setup: function () {
       var role = ref('buyer');
       // 2026-09-01:这个 gallery 页面的真实 .vue 文件直接 import
@@ -1983,21 +1996,31 @@
       // 没有真正的 import,只能手动内联同一份数值——按同一份 Number rules
       // 重新生成同步过,细节见 OfferCard/mock.js 文件头注释。
       var buyerItems = [
-        { label: 'In Negotiation · Received — seller just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM', counterpartyTimestamp: 'Yesterday, 06:30 PM' } },
-        { label: 'In Negotiation · Sent — you just countered, waiting on seller', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM' } },
-        { label: 'Make Offer · Sent — you just sent an offer, waiting on seller', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM' } },
-        { label: 'Declined — seller declined your offer, closed', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000' } },
-        { label: 'Expired — timed out with no action, closed', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '' } }
+        { type: 'in-negotiation', label: 'In Negotiation · Received — seller just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '4h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,500', ownAmount: '$3,800', ownTimestamp: 'Yesterday, 02:10 PM', counterpartyTimestamp: 'Yesterday, 06:30 PM' } },
+        { type: 'in-negotiation', label: 'In Negotiation · Sent — you just countered, waiting on seller', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: false, ownAmount: '$4,100', ownTimestamp: 'Today, 08:12 AM', counterpartyAmount: '$4,500' } },
+        { type: 'make-offer', label: 'Make Offer · Sent — you just sent an offer, waiting on seller', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '18h Left', timeLeftUrgent: false, isNew: false, ownAmount: '$26,500', ownTimestamp: 'Today, 10:49 AM' } },
+        { type: 'make-offer', label: 'Declined — seller declined your offer, closed', props: { offerType: 'make-offer', viewerRole: 'buyer', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, ownAmount: '$25,000' } },
+        { type: 'in-negotiation', label: 'Expired — timed out with no action, closed', props: { offerType: 'in-negotiation', viewerRole: 'buyer', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', isNew: false, ownAmount: '$4,100', expiredAt: '' } }
       ];
       var sellerItems = [
-        { label: 'In Negotiation · Received — buyer just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM', counterpartyTimestamp: 'Today, 08:12 AM' } },
-        { label: 'In Negotiation · Sent — you just countered, waiting on buyer', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM' } },
-        { label: 'Make Offer · Received — buyer just sent an offer, waiting on you', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000', counterpartyTimestamp: 'Today, 12:15 PM' } },
-        { label: 'Declined — you declined the buyer\'s offer, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200' } },
-        { label: 'Expired — timed out with no action, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '' } }
+        { type: 'in-negotiation', label: 'In Negotiation · Received — buyer just countered, waiting on you', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '2h 40m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$4,100', ownAmount: '$4,500', ownTimestamp: 'Yesterday, 06:30 PM', counterpartyTimestamp: 'Today, 08:12 AM' } },
+        { type: 'in-negotiation', label: 'In Negotiation · Sent — you just countered, waiting on buyer', props: { offerType: 'in-negotiation', viewerRole: 'seller', dealState: 'sent', photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', vehicleTitle: '2018 Ford Focus RS', mileage: '32,450 miles', vin: '884523', auctionId: '452161', timeLeft: '45m Left', timeLeftUrgent: true, isNew: false, ownAmount: '$4,300', ownTimestamp: 'Today, 08:45 AM', counterpartyAmount: '$4,100' } },
+        { type: 'make-offer', label: 'Make Offer · Received — buyer just sent an offer, waiting on you', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'received', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', timeLeft: '20h 30m Left', timeLeftUrgent: false, isNew: true, counterpartyAmount: '$27,000', ownAmount: '$28,000', counterpartyTimestamp: 'Today, 12:15 PM' } },
+        { type: 'make-offer', label: 'Declined — you declined the buyer\'s offer, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'declined', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$24,200' } },
+        { type: 'make-offer', label: 'Expired — timed out with no action, closed', props: { offerType: 'make-offer', viewerRole: 'seller', dealState: 'expired', photoUrl: 'assets/vehicle-photos/2022-bmw-x5.jpg', dealerName: 'Asbury Automotive Group', vehicleTitle: '2022 BMW X5', mileage: '8,240 miles', vin: '410877', auctionId: '876143', isNew: false, counterpartyAmount: '$25,800', expiredAt: '' } }
       ];
       var activeItems = computed(function () { return role.value === 'buyer' ? buyerItems : sellerItems; });
-      return { role: role, activeItems: activeItems };
+      // 2026-09-02 按你的要求新增:In Negotiation / Make Offer 分成两个
+      // 独立分组显示,细节见真实文件 fragments/OfferCardGallery/
+      // OfferCardGallery.vue 同名 computed 注释
+      var activeGroups = computed(function () {
+        var items = activeItems.value;
+        return [
+          { type: 'in-negotiation', title: 'In Negotiation', items: items.filter(function (item) { return item.type === 'in-negotiation'; }) },
+          { type: 'make-offer', title: 'Make Offer', items: items.filter(function (item) { return item.type === 'make-offer'; }) }
+        ];
+      });
+      return { role: role, activeItems: activeItems, activeGroups: activeGroups };
     }
   });
 
@@ -2197,18 +2220,18 @@
       '<OfferTabs v-bind="tabs" @select="handleTabSelect" />' +
       '<div class="offer-dashboard__toolbar">' +
       '<SearchInput v-model="searchValue" />' +
-      '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" class="offer-dashboard__filters" :is-multi-dealer="isMultiDealer" ' +
+      '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" class="offer-dashboard__filters" :is-multi-dealer="effectiveMultiDealer" ' +
       ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" :show-declined="activeMainTab !== \'selling\'" ' +
       '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event" @clear-dealer="dealerFilter = []" />' +
       '</div>' +
       '<div v-if="dealershipDropdownOpen" ref="dealerPopoverWrapRef" class="offer-dashboard__dealer-popover-anchor" :style="dealerPopoverStyle">' +
-      '<DealershipFilterDropdown :is-multi-dealer="isMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
+      '<DealershipFilterDropdown :is-multi-dealer="effectiveMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
       '</div>' +
       '<div class="offer-dashboard__table-card">' +
       '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" ' +
       ':has-prev-page="topPagination.hasPrevPage" :has-next-page="topPagination.hasNextPage" />' +
       '<template v-if="viewMode === \'table\'">' +
-      '<OfferTableHeader :is-multi-dealer="isMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
+      '<OfferTableHeader :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
       '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
       ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" :dialog-version="dialogVersion" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" @viewed="markSeen(row.auctionId)" />' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
@@ -2322,6 +2345,9 @@
       var hasAnyNewDeal = computed(function () { return buyingNewCount.value + sellingNewCount.value > 0; });
       var sidebar = computed(function () { return { activeItem: 'offers', offersCount: buyingNewCount.value + sellingNewCount.value }; });
       var tabs = computed(function () { return { activeTab: activeMainTab.value, buyingCount: buyingNewCount.value, sellingCount: sellingNewCount.value }; });
+      // 2026-09-02 按你的要求新增,细节见真实文件 fragments/OfferDashboard/
+      // OfferDashboard.vue 同名 computed 注释
+      var effectiveMultiDealer = computed(function () { return props.isMultiDealer && activeMainTab.value === 'selling'; });
       // [2026-08 按你的要求更正] 之前故意不跟着 dealerFilter/chipFilter
       // 联动,一直显示 rowsLimited 全量算出来的数字。你指出选了dealership
       // 后数量应该跟着筛选结果变——改成基于 dealerFilteredRows(只按
@@ -2404,7 +2430,7 @@
       var viewerRoleValue = computed(function () { return activeMainTab.value === 'selling' ? 'seller' : 'buyer'; });
       var rowsWithDealerMode = computed(function () {
         return visibleRows.value.map(function (row) {
-          return Object.assign({}, row, { isMultiDealer: props.isMultiDealer, viewerRole: viewerRoleValue.value, statusNew: isRowNew(row) });
+          return Object.assign({}, row, { isMultiDealer: effectiveMultiDealer.value, viewerRole: viewerRoleValue.value, statusNew: isRowNew(row) });
         });
       });
       // 2026-09-02 Figma 7597:112866 的 dialog Previous/Next 按钮需要跨
@@ -2467,7 +2493,7 @@
           var counterparty = (row.receivedAmount && row.receivedAmount !== '--') ? row.receivedAmount : row.acvEstimate;
           var own = (row.sentAmount && row.sentAmount !== '--') ? row.sentAmount : row.acvEstimate;
           return {
-            photoUrl: row.photoUrl, dealerName: row.dealerName, offerType: row.offerType,
+            photoUrl: row.photoUrl, dealerName: row.dealerName, isMultiDealer: effectiveMultiDealer.value, offerType: row.offerType,
             vehicleTitle: row.vehicleTitle, mileage: row.mileage, vin: row.vin, auctionId: row.auctionId,
             timeLeft: row.timeRemaining ? row.timeRemaining + ' Left' : '',
             timeLeftUrgent: rowTimeLeftUrgent(row.timeRemaining),
@@ -2513,7 +2539,7 @@
         setTableRowRef: setTableRowRef, setCardRef: setCardRef,
         handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
         handleCardPrev: handleCardPrev, handleCardNext: handleCardNext,
-        handleRemoveFromList: handleRemoveFromList, markSeen: markSeen
+        handleRemoveFromList: handleRemoveFromList, markSeen: markSeen, effectiveMultiDealer: effectiveMultiDealer
       };
     }
   });

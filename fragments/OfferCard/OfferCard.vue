@@ -300,7 +300,7 @@
           :label="offerTypeLabel"
           :ring="offerType === 'in-negotiation' && badgeStyle === 'ring'"
         />
-        <ImageBadge v-if="dealerName" variant="dealer" :label="dealerName" />
+        <ImageBadge v-if="dealerName && isMultiDealer" variant="dealer" :label="dealerName" />
       </div>
     </a>
 
@@ -444,6 +444,14 @@ const props = defineProps({
   // 兜底保留(徽标就不渲染),规范里不存在这个值。
   offerType: { type: String, default: 'in-negotiation' },
   dealerName: { type: String, default: 'CarMax Boston' },
+  // 2026-09-02 按你的要求新增:图片上的 dealer/lane 徽标只在 Buying/
+  // Selling 都是"有意义要区分多个经销商"的场景才显示——Buying tab 不
+  // 显示(不管账号本身是不是多经销商),Selling tab 只在账号是多经销商
+  // 时显示。这个判断在 OfferDashboard 那一层算好(effectiveMultiDealer),
+  // 这里只是被动接收结果,不自己判断"当前是哪个 tab",细节见
+  // fragments/OfferDashboard/notes.md。默认 true 不影响任何已有用法
+  // (没有传这个 prop 的场景,比如各自的 Playground 页面,行为不变)。
+  isMultiDealer: { type: Boolean, default: true },
   vehicleTitle: { type: String, default: 'Year Make Model' },
   mileage: { type: String, default: '250,000 miles' },
   vin: { type: String, default: '192211' },
@@ -637,11 +645,30 @@ const messageLine2V1 = computed(() => {
 //   (不是"Your counter")——卖家这一侧没有对应例子,沿用它本来就在用的
 //   "Your counter"/"Your reserve"措辞,只是结构上加了差额。
 // - declined/expired 这两个关闭状态你没有提到要改,原样复用 v1 的文案。
+// 2026-09-02 按你的要求更正:In Negotiation 的 sent(等对方回复)状态
+// 不再显示"Waiting on the seller/buyer",改成和 received(轮到你)状态
+// 同一套结构——line1 永远是"最后一个动作"(不管是你自己还是对方做的)+
+// 右侧时间,line2 是"对方最近一次的数字"+差额。原因(你的原话):In
+// Negotiation 里买卖双方可以无限次连续 counter,只要比自己上一次更靠近
+// 对方(不能等于或反向,否则对方直接接受就好,不需要继续还价);Make
+// Offer 买家只能出一次价,之后只能等卖家回应,不能连续出价——所以这条
+// 改动只影响 In Negotiation,Make Offer 的"Waiting on the seller"原样
+// 保留,没有变。
+// - sent + In Negotiation:line1 = "{你自己的角色} countered {你自己
+//   最新的金额}"(是你刚发的这个counter让你进入"等待"状态,所以"最后
+//   一个动作"就是你自己的);line1 时间用 ownTimestamp。
+// - sent + Make Offer:不变,还是 "Waiting on the seller/buyer",没有
+//   时间(等待本身没有时间点)。
+// - received:不变,line1 还是对方刚做的动作 + counterpartyTimestamp。
 const messageLine1V2 = computed(() => {
   const s = props.dealState
   if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
   if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
-  if (s === 'sent') return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer'
+  if (s === 'sent') {
+    if (isMakeOffer.value) return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer'
+    const who = isBuyer.value ? 'Buyer' : 'Seller'
+    return `${who} countered ${props.ownAmount}`
+  }
   if (s === 'received') {
     const who = isBuyer.value ? 'Seller' : 'Buyer'
     const verb = isBuyer.value ? 'countered' : (isMakeOffer.value ? 'offered' : 'countered')
@@ -652,13 +679,18 @@ const messageLine1V2 = computed(() => {
 
 // 2026-09 按你的要求:line1 的时间不再拼进文案字符串里挤在金额后面,改成
 // 单独一个元素,和 line1 文字同一行、靠最右边对齐(截图里"Seller
-// countered $4,500"和"Today, 08:45 AM"分别贴在这一行的左右两端)。只有
-// v2 的 received 状态 line1 才有这个时间(sent 状态的"Waiting on the
-// seller"本身没有时间点,declined/expired 也没有,v1 从来没有过这个时间)
+// countered $4,500"和"Today, 08:45 AM"分别贴在这一行的左右两端)。
+// 【2026-09-02 更正】sent 状态原来整体没有这个时间(因为line1整体是
+// "Waiting on..."没有时间点)——现在 In Negotiation 的 sent 状态 line1
+// 变成"你自己的最后一个动作",对应的时间(ownTimestamp)也要跟着显示在
+// 右侧,和 received 状态是同一个位置/同一套视觉。Make Offer 的 sent
+// 状态没有变,还是没有时间。declined/expired 也没有,v1 从来没有过这个
+// 时间。
 const messageLine1Timestamp = computed(() => {
   if (props.cardVersion !== 'v2') return ''
-  if (props.dealState !== 'received') return ''
-  return props.counterpartyTimestamp || ''
+  if (props.dealState === 'received') return props.counterpartyTimestamp || ''
+  if (props.dealState === 'sent' && !isMakeOffer.value) return props.ownTimestamp || ''
+  return ''
 })
 
 // 差额只在双方都有具体金额时才算得出来(和 InformationDialog 的
@@ -676,8 +708,14 @@ const messageLine2V2 = computed(() => {
     return isBuyer.value ? `Your offer ${props.ownAmount}` : `Buyer offered ${props.counterpartyAmount}`
   }
   if (s === 'sent') {
-    const verb = isMakeOffer.value ? 'offer' : 'counter'
-    return `Your ${verb} ${props.ownAmount} · ${props.ownTimestamp}`
+    // Make Offer:不变,原来的"Your offer/counter + 你自己的时间"。
+    // In Negotiation:line1 已经把"你自己的最后一个动作+时间"说完了,
+    // line2 换成"对方最近一次的数字+差额"——和 received 状态的 line2
+    // 结构对称(那边是"你自己的数字+差额"),只是这次换成对方的数字。
+    if (isMakeOffer.value) return `Your offer ${props.ownAmount} · ${props.ownTimestamp}`
+    const who = isBuyer.value ? 'Seller' : 'Buyer'
+    const gap = gapBetween(props.counterpartyAmount, props.ownAmount)
+    return gap ? `${who} countered ${props.counterpartyAmount} · ${gap} apart` : `${who} countered ${props.counterpartyAmount}`
   }
   if (s === 'received') {
     if (!isBuyer.value && isMakeOffer.value) return `Your reserve ${props.ownAmount}`

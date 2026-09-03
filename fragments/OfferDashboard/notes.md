@@ -548,3 +548,24 @@ rowsAsCards 的 isNew 都改成读 isRowNew()，不再直接读 mock 数据里�
 statusNew。**没有改**FilterChipGroup 筛选行 New chip 旁边的数字
 （newCount）——你只提到 Buying/Selling 和 Offers tab 这两处，筛选行的
 数字如果也需要一起联动，请告诉我。
+
+## 2026-09-02 新增：effectiveMultiDealer——Dealership 只在 Selling+多经销商时出现
+你反馈：Dealership 筛选 chip 只应该在 Selling tab 且账号是多经销商时
+出现，Buying tab 不管账号是单/多经销商都不应该有这个筛选；对应地，
+card 上的 dealer/lane 徽标、table 第一列的 Dealer Name 显示也要跟着
+调整——Buying 一律不显示 dealer 相关内容。
+
+用你给的 Figma node 6837:16635/16636 核实过：这个"不显示dealership"
+的参照帧，表头是"Auction ID"/"Type"、行内容直接显示 Auction ID，和
+项目里已经实现的 isMultiDealer=false 那一套视觉完全一样——所以
+Buying tab 不是需要单独设计的新样式，是直接复用这套已核实的渲染。
+
+新增 effectiveMultiDealer = isMultiDealer && activeMainTab==='selling'
+这个派生值，统一替换掉原来直接传 isMultiDealer 的四个地方：
+FilterChipGroup、DealershipFilterDropdown、OfferTableHeader、
+rowsWithDealerMode 里每一行的 isMultiDealer 字段。真正的 isMultiDealer
+prop（账号本身是不是多经销商）本身没有变，只是这几处消费方不再直接读
+它。
+
+rowsAsCards 新增了一个 isMultiDealer 字段（之前没有，OfferCard 本身也
+没有这个 prop）——细节见 OfferCard/notes.md。

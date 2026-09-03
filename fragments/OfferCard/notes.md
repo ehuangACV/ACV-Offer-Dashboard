@@ -483,3 +483,41 @@ Offer/Raise Your Offer）行为完全没变，还是统一打开 InformationDial
 （Remove From List 除外），都 emit viewed 事件，由 OfferDashboard 接住
 标记这一张卡"看过了"，New 徽标/Buying-Selling/Offers 数字会跟着调整，
 细节见 [OfferDashboard/notes.md](../OfferDashboard/notes.md)。
+
+## 2026-09-02 新增 isMultiDealer prop：dealer/lane 徽标只在多经销商时显示
+按你的要求新增。图片上的 dealer/lane 徽标（ImageBadge variant=dealer）
+原来只要 dealerName 有值就显示，现在还要看 isMultiDealer——Buying tab
+不显示（OfferDashboard 那一层传的 effectiveMultiDealer 在 Buying tab
+永远是 false，不管账号本身是不是多经销商），Selling tab 只在账号是
+多经销商时显示。默认值 true，不影响没有传这个 prop 的场景（比如这个
+组件自己的 Playground 页面）。细节见
+[OfferDashboard/notes.md](../OfferDashboard/notes.md)。
+
+## 2026-09-02 更正：In Negotiation 的 sent(waiting)状态改成显示"最后一个动作"
+你反馈：In Negotiation 的 sent 状态不应该再显示"Waiting on the
+seller/buyer"，应该改成和 received（轮到你）状态同一套结构——line1
+永远是"最后一个动作"+右侧时间，line2 是"对方最近一次的counter"+差额。
+
+原因（你的原话）：In Negotiation 里买卖双方可以无限次连续 counter，
+只要比自己上一次更靠近对方（不能等于或反向——等于或反向对方直接接受
+就好，不需要继续还价；低于对方上次出价只能是填错价格）；Make Offer
+买家只能出一次价，之后只能等卖家回应，不能连续出价。所以这条改动
+**只影响 In Negotiation**，Make Offer 的 sent 状态（"Waiting on the
+seller/buyer"，没有时间）**没有变**。
+
+只改了 v2（messageLine1V2/messageLine2V2/messageLine1Timestamp），
+v1（旧版本，保留对比用）没有动。
+
+改法：
+- messageLine1V2 的 sent 分支：In Negotiation 时不再是
+  "Waiting on the seller/buyer"，改成"{你自己的角色} countered
+  {ownAmount}"——因为进入 sent 状态本身就是因为你刚发了这个counter，
+  "最后一个动作"就是你自己的。
+- messageLine1Timestamp：In Negotiation 的 sent 状态现在也显示时间了
+  （用 ownTimestamp，因为line1现在说的是你自己的动作），Make Offer
+  的 sent 状态还是没有时间。
+- messageLine2V2 的 sent 分支：In Negotiation 时不再是"Your
+  counter + 你自己的时间"，改成"{对方角色} countered {对方最新
+  金额} · {差额} apart"——和 received 状态的 line2（"Your counter +
+  差额"）结构对称，只是这次换成显示对方的数字。Make Offer 的 sent
+  分支没有变。

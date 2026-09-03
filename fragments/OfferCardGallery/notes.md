@@ -51,3 +51,12 @@
 
 ## 2026-09-02 mirror sync fix: added missing counterpartyTimestamp
 While fixing OfferCard's cardVersion default (see OfferCard/notes.md), found that component-playground.html's hand-duplicated buyerItems/sellerItems arrays for this gallery were missing the counterpartyTimestamp field on all three "Received" entries (the real .vue file does not have this gap since it spreads the actual mock objects directly via props: buyerReceivedExample etc.). Added the matching values from fragments/OfferCard/mock.js so the v2 line1-timestamp now renders correctly here too.
+
+## 2026-09-02 追加：In Negotiation / Make Offer 分成两个独立分组
+按你的要求："in negotiation 和make offer是2类型，要分开"——每个 item
+新增 type 字段（值直接取自它自己 mock 里的 offerType，不是重新分类），
+按 type 分成两个 activeGroups（In Negotiation 在前、Make Offer 在后），
+每组一个小标题，组内顺序保留原来"进行中→已结束"的排法。Declined/
+Expired 各自归到它自己 mock 原本的 offerType 对应的组（比如买家侧
+Declined 例子本身 offerType 是 make-offer，归进 Make Offer 组，不是
+凭状态名称猜的）。
