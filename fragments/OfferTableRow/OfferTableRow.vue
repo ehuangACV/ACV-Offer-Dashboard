@@ -276,7 +276,6 @@
       :history="history"
       :has-prev="hasPrevDeal"
       :has-next="hasNextDeal"
-      :dialog-version="dialogVersion"
       @prev="$emit('prev-deal')"
       @next="$emit('next-deal')"
     />
@@ -343,10 +342,7 @@ const props = defineProps({
   // rowsWithDealerMode)按当前行在可见列表里的位置算好了传进来。默认都是
   // false,不传就是"没有其他 deal 可以切",不影响任何已有用法。
   hasPrevDeal: { type: Boolean, default: false },
-  hasNextDeal: { type: Boolean, default: false },
-  // 2026-09-02 按你的要求新增,原样透传给 InformationDialog 的
-  // dialogVersion,细节见 fragments/InformationDialog/notes.md。
-  dialogVersion: { type: String, default: 'v1' }
+  hasNextDeal: { type: Boolean, default: false }
 })
 // 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
 // Previous/Next 之后,原样往上 emit,交给真正维护列表的 OfferDashboard 处理

@@ -1,5 +1,75 @@
 # OfferDashboard — Notes
 
+## 2026-09-03(第二次)Sent/Received/New 三个 filter chip 也是同一类 bug
+你截图指出:Selling tab 同时选中 "Make Offer (2)" + "Sent (3)",结果却是
+"No vehicles match the current filters"——"显示 sent 3 个，具体 filter
+的内容是空的"，要求"仔细检查 buying and selling filter chip 的显示和
+对应的 filter 内容有没有逻辑上的问题"。
+
+逐行核对 `OfferTableRow/mock.js` 之后,发现不只是 Sent+Make Offer 这一个
+组合凑巧显示空,是 Sent/Received/New 三个 chip 的计数和匹配逻辑本身各自
+都有和上一条 Declined 同一类的 bug——都是"用了一个看起来相关、但实际上
+和 Update 列真正显示的状态脱节的原始字段/启发式判断":
+
+- **Sent**:之前判断 `sentAmount 存在(非'--')`,不是真正驱动 Update 列
+  显示的 `statusSent` 字段。Selling 的 `rowToyotaMatrix` 就是反例:
+  `sentAmount:'$5,200'`(有数字)但 `statusSent:false`,Update 列显示的
+  其实是 "Received"。这也是截图里那个诡异现象的根: "Sent (3)" 本身就
+  多算了(把这行也算进去了),叠加 "Make Offer" 一起选,真正同时满足
+  "make-offer 类型 且 dealState 真的是 sent" 的行数是 0——两个问题叠在
+  一起,看起来比单独一个问题更离奇。
+- **Received**:之前判断 `row.statusReceived` 这个字段,但 Update 列的
+  `dealState`(`rowToDealState()`,和 `OfferTableRow.vue` 自己的
+  `dealState` computed 同一套优先级)根本不看这个字段——没有
+  declined/sent 时默认就是 'received',不管 `statusReceived` 写的是
+  true 还是 false。`rowWithNoStatusChip`/`rowDodgeCharger` 的
+  `statusReceived` 都是 `false`,但 Update 列因为 statusDeclined/
+  statusSent 都是 false,显示的正是 "Received"——之前的写法会把这些行
+  排除在 "Received" 筛选结果外,尽管它们在 Update 列上明明显示着
+  Received。
+- **New**:之前只判断原始 `row.statusNew`,漏了两层规则:(1) New 从不
+  和 `dealState==='sent'` 一起出现(`rowChevyMalibu`/`rowFordEscapeSE`
+  都是 `statusNew:true` 但 dealState 是 'sent',Update 列根本不会渲染
+  New,这条规则 `OfferCard`/`OfferTableRow` 自己的 `showNewChip`
+  computed 里一直都有,这里没跟着用);(2) 有没有被"看过"
+  (`isRowNew()`,和 sidebar/Buying-Selling 数字用的是同一个函数)——之前
+  看过的行,sidebar 数字会跟着减少,这个 filter chip 却继续把它算进
+  New、筛选也筛得出来。
+
+改法:在 `isRowNew` 旁边新增两个共享 helper——
+`rowToDealState(row)`(declined 优先、再 sent、默认 received,原来只在
+`rowsAsCards` 那边单独定义,这次挪到更靠前的位置,给 `filters`/
+`matchesFilters` 也用,不再各自维护一份判断)和
+`rowShowsNew(row)`(= `isRowNew(row) && dealState 是 received 或
+declined`)。`filters` computed 的四个 count 和 `matchesFilters` 的四个
+single 分支(New/Received/Sent/Declined)统一改成调用这两个函数,保证
+"chip 上写的数字"和"点开筛出来的内容"永远用同一套判断算出来,不会再有
+数字和内容对不上的情况。
+
+## 2026-09-03 修了一个真实 bug:Declined filter chip 一直是 disabled
+你反馈:"table and tile view 里有这个 declined 2022 lexus car,但是你
+filter 的 declined 显示 inactive。只有没有对应的 deal 才应该显示
+inactive filter chip"。
+
+根因:`filters` computed 里 `declinedCount` 之前是硬编码的 `0`(见
+METADATA 里 2026-08 那条"declinedCount 目前没有对应字段可统计,固定给
+0"的历史记录——当时这条记录本身就是错的,`row.statusDeclined` 这个字段
+其实从一开始就存在,`rowToDealState()` 一直在用它判断 declined 状态,
+table/card 也确实会显示 Declined 的行,只是这里的筛选/计数逻辑没跟着用
+这个已有字段)。`matchesFilters(row)` 里 `single === 'declined'` 分支也
+写死 `return false`,选中这个 chip 必然筛出空列表。
+[FilterChipGroup](../FilterChipGroup/notes.md) 的 Declined chip 本身是
+"`declinedCount === 0` 就 disabled"的逻辑,`declinedCount` 永远是 0,
+chip 也就永远灰掉,和实际有没有 declined 的行完全没关系。
+
+改法:
+- `declinedCount` 改成 `dealerFilteredRows.value.filter((r) =>
+  r.statusDeclined).length`,和 newCount/receivedCount/sentCount 是同一
+  个套路。
+- `matchesFilters` 里 `if (single === 'declined') return false` 改成
+  `if (single === 'declined' && !row.statusDeclined) return false`,和
+  new/received/sent 三个 single 筛选保持一致的写法。
+
 ## 2026-09-02(第四次)新增 Dialog 两侧 Previous/Next 的跨行导航
 对照 Figma node 7597:112866,[InformationDialog](../InformationDialog/notes.md)
 新增了两侧的 Previous/Next 按钮 + `hasPrev`/`hasNext`/`prev`/`next` 这套

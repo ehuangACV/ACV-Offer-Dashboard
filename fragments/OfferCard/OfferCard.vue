@@ -396,7 +396,6 @@
       :history="history"
       :has-prev="hasPrevDeal"
       :has-next="hasNextDeal"
-      :dialog-version="dialogVersion"
       @prev="$emit('prev-deal')"
       @next="$emit('next-deal')"
     />
@@ -538,12 +537,7 @@ const props = defineProps({
   // 传进来。默认都是 false,不传就是"没有其他 deal 可以切",两个按钮都
   // 不显示,不影响任何已有用法。
   hasPrevDeal: { type: Boolean, default: false },
-  hasNextDeal: { type: Boolean, default: false },
-  // 2026-09-02 按你的要求新增,原样透传给 InformationDialog 的
-  // dialogVersion——OfferCard 自己不关心这个版本切换,只是转手传下去,
-  // 由 OfferDashboard 的 Controls 统一控制,细节见
-  // fragments/InformationDialog/notes.md。
-  dialogVersion: { type: String, default: 'v1' }
+  hasNextDeal: { type: Boolean, default: false }
 })
 // 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
 // Previous/Next 之后,OfferCard 自己不知道"上一张/下一张是哪张卡",只是

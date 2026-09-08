@@ -1,5 +1,31 @@
 # InformationDialog — Notes
 
+## 2026-09-03 去掉 V1,只保留 V2 行为(不再是可切换的版本)
+你确认"去掉 information dialog version V1，已确认使用V2版本"——V1/V2 从
+"两套可切换的版本"变成"只有一套行为",不再是一个 prop。
+
+删掉的东西:
+- `dialogVersion` prop 本身,以及所有透传它的地方——
+  [OfferCard.vue](../OfferCard/notes.md)、
+  [OfferTableRow.vue](../OfferTableRow/notes.md)、
+  `OfferDashboard.vue`(prop 本身 + 两处 `:dialog-version="dialogVersion"`
+  绑定)、`OfferDashboard/controls.js` 里的 "Information Dialog version"
+  Controls 分段控件,四个文件一起删,不再有任何地方能切换版本。
+- 车辆信息区右上角那个"v1 专属"的徽标(`v-if="offerType !== 'none' &&
+  dialogVersion !== 'v2'"`,配套的 `.info-dialog__type-badge` 定位
+  CSS)——这是 v1 独有的徽标位置,v2 把徽标挪到了状态行,两个位置本来就
+  不会同时出现,删掉 v1 分支后车辆信息区右上角不再渲染任何徽标。
+- 状态行徽标/状态chip 上原来只在 `dialogVersion==='v2'` 时才生效的条件
+  全部去掉,改成无条件渲染/无条件应用——徽标 `v-if="offerType !== 'none'"`
+  (不再判断版本),New/状态chip 的高度直接改成 24px/padding 5px 8px
+  (原来的 `.info-dialog__chip--v2` 修饰类,只在 v2 时把 22px 的
+  `.info-dialog__chip` 撑到 24px 去对齐旁边的 type badge,现在既然永远
+  是这套行为,直接合并进 `.info-dialog__chip` 本身,不再需要单独一个
+  修饰类)。
+
+没有变的:所有其它逻辑、几何、文案都是原来 v2 的样子,一个字没动——这次
+纯粹是"删掉 v1 分支和切换开关",不是重新设计 v2。
+
 ## 2026-09-02 新增:两侧 Previous/Next + 车辆信息行的类型徽标
 对照 Figma node 7597:112866("Offers"整页 + 打开的 Dialog + 两侧的
 Previous/Next)新增两块内容,细节和取舍(为什么按钮贴视口边缘不是照抄

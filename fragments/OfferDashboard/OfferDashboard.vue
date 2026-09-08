@@ -297,7 +297,6 @@
               :ref="(el) => setTableRowRef(el, i)"
               :has-prev-deal="i > 0"
               :has-next-deal="i < rowsWithDealerMode.length - 1"
-              :dialog-version="dialogVersion"
               @prev-deal="handleTablePrev(i)"
               @next-deal="handleTableNext(i)"
               @remove-from-list="handleRemoveFromList(row.auctionId)"
@@ -321,8 +320,7 @@
                 :ref="(el) => setCardRef(el, i)"
                 :has-prev-deal="i > 0"
                 :has-next-deal="i < rowsAsCards.length - 1"
-                :dialog-version="dialogVersion"
-                @prev-deal="handleCardPrev(i)"
+                  @prev-deal="handleCardPrev(i)"
                 @next-deal="handleCardNext(i)"
                 @remove-from-list="handleRemoveFromList(card.auctionId)"
                 @viewed="markSeen(card.auctionId)"
@@ -374,13 +372,7 @@ const props = defineProps({
   // OfferDashboard 自己以后可能会有的其它 "badgeStyle" 概念混在一起
   // (比如 StatusChip/OfferTypeBadge 那些表格徽标),同 cardVersion 一样
   // 只透传给 tile 视图的 OfferCard,不影响 table 视图。
-  cardBadgeStyle: { type: String, default: 'default' },
-  // 2026-09-02 按你的要求新增,给 InformationDialog 的 v1/v2 切换用——
-  // v1 是徽标贴车辆标题区右上角的现有样子,v2 把徽标挪到状态行最前面、
-  // 加 info 图标点开说明弹层,细节见 fragments/InformationDialog/notes.md。
-  // 同时透传给 table 视图(OfferTableRow)和 tile 视图(OfferCard)里各自
-  // 嵌的那个 InformationDialog,两种视图切出来的弹窗版本保持一致。
-  dialogVersion: { type: String, default: 'v1' }
+  cardBadgeStyle: { type: String, default: 'default' }
 })
 
 const dealershipDropdownOpen = ref(false)
@@ -536,13 +528,19 @@ const dealerFilteredRows = computed(() =>
   )
 )
 
+// 2026-09-03 四个 single 筛选(New/Received/Sent/Declined)的计数全部改成
+// 用 rowToDealState()/rowShowsNew()(定义见上面 isRowNew 旁边)算,不再
+// 各自直接读 statusReceived/sentAmount 这些和 Update 列实际显示脱节的
+// 原始字段——细节和发现的 bug 见下面 matchesFilters 旁边的注释,这里的
+// 计数和那边的匹配逻辑必须用同一套判断,否则又会出现"chip 上写着有几条,
+// 点开却是空/或者混进了 chip 上没写的行"这种数字和内容对不上的问题。
 const filters = computed(() => ({
   negotiationCount: dealerFilteredRows.value.filter((r) => r.offerType === 'in-negotiation').length,
   makeOfferCount: dealerFilteredRows.value.filter((r) => r.offerType === 'make-offer').length,
-  newCount: dealerFilteredRows.value.filter((r) => r.statusNew).length,
-  receivedCount: dealerFilteredRows.value.filter((r) => r.statusReceived).length,
-  sentCount: dealerFilteredRows.value.filter((r) => r.sentAmount && r.sentAmount !== '--').length,
-  declinedCount: 0
+  newCount: dealerFilteredRows.value.filter(rowShowsNew).length,
+  receivedCount: dealerFilteredRows.value.filter((r) => rowToDealState(r) === 'received').length,
+  sentCount: dealerFilteredRows.value.filter((r) => rowToDealState(r) === 'sent').length,
+  declinedCount: dealerFilteredRows.value.filter((r) => rowToDealState(r) === 'declined').length
 }))
 
 const searchValue = ref('')
@@ -601,11 +599,72 @@ function markSeen(auctionId) {
 function isRowNew(row) {
   return row.statusNew && !seenAuctionIds.value.includes(row.auctionId)
 }
+// 2026-09-03 挪到这里(原来定义在下面 rowsAsCards 旁边,靠函数声明的
+// hoisting 在这之前也能用,这次为了讲清楚"filter chip 的计数/匹配和
+// Update 列显示用的是同一套优先级判断"这件事,把它挪到调用者(filters/
+// matchesFilters)前面,不是逻辑本身有变化)——declined 优先、再 sent、
+// 默认 received,和 OfferTableRow.vue 自己的 dealState computed 是同一套
+// 判断,table/card 的 Update 列/状态chip 显示的就是这个值,不是分别再看
+// statusReceived 这个字段。
+function rowToDealState(row) {
+  if (row.statusDeclined) return 'declined'
+  if (row.statusSent) return 'sent'
+  return 'received'
+}
+// 2026-09-03 新增:New chip 到底应不应该显示,规则和 OfferCard/
+// OfferTableRow 的 showNewChip computed 完全一样——New 只能和
+// received/declined 搭配,从不和 sent 一起出现,而且要叠加上面的
+// isRowNew()(看过之后就不再算 New)。filter chip 的 New 计数/匹配如果
+// 只看 row.statusNew 这一个原始字段,会把"实际上 Update 列不会显示 New"
+// 的行也算进去(比如 statusNew+statusSent 都是 true 的行,dealState 是
+// sent,New 从来不会真的渲染出来)。
+function rowShowsNew(row) {
+  const state = rowToDealState(row)
+  return isRowNew(row) && (state === 'received' || state === 'declined')
+}
 
 // In negotiation / Make Offer 是可以同时选中的(见 FilterChipGroup 的
 // Figma 标注:两者多选),选中任一个就要求 offerType 匹配其中之一;
-// New/Received/Sent 互斥单选,直接对应行上的字段;Declined 这几行 mock
-// 数据里没有对应字段,选中后必然没有匹配行(空列表是正确结果,不是bug)。
+// New/Received/Sent/Declined 互斥单选。
+// 【2026-09-03 修正,你反馈"buying and selling filter chip 的显示和
+// 对应的 filter 内容"有逻辑问题】这四个 single 分支之前各自直接读一个
+// "看起来相关"但其实和 Update 列实际显示脱节的原始字段,逐条核对
+// mock.js 发现四个全部有问题(不只是你截图指出的 Sent+Make Offer 组合):
+// - **Declined**(上一轮已修):之前写死 `return false`,永远选不出
+//   任何结果——已经改成判断 `row.statusDeclined`,这次改成
+//   `rowToDealState(row) === 'declined'`,和其它三个分支统一用同一个
+//   来源(结果等价,统一是为了避免以后 statusDeclined/statusSent 同时
+//   为 true 这种"理论上不该出现但没人校验"的组合让 declined 分支的
+//   判断标准和 Update 列脱节)。
+// - **Sent**:之前判断 `sentAmount 存在(非'--')`,不是 `statusSent`
+//   这个真正驱动 Update 列显示的字段——Selling tab 的 rowToyotaMatrix
+//   就是个例子:`sentAmount: '$5,200'`(有数字)但 `statusSent: false`,
+//   Update 列实际显示的是 "Received"。之前的写法会把这一行也算进
+//   "Sent",导致 chip 上写 "Sent (3)" 但其中一条其实是 Received、
+//   点开筛选也会把它列进来——这正是你截图指出"Sent 写 3 个,筛出来的
+//   内容却是空"这个诡异现象背后更深一层的原因(Sent 本身计数就多算了,
+//   叠加 Make Offer 一起选之后,真正符合"Make Offer 且真的是 Sent"的
+//   行数是 0,两个 bug 叠在一起看起来更离奇)。
+// - **Received**:之前判断 `row.statusReceived` 这个字段,但 Update 列
+//   的 dealState 判断根本不看这个字段(`rowToDealState()`/
+//   `OfferTableRow.vue` 的 dealState computed 都只看 statusDeclined/
+//   statusSent,没有 sent/declined 时默认落到 'received')——比如
+//   rowWithNoStatusChip/rowDodgeCharger 的 `statusReceived` 都是
+//   `false`,但 Update 列因为 statusDeclined/statusSent 都是 false,
+//   实际显示的正是 "Received"。之前的写法会把这些行排除在 "Received"
+//   筛选结果之外,尽管它们在 Update 列上明明显示着 Received。
+// - **New**:之前只判断原始的 `row.statusNew`,漏了两层已经在
+//   showNewChip/rowShowsNew 里实现过的规则:(1) New 从不和
+//   dealState==='sent' 一起出现(比如 rowChevyMalibu/rowFordEscapeSE
+//   都是 `statusNew:true` 但 dealState 是 'sent',Update 列根本不会
+//   渲染 New);(2) 这一行是不是已经被看过(`isRowNew()`,决定 sidebar/
+//   Buying-Selling 数字的同一个函数)——之前选中"看过"的行,sidebar 数字
+//   会跟着减少,但这个 filter chip 还是会继续把它算进 New、筛选也筛得出
+//   来,和其它地方的"看过就不算 New"这条规则不一致。
+// 统一改成调用 `rowToDealState(row)`/`rowShowsNew(row)`(定义见上面
+// isRowNew 旁边)——和上面 `filters` computed 用的是同一套函数,保证
+// "chip 上写的数字"和"点开筛出来的内容"永远是同一个判断标准算出来的,
+// 不会再出现两者对不上的情况。
 function matchesFilters(row) {
   if (removedAuctionIds.value.includes(row.auctionId)) return false
   if (dealerFilter.value.length && !dealerFilter.value.includes(row.dealerName)) {
@@ -618,10 +677,10 @@ function matchesFilters(row) {
       (makeOffer && row.offerType === 'make-offer')
     if (!matchesOfferType) return false
   }
-  if (single === 'new' && !row.statusNew) return false
-  if (single === 'received' && !row.statusReceived) return false
-  if (single === 'sent' && !(row.sentAmount && row.sentAmount !== '--')) return false
-  if (single === 'declined') return false
+  if (single === 'new' && !rowShowsNew(row)) return false
+  if (single === 'received' && rowToDealState(row) !== 'received') return false
+  if (single === 'sent' && rowToDealState(row) !== 'sent') return false
+  if (single === 'declined' && rowToDealState(row) !== 'declined') return false
   return true
 }
 
@@ -769,11 +828,8 @@ function handleCardNext(i) {
 function rowTimeLeftUrgent(timeRemaining) {
   return !!timeRemaining && !/[hd]/.test(timeRemaining) && /m/.test(timeRemaining)
 }
-function rowToDealState(row) {
-  if (row.statusDeclined) return 'declined'
-  if (row.statusSent) return 'sent'
-  return 'received'
-}
+// rowToDealState() 挪到上面 isRowNew 旁边了(filters/matchesFilters 也
+// 要用它),这里不再重复定义,靠函数声明的 hoisting 在这里一样能用。
 const rowsAsCards = computed(() => {
   const role = viewerRoleValue.value
   return visibleRows.value.map((row) => {

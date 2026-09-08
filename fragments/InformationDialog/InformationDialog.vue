@@ -194,12 +194,6 @@
             <span class="info-dialog__vehicle-line">Odometer: {{ mileage }}</span>
             <span class="info-dialog__vehicle-line">Auction ID: {{ auctionId }}</span>
           </div>
-          <ImageBadge
-            v-if="offerType !== 'none' && dialogVersion !== 'v2'"
-            :variant="offerType"
-            :label="offerTypeLabel"
-            class="info-dialog__type-badge"
-          />
         </div>
 
         <div class="info-dialog__money">
@@ -244,7 +238,7 @@
                  徽标是深色字,图标跟着变深色),不需要为两种徽标背景单独
                  调颜色 -->
             <ImageBadge
-              v-if="offerType !== 'none' && dialogVersion === 'v2'"
+              v-if="offerType !== 'none'"
               :variant="offerType"
               :label="offerTypeLabel"
               class="info-dialog__type-badge-v2"
@@ -285,8 +279,8 @@
                 </div>
               </div>
             </ImageBadge>
-            <span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new" :class="{ 'info-dialog__chip--v2': dialogVersion === 'v2' }">New</span>
-            <span v-if="hasStateChip" class="info-dialog__chip" :class="[`info-dialog__chip--${dealState}`, { 'info-dialog__chip--v2': dialogVersion === 'v2' }]">{{ stateChipLabel }}</span>
+            <span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new">New</span>
+            <span v-if="hasStateChip" class="info-dialog__chip" :class="`info-dialog__chip--${dealState}`">{{ stateChipLabel }}</span>
           </span>
           <span v-if="hasCountdown" class="info-dialog__time-remaining">
             Time Remaining
@@ -463,28 +457,18 @@ const props = defineProps({
   // false——不传就等于"没有其他 deal 可以切",两个按钮都不显示,新增这个
   // 功能不会影响任何已有用法。
   hasPrev: { type: Boolean, default: false },
-  hasNext: { type: Boolean, default: false },
-  // 2026-09-02 按你的要求新增 v2:v1(默认)是徽标贴在车辆标题区右上角的
-  // 现有样子;v2 把徽标挪到状态行(New/Received/...)最前面、配一个可以
-  // 点开说明弹层的 info 图标,细节见下面徽标/状态行相关的注释和
-  // fragments/InformationDialog/notes.md。由 OfferDashboard 的 Controls
-  // 统一控制,不是这个组件自己默认切换的。
-  dialogVersion: { type: String, default: 'v1' }
+  hasNext: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer', 'prev', 'next'])
 
 const isBuyer = computed(() => props.viewerRole === 'buyer')
 const isMakeOffer = computed(() => props.offerType === 'make-offer')
-// 2026-09-02 按 Figma node 7597:112866(In Negotiation 徽标出现在车辆信息
-// 行右上角)新增,复用 fragments/ImageBadge——和 OfferCard 图片上的徽标
-// 是同一个组件。这里不传 ring,走默认样式(深色底,无描边无投影)——
-// 按你的要求,dialog 上的徽标不需要 ring 版本的描边/投影,和 Card 图片上
+// 复用 fragments/ImageBadge——和 OfferCard 图片上的徽标是同一个组件,挂在
+// 状态行(New/Received/...)最前面,不传 ring,走默认样式(深色底,无描边
+// 无投影)——dialog 上的徽标不需要 ring 版本的描边/投影,和 Card 图片上
 // 需要靠描边+投影提升可辨识度的场景不一样(dialog 里徽标本身就在浅灰底
 // 卡片上,不存在"和图片背景混在一起看不清"的问题)。Make Offer 沿用
 // ImageBadge 已核实的白底+灰描边样式,保持两种类型一致的视觉语言。
-// 2026-09-02 新增 v2 之后,这个位置(车辆标题区右上角)的徽标只在
-// dialogVersion==='v1' 时渲染——v2 把徽标挪到下面的状态行,两个位置
-// 不会同时出现同一个徽标,细节见下面状态行附近的注释。
 const offerTypeLabel = computed(() => (isMakeOffer.value ? 'Make Offer' : 'In Negotiation'))
 
 // 2026-09-02 v2 徽标内 info 图标的说明弹层——点外部/按 Escape 关闭,照抄
@@ -776,16 +760,6 @@ function handleFooterCommit() {
   background: #F7F7F8;
 }
 
-/* 2026-09-02 按 Figma node 7597:112866 新增,徽标贴着这一块的右上角,
-   数值(top/right)是照这个节点量出来的比例估的,不是像素级核实——那个
-   节点的车辆信息行是574px宽对话框里的一个固定尺寸块,和我们520px宽
-   对话框、14px padding 不是同一套坐标,直接照抄像素反而会对不上 */
-.info-dialog__type-badge {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-}
-
 .info-dialog__vehicle-photo {
   position: relative;
   width: 116px;
@@ -882,7 +856,9 @@ function handleFooterCommit() {
 }
 
 /* 2026-09 按模板要求"照抄几何,不要重新设计样式",这几个chip改回手写
-   markup,不再引用 StatusChip 组件——细节和取舍见上面 METADATA */
+   markup,不再引用 StatusChip 组件——细节和取舍见上面 METADATA。高度
+   24px(4px→5px 上下 padding)是为了和旁边的 type badge(ImageBadge,
+   24px高)对齐 */
 .info-dialog__chips {
   display: flex;
   align-items: center;
@@ -892,8 +868,8 @@ function handleFooterCommit() {
 .info-dialog__chip {
   display: flex;
   align-items: center;
-  height: 22px;
-  padding: 4px 8px;
+  height: 24px;
+  padding: 5px 8px;
   border-radius: 4px;
   box-sizing: border-box;
   font-size: 12px;
@@ -906,16 +882,6 @@ function handleFooterCommit() {
 .info-dialog__chip--sent { background: #E0E0E0; color: #212121; }
 .info-dialog__chip--declined { background: #FFEFBF; color: #402D00; }
 .info-dialog__chip--expired { background: #E0E0E0; color: #55575C; }
-
-/* 2026-09-02 v2 新增:你要求"status chip match to type badge 的高度"——
-   type badge(ImageBadge)高度是 24px,这几个状态 chip 原来是 22px(见上面
-   .info-dialog__chip 的 height:22px)。只在 v2 时加 1px 上下 padding
-   (4px→5px,水平 padding 不变),22px + 2px = 24px,刚好和徽标对齐,不
-   直接改 .info-dialog__chip 本身的高度(v1 还是原来的 22px,不受影响)。 */
-.info-dialog__chip--v2 {
-  height: 24px;
-  padding: 5px 8px;
-}
 
 /* 2026-09-02 v2 新增:徽标从车辆标题区挪到状态行最前面,复用同一个
    ImageBadge 组件(样式跟 v1 的徽标完全一样,深色底/白底两种颜色不变),
