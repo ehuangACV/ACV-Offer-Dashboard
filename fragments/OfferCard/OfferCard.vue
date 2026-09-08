@@ -269,17 +269,44 @@
     由卡片自己去解析 `timeLeft` 文本里到底有没有"h"来自动判断,而不是靠
     外部传的 `timeLeftUrgent` 布尔值,请明确说一下,现在没有做这个改动
     (担心猜错方向,搞出一个你没要求的新机制)。
+
+    【2026-09-08 按你的要求删除 v1】你确认 tile view 只需要 v2,v1(车辆
+    信息第二行显示 mileage、message 两行用旧文案规则)已经完全不需要,
+    删掉了 `cardVersion` prop 本身——组件不再有版本分支,`messageLine1`/
+    `messageLine2` 直接就是原来 v2 的那套算法(`messageLine1V2`/
+    `messageLine2V2` 改名,不再需要按 `cardVersion` 选择)。车辆信息第二
+    行原来 `cardVersion==='v2' ? auctionId : mileage` 的三元表达式改成
+    恒定显示 `Auction ID: {{ auctionId }}`,原来只在非 v2 时才渲染的
+    "Auction ID: xxx" 独立那一行(本来就是死代码,cardVersion 恒为
+    'v2')一并删掉。`showGap`/`gapAmount` 这两个只服务于 v1 message
+    line2 的 prop 也一起删了(v1 的分支删掉之后没有任何代码再读它们)。
+    `mileage` prop 本身没有删——它还要传给 `InformationDialog` 显示
+    "Odometer: {mileage}",和卡片自己"要不要显示mileage行"是两件不同
+    的事。同步删掉了 `OfferDashboard.vue` 的 `cardVersion` prop(不再
+    需要透传"v1"还是"v2"给 tile view 的卡片),细节见
+    fragments/OfferDashboard/notes.md。
+
+    【2026-09-08 按你的要求删除 In Negotiation 徽标的 ring 样式】你确认
+    tile view 的徽标只留 default 样式,ring(白色描边+投影)这个 2026-
+    09-02 才加的概念稿方向不需要了。删掉了 `badgeStyle` prop 本身,
+    `<ImageBadge>` 不再传 `:ring` 这个 prop(交给它自己默认值,恒为
+    false)。`ImageBadge.vue` 组件本身的 `ring` 能力没有删——它是一个
+    独立的通用组件,自己的 Playground 页面(order 39)还留着 ring 的
+    demo,只是 OfferCard 不会再用它。同步删掉了 `OfferDashboard.vue` 的
+    `cardBadgeStyle` prop(不再需要透传 default/ring 给 tile view 的
+    卡片),细节见 fragments/OfferDashboard/notes.md。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
+  <!-- 2026-09-03(第五次)按 Figma node 7672:20143 核实,模糊范围不再
+       按按钮数量区分(见下面 CSS 的 .offer-card--v1:hover
+       .offer-card__flex-section),-btn-1/-btn-2/-btn-3 这三个修饰类已经
+       没有 CSS 规则再引用,删掉,只留 -v1 本身(hoverButtons.length>0,
+       现在恒为真,用来在 cardVersion 之外的旧 buttonVersion 场景里限定
+       "有 hover 按钮才模糊",细节见下面 CSS 注释)。 -->
   <div
     class="offer-card"
-    :class="{
-      'offer-card--v1': hoverButtons.length > 0,
-      'offer-card--v1-btn-1': hoverButtons.length === 1,
-      'offer-card--v1-btn-2': hoverButtons.length === 2,
-      'offer-card--v1-btn-3': hoverButtons.length === 3
-    }"
+    :class="{ 'offer-card--v1': hoverButtons.length > 0 }"
   >
     <!-- 2026-08 按你的要求:点卡片图片也进 VDP,和表格视图
          (OfferTableRow)点缩略图的行为保持一致,同样是先用占位截图页
@@ -298,7 +325,6 @@
           v-if="offerType !== 'none'"
           :variant="offerType"
           :label="offerTypeLabel"
-          :ring="offerType === 'in-negotiation' && badgeStyle === 'ring'"
         />
         <ImageBadge v-if="dealerName && isMultiDealer" variant="dealer" :label="dealerName" />
       </div>
@@ -308,18 +334,18 @@
       <div class="offer-card__vehicle">
         <div class="offer-card__vehicle-title">{{ vehicleTitle }}</div>
         <div class="offer-card__vehicle-sub">
-          <span>{{ cardVersion === 'v2' ? ('Auction ID: ' + auctionId) : mileage }}</span>
+          <span>Auction ID: {{ auctionId }}</span>
           <span>・</span>
-          <span class="offer-card__vin">
+          <span class="offer-card__vin" :class="{ 'is-copied': copiedVin }">
             VIN {{ vin }}
-            <button type="button" class="offer-card__copy-btn" aria-label="Copy VIN" @click="copyVin">
+            <button type="button" class="offer-card__copy-btn" :class="{ 'is-copied': copiedVin }" aria-label="Copy full VIN" @click="copyVin">
               <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3.52941 9.6C3.20588 9.6 2.92902 9.4826 2.69882 9.2478C2.46824 9.0126 2.35294 8.73 2.35294 8.4V1.2C2.35294 0.87 2.46824 0.5874 2.69882 0.3522C2.92902 0.1174 3.20588 0 3.52941 0H8.82353C9.14706 0 9.42412 0.1174 9.65471 0.3522C9.8849 0.5874 10 0.87 10 1.2V8.4C10 8.73 9.8849 9.0126 9.65471 9.2478C9.42412 9.4826 9.14706 9.6 8.82353 9.6H3.52941ZM1.17647 12C0.852941 12 0.575882 11.8826 0.345294 11.6478C0.115098 11.4126 0 11.13 0 10.8V3C0 2.83 0.0564707 2.6874 0.169412 2.5722C0.281961 2.4574 0.421569 2.4 0.588235 2.4C0.754902 2.4 0.894706 2.4574 1.00765 2.5722C1.1202 2.6874 1.17647 2.83 1.17647 3V10.8H7.05882C7.22549 10.8 7.36529 10.8576 7.47824 10.9728C7.59078 11.0876 7.64706 11.23 7.64706 11.4C7.64706 11.57 7.59078 11.7124 7.47824 11.8272C7.36529 11.9424 7.22549 12 7.05882 12H1.17647Z" fill="#55575C"/>
+                <path d="M3.52941 9.6C3.20588 9.6 2.92902 9.4826 2.69882 9.2478C2.46824 9.0126 2.35294 8.73 2.35294 8.4V1.2C2.35294 0.87 2.46824 0.5874 2.69882 0.3522C2.92902 0.1174 3.20588 0 3.52941 0H8.82353C9.14706 0 9.42412 0.1174 9.65471 0.3522C9.8849 0.5874 10 0.87 10 1.2V8.4C10 8.73 9.8849 9.0126 9.65471 9.2478C9.42412 9.4826 9.14706 9.6 8.82353 9.6H3.52941ZM1.17647 12C0.852941 12 0.575882 11.8826 0.345294 11.6478C0.115098 11.4126 0 11.13 0 10.8V3C0 2.83 0.0564707 2.6874 0.169412 2.5722C0.281961 2.4574 0.421569 2.4 0.588235 2.4C0.754902 2.4 0.894706 2.4574 1.00765 2.5722C1.1202 2.6874 1.17647 2.83 1.17647 3V10.8H7.05882C7.22549 10.8 7.36529 10.8576 7.47824 10.9728C7.59078 11.0876 7.64706 11.23 7.64706 11.4C7.64706 11.57 7.59078 11.7124 7.47824 11.8272C7.36529 11.9424 7.22549 12 7.05882 12H1.17647Z" fill="currentColor"/>
               </svg>
+              <span class="offer-card__vin-tooltip">{{ copiedVin ? 'Copied' : 'Copy full VIN' }}</span>
             </button>
           </span>
         </div>
-        <div v-if="auctionId && cardVersion !== 'v2'" class="offer-card__auction-id">Auction ID: {{ auctionId }}</div>
       </div>
 
       <div v-if="hasCountdown || hasStateChip || messageLine1" class="offer-card__flex-section">
@@ -481,11 +507,6 @@ const props = defineProps({
   // Expired 状态下可选的结束时间,拼在 line1 "Time ran out" 后面
   // (规范:"if the timeout moment matters"),不传就只显示 "Time ran out"
   expiredAt: { type: String, default: '' },
-  // 2026-08 规范第2节"可选:the gap",规范自己标了是待产品确认的问题,
-  // 默认关闭。打开后只在 dealState==='received' 时把 line2 的时间戳换成
-  // "· {gapAmount} apart"
-  showGap: { type: Boolean, default: false },
-  gapAmount: { type: String, default: '$700 apart' },
   // 2026-08 按你的要求新增:点任意 hover 按钮都会打开 Information
   // Dialog,这几个 prop 是卡片本身用不到、但 Dialog 需要的额外数据——
   // 见 fragments/InformationDialog/notes.md。
@@ -502,34 +523,10 @@ const props = defineProps({
   acvEstimate: { type: String, default: '$4,600' },
   reportUrl: { type: String, default: '#' },
   history: { type: Array, default: () => [] },
-  // 2026-09 按你的要求新增 "card 版本" 概念——v1 是之前所有已经核实/验证过
-  // 的内容规则(原样不动),v2 是这次新给的规则(去掉mileage行,用
-  // auctionId顶替;message两行的逻辑也不同,见下面 messageLine1V2/
-  // messageLine2V2)。以后如果还有更多版本,往这个 'v1'/'v2'/... 的字符串
-  // 集合里加新值即可,不用再破坏性改已有版本。默认 'v1',不传就完全是老
-  // 行为——只有 OfferDashboard.vue 明确传 'v2'。
-  // 2026-09-02 按你的要求把默认值从 v1 改成 v2——v2 是"最新"的正确行为
-  // (received 状态 line1 带对方最新动作的时间、右对齐;sent 状态时间在
-  // line2,这条本来就没变),v1 只是保留下来对比用的旧版本,不该是默认值。
-  // OfferDashboard 本来就显式传 'v2' 不受影响;这次真正受益的是没有单独
-  // 传 cardVersion 的场景——standalone 的 Offer Card Playground 页面和
-  // OfferCardGallery("Offer Card — All States"),它们之前会落到旧默认值
-  // v1,显示的时间位置是错的,细节见 notes.md。
-  cardVersion: { type: String, default: 'v2' },
-  // 2026-09 v2 专用:对方最近一次动作的时间点(比如"卖家countered"是什么
-  // 时候发生的)。v1 没有这个字段的显示位置,只有v2 message line1 在
-  // dealState 是 received 时会用到。默认空字符串,不传就不在line1追加
-  // 时间。
+  // 对方最近一次动作的时间点(比如"卖家countered"是什么时候发生的),
+  // message line1 在 dealState 是 received 时会用到。默认空字符串,不传
+  // 就不在line1追加时间。
   counterpartyTimestamp: { type: String, default: '' },
-  // 2026-09-02 按 PM 反馈新增:'default'(原样)/'ring'——In Negotiation
-  // 徽标之前 PM 觉得不够明显(Make Offer 有描边、对比更强),在 Playground
-  // 里先做了两个概念稿给你挑,你选定了"ring"这个方向(深色底不变,加一圈
-  // 白色描边+投影,靠"有清晰边缘"这个 Make Offer 本来就有的优势提升
-  // 可辨识度),这次正式放进真实组件。只影响 offerType==='in-negotiation'
-  // 时的徽标,Make Offer 徽标本身不受影响。默认 'default',不传就是原来
-  // 的纯色徽标,只有 OfferDashboard.vue 新增的 cardBadgeStyle 这个 prop
-  // 会传 'ring' 进来。
-  badgeStyle: { type: String, default: 'default' },
   // 2026-09-02 按 Figma node 7597:112866 新增,透传给 InformationDialog
   // 的 hasPrev/hasNext——这两个值本身"这张卡是不是列表里第一/最后一张"
   // 这件事,OfferCard 自己不知道(它只认识自己这一张卡),要由外层
@@ -571,56 +568,10 @@ const stateChipLabel = computed(() => {
   return labels[props.dealState] || ''
 })
 
-// 2026-08 按你给的 "Offer card — content & interaction spec" 第2节两张
-// 表(buyer/seller)逐条抄的文案——不是套一个通用公式生成的,因为
-// declined/expired 这两个"关闭状态"在 buyer 侧 line2 用的是自己的金额,
-// seller 侧用的却是对方的金额,两边不对称,没法用一个公式覆盖。
-// 【2026-09】这是 v1 的文案逻辑,原样保留、完全没有改动——v2 的新规则在
-// 下面 messageLine1V2/messageLine2V2 里单独实现,两套逻辑互不影响。
-const messageLine1V1 = computed(() => {
-  const s = props.dealState
-  if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
-  if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
-  if (isBuyer.value) {
-    if (s === 'received') return `Seller countered ${props.counterpartyAmount}`
-    if (s === 'sent') return 'Waiting on the seller'
-  } else {
-    if (s === 'received') return isMakeOffer.value ? `Buyer offered ${props.counterpartyAmount}` : `Buyer countered ${props.counterpartyAmount}`
-    if (s === 'sent') return 'Waiting on the buyer'
-  }
-  return ''
-})
-
-const messageLine2V1 = computed(() => {
-  const s = props.dealState
-  if (s === 'declined' || s === 'expired') {
-    // 关闭状态:buyer 侧显示自己的金额,seller 侧显示对方的金额——两边
-    // 不对称,是规范表格里逐条给的,不是我推出来的公式
-    return isBuyer.value
-      ? `Your offer ${props.ownAmount}`
-      : `Buyer offered ${props.counterpartyAmount}`
-  }
-  if (isBuyer.value) {
-    if (s === 'received') {
-      const tail = props.showGap ? `${props.gapAmount}` : props.ownTimestamp
-      return `You offered ${props.ownAmount} · ${tail}`
-    }
-    if (s === 'sent') {
-      const verb = isMakeOffer.value ? 'offer' : 'counter'
-      return `Your ${verb} ${props.ownAmount} · ${props.ownTimestamp}`
-    }
-  } else {
-    if (s === 'received') {
-      if (isMakeOffer.value) return `Your reserve ${props.ownAmount}`
-      const tail = props.showGap ? `${props.gapAmount}` : props.ownTimestamp
-      return `Your counter ${props.ownAmount} · ${tail}`
-    }
-    if (s === 'sent') return `Your counter ${props.ownAmount} · ${props.ownTimestamp}`
-  }
-  return ''
-})
-
-// 2026-09 按你的要求新增 v2 文案规则,原话:"Latest move first显示在卡
+// 2026-09 按你给的 "Offer card — content & interaction spec" 逐条抄的
+// 文案——不是套一个通用公式生成的,因为 declined/expired 这两个"关闭
+// 状态"在 buyer 侧 line2 用的是自己的金额,seller 侧用的却是对方的金额,
+// 两边不对称,没法用一个公式覆盖。原话:"Latest move first显示在卡
 // 底部的第一行,Waiting on the seller时间显示在第二行,因为等待没有时间
 // 节点。就显示买家最后一个行为在第二行。" + "如果收到counter没有counter
 // back,买家显示时间在第一行对应买家counter时间点...卖家则会显示waiting
@@ -654,7 +605,7 @@ const messageLine2V1 = computed(() => {
 // - sent + Make Offer:不变,还是 "Waiting on the seller/buyer",没有
 //   时间(等待本身没有时间点)。
 // - received:不变,line1 还是对方刚做的动作 + counterpartyTimestamp。
-const messageLine1V2 = computed(() => {
+const messageLine1 = computed(() => {
   const s = props.dealState
   if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
   if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
@@ -681,7 +632,6 @@ const messageLine1V2 = computed(() => {
 // 状态没有变,还是没有时间。declined/expired 也没有,v1 从来没有过这个
 // 时间。
 const messageLine1Timestamp = computed(() => {
-  if (props.cardVersion !== 'v2') return ''
   if (props.dealState === 'received') return props.counterpartyTimestamp || ''
   if (props.dealState === 'sent' && !isMakeOffer.value) return props.ownTimestamp || ''
   return ''
@@ -696,7 +646,7 @@ function gapBetween(a, b) {
   return '$' + Math.abs(na - nb).toLocaleString('en-US')
 }
 
-const messageLine2V2 = computed(() => {
+const messageLine2 = computed(() => {
   const s = props.dealState
   if (s === 'declined' || s === 'expired') {
     return isBuyer.value ? `Your offer ${props.ownAmount}` : `Buyer offered ${props.counterpartyAmount}`
@@ -720,9 +670,6 @@ const messageLine2V2 = computed(() => {
   return ''
 })
 
-const messageLine1 = computed(() => (props.cardVersion === 'v2' ? messageLine1V2.value : messageLine1V1.value))
-const messageLine2 = computed(() => (props.cardVersion === 'v2' ? messageLine2V2.value : messageLine2V1.value))
-
 // 2026-08 按规范第4节两张表(buyer/seller)查出来的 hover 按钮组——
 // label + style('filled'/'outlined'/'grey-outline'),数组长度决定
 // hover 时模糊覆盖范围(1/2/3 按钮对应 .offer-card--v1-btn-N,见 CSS)
@@ -744,10 +691,21 @@ const hoverButtons = computed(() => {
   return [{ label: 'Manage Offer', style: 'filled' }]
 })
 
+// 2026-09-08 按你的要求新增:点击复制之后 tooltip 文字临时换成
+// "Copied"(1.5秒后自动变回"Copy full VIN"),逻辑和
+// OfferTableRow.vue 的 copyVin() 一模一样(两边没有共享 script,各自
+// 维护一份)。`.is-copied` 这个 class 让按钮/tooltip 强制保持可见——
+// 不然点完之后鼠标一移出卡片,`.offer-card:hover` 失效,按钮直接
+// display:none,"Copied" 反馈跟着图标一起消失,还没看清就没了。
+const copiedVin = ref(false)
+let copiedVinTimer = null
 function copyVin() {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(props.vin).catch(() => {})
   }
+  copiedVin.value = true
+  clearTimeout(copiedVinTimer)
+  copiedVinTimer = setTimeout(() => { copiedVin.value = false }, 1500)
 }
 </script>
 
@@ -805,13 +763,23 @@ function copyVin() {
    1按钮更小范围。已经把 1 按钮也扩大到和 2 按钮一样同时模糊车辆信息+
    倒计时/状态chip那一行,不再只模糊车辆信息。这是规范自己明确写出来的
    规则,不是我顺便调整的。 */
-.offer-card--v1-btn-1:hover .offer-card__vehicle,
-.offer-card--v1-btn-1:hover .offer-card__flex-row,
-.offer-card--v1-btn-2:hover .offer-card__vehicle,
-.offer-card--v1-btn-2:hover .offer-card__flex-row {
-  filter: blur(2px);
-}
-.offer-card--v1-btn-3:hover .offer-card__info {
+/* 2026-09-03(第五次)按你反馈"现在 hover 只应该 blur 最下面3行,除了
+   vehicle title 和 auction ID + VIN 都要 blur"——对照 Figma node
+   7672:20143 重新核实清楚:模糊的容器是 `.offer-card__flex-section`
+   (倒计时/状态chip 那一行 + 分隔线 + 消息两行,加起来正好是"最下面3行"
+   ——倒计时/chip行算1行,消息主/副两行各算1行),`.offer-card__vehicle`
+   (标题 + Auction ID + VIN + copy icon)不在这个容器里,从来没被这条
+   规则模糊过,一直是清晰的。
+   上一版(2026-08)的规则是反的——直接给 `.offer-card__vehicle` 加了
+   `filter:blur`,把车辆信息区也模糊了,还特意把消息块排除在外
+   ("message stays readable"),这是照抄一份更早的、后来没有继续更新的
+   规范文档("Offer card — content & interaction spec"第4节),和这次
+   给的 Figma 节点(更新、更明确的参照)刚好反过来。以这次的 Figma 节点
+   为准,不再区分按钮数量——Figma 里 1按钮/2按钮两个真实实例的模糊范围
+   是同一个容器,不需要像之前那样按 `.offer-card--v1-btn-1/2/3` 分别
+   写规则,`.offer-card--v1`(hoverButtons.length>0,现在恒为真)这一个
+   选择器就够了。 */
+.offer-card--v1:hover .offer-card__flex-section {
   filter: blur(2px);
 }
 
@@ -824,20 +792,57 @@ function copyVin() {
    ~11px,不是之前沿用车辆信息区的16px padding)定位,按钮块自己的高度
    完全由内容撑开(pt8px+按钮+gap8px+pb16px),1个按钮时块矮、紧贴在
    车辆信息下面,2/3个按钮时块跟着变高,不再需要手动居中。 */
+/* 2026-09-03 按你的要求删掉了 backdrop-filter:blur(2px)——规范第4节
+   写的是"identity + status dimmed, message stays readable"(消息块不
+   模糊),车辆信息/倒计时·状态chip 那一行本身已经各自用 filter:blur()
+   模糊过了(见上面 .offer-card--v1-btn-1/2/3 那几条规则),这个按钮块
+   自己身上的 backdrop-filter 其实是多余的——它模糊的不是按钮块自己
+   (按钮有自己的背景色,不需要背后模糊衬底),是"这个绝对定位的按钮块
+   矩形范围内、恰好在按钮之间/底部padding空隙里,透出来的卡片内容"。
+   declined/expired 这种没有倒计时的卡片,info 区整体比原来 3 按钮时代
+   核实的高度矮,这个仍然写死在 top:220px 的按钮块下边缘会伸到消息块
+   第一行的位置,backdrop-filter 就把这行本该保持清晰的消息文字也模糊
+   了,直接违反了上面这条规则。删掉之后,按钮块矩形范围内该模糊的部分
+   (车辆信息/倒计时行)本身已经用 filter:blur() 模糊过,视觉上没有变化;
+   不该模糊的部分(伸到消息块的那一小截)现在会清晰显示,不再被误伤。 */
+/* 2026-09-03(第四次)你反馈"hover on 后 VIN 旁边的 copy icon 被遮挡",
+   对照 Figma node 7672:20143("Hover" 分区,fileKey
+   4z7FK34Fgit7Fi9UxZu0za,"Offers - Negotiation" 文件)核实——这个节点
+   同时给了 2 按钮和 1 按钮两个真实 hover 态实例,两个实例的按钮块都是
+   `top` 定位(不是 bottom-anchored,虽然 2 按钮那个实例的 CSS 类名字面
+   写的是 `bottom-[-1px]`,但换算成 top 值后两个实例其实是同一个数字,
+   说明设计稿里这个块本来就是钉在车辆信息区正下方、按钮数量只影响它自己
+   往下伸多长,不是钉在卡片底部再往上长)——车辆信息区(标题+Auction
+   ID+VIN+copy icon)自己一直没有加 blur,只有它下面那一块(倒计时/状态
+   chip + 分隔线 + 消息)才被模糊,按钮块的顶边贴着车辆信息区的下边缘,
+   完全不会盖住车辆信息区。
+   之前(第三次)"上移12px"改成 208px 是你直接给的调整量,不是核实过的
+   Figma 数值——现在核对发现原来 220px、后来的 208px 都定得太靠上了,
+   按钮块的顶部一直伸进车辆信息区(标题+Auction ID+VIN+copy icon)的范围
+   里,VIN 旁边的 copy icon 因此被压在按钮块的透明 padding 区域下面看不清
+   楚,这正是你这次反馈的问题。换算到我们卡片自己的真实结构(.offer-card
+   根节点 gap:12px,子元素依次是 .offer-card__image(210px)→
+   .offer-card__info,.offer-card__info 内部 padding:0 16px、gap:12px,
+   第一个子元素 .offer-card__vehicle 在 v2 版本下高度是标题行24px+VIN行
+   21px=45px,不含 v1 才有的单独 Auction ID 行):
+   车辆信息区下边缘 = 210(图片)+12(卡片根gap)+45(车辆信息区自身高度)
+   = 267px。改成 top:267px,正好贴着车辆信息区下边缘,按钮块的
+   padding-top(8px)再让实际按钮往下多空 8px,不会有任何重叠。
+   同时把 padding-bottom 从 16px 改成 8px(照抄这个 Figma 节点
+   `pb-[8px]`,不是之前沿用车辆信息区左右padding估的16px)。 */
 .offer-card__hover-buttons {
   position: absolute;
   left: 11px;
   right: 11px;
-  top: 220px;
+  top: 267px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 16px 16px;
+  padding: 8px 16px 8px;
   box-sizing: border-box;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s ease;
-  backdrop-filter: blur(2px);
 }
 
 .offer-card:hover .offer-card__hover-buttons {
@@ -957,15 +962,65 @@ function copyVin() {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  border-radius: 999px;
+  color: #55575C;
 }
 
+/* 2026-09-08 按你的要求,把 OfferTableRow 那边刚做的"hover 才出现复制
+   图标 + tooltip"效果同样搬到 card 上——之前这个复制图标一直是无条件
+   常驻显示,没有这个"默认不显示,hover 才出现"的交互。
+   【2026-09-08 第三次,更正】上一版这里的注释说"颜色沿用灰色系,不套用
+   table 那套蓝色配色,也不加浅蓝底 pill"——你这次直接给了张截图,要求
+   hover 时背景和图标颜色也要跟着变,等于是要 table 那套"浅蓝底 pill +
+   蓝色图标/文字"的效果。改成:hover 卡片(或刚点过复制,`.is-copied`)
+   时,`.offer-card__vin` 套上和 table 同一套浅蓝底
+   (`#F5FBFF`)+文字变蓝(`#00558C`);图标的 `fill` 从写死的
+   `#55575C` 改成 `currentColor`,跟着这个 `color` 一起变蓝,不用再单独
+   写一条图标专属的颜色规则。默认(没 hover)状态颜色还是原来的
+   `#55575C`,没有变。 */
+.offer-card:hover .offer-card__vin,
+.offer-card__vin.is-copied {
+  padding: 0 4px 0 0;
+  background: #F5FBFF;
+  color: #00558C;
+}
 .offer-card__copy-btn {
-  display: inline-flex;
+  position: relative;
+  display: none;
   align-items: center;
   border: none;
   background: none;
   padding: 0;
   cursor: pointer;
+  color: inherit;
+}
+.offer-card:hover .offer-card__copy-btn,
+.offer-card__copy-btn.is-copied {
+  display: inline-flex;
+}
+/* tooltip 样式和 OfferTableRow.vue 的 .offer-table-row__vin-tooltip、
+   AppHeader.vue 的 .app-header__tooltip 是同一套已核实数值,不重新设计。 */
+.offer-card__vin-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: #1C1D1F;
+  color: #F7F7F8;
+  font: 400 12px/18px 'Roboto', sans-serif;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s ease;
+  z-index: 10;
+}
+.offer-card__copy-btn:hover .offer-card__vin-tooltip,
+.offer-card__copy-btn:focus-visible .offer-card__vin-tooltip,
+.offer-card__copy-btn.is-copied .offer-card__vin-tooltip {
+  opacity: 1;
 }
 
 .offer-card__auction-id {

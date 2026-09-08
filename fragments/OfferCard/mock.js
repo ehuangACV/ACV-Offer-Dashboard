@@ -331,15 +331,146 @@ export const sellerExpiredExample = {
   ]
 }
 
+// ── 2026-09-03 补充:之前漏掉的 4 种合法组合 ──────────────────────
+// 你要求检查 "Offer Card — All States" 有没有漏掉的状态。核对
+// "Offer States Logic for CC.md" 的业务规则(In Negotiation 买卖双方都
+// 能到 received/sent/declined/expired 四种状态之一;Make Offer 买家只能
+// sent/declined/expired 三种之一(买家不会 received,因为卖家在 Make
+// Offer 上不会 counter),卖家只能 received/declined/expired 三种之一
+// (卖家不会 sent,同样因为卖家不会 counter))之后,发现原来 10 个例子
+// 少了 4 个合法组合:
+// - In Negotiation · buyer · declined(买家的还价被卖家拒绝,原来只有
+//   Make Offer 场景下买家被拒绝的例子,In Negotiation 场景缺失)
+// - In Negotiation · seller · declined(卖家拒绝买家的还价,同上,原来
+//   只有 Make Offer 场景)
+// - In Negotiation · seller · expired(卖家视角下的 In Negotiation 超时,
+//   原来 Expired 只做了买家视角的 In Negotiation 和卖家视角的 Make
+//   Offer,漏了卖家视角的 In Negotiation)
+// - Make Offer · buyer · expired(买家发的 offer 超时没人处理,原来
+//   Expired 只做了买家视角的 In Negotiation 和卖家视角的 Make Offer,
+//   漏了买家视角的 Make Offer)
+// declined 状态永远是卖家的动作("The buyer cannot decline, ever"),但
+// 卡片可以是买家视角(看到"卖家拒绝了你") 或卖家视角(看到"你拒绝了
+// 对方"),所以 declined/expired 在两种 offerType 下都要给买家和卖家
+// 各准备一份,不能只做其中一边。
+// 金额延续文件头 Number rules(reserve 先定→买家开盘价严格 85%–97% of
+// reserve→卖家 counter 严格落在买家和 reserve 之间→后续每次 counter
+// 必须严格更接近对方),declined/expired 例子换了新的车辆/dealer/
+// auctionId,不是延用 Ford Focus RS/BMW X5 那两条已经在演别的状态的
+// 协商链,避免同一个 VIN 同时"看起来"处于两种矛盾的结局。买家 Make
+// Offer 超时的例子例外——继续用 BMW X5(auctionId 876143),因为这
+// 5 个 Make Offer 例子本来就是同一个 listing 的"如果...会怎样"几种
+// 假设结局(sent/declined/received/declined/expired),不是一条真实
+// 按时间发生的单一序列,新增买家视角的 expired 延续同一个约定。
+
+export const buyerDeclinedNegotiationExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'buyer',
+  dealState: 'declined',
+  photoUrl: '/assets/vehicle-photos/lexus-rx300.jpg',
+  dealerName: 'Baxter Auto Mall',
+  vehicleTitle: '2001 Lexus RX300',
+  mileage: '156,200 miles',
+  vin: '719440',
+  auctionId: '719440',
+  // 卖家收到买家开盘价后直接拒绝(没有走到 counter 这一步)——decline 本身
+  // 就是"收到"之后的三个可选动作之一(accept/decline/counter),不要求
+  // 一定要先 counter 过才能被拒绝
+  isNew: true,
+  ownAmount: '$16,900',
+  reservePrice: '$19,000',
+  acvEstimate: '$18,200',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$16,900', timestamp: 'Mon, Aug 24, 10:20 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 03:10 PM' }
+  ]
+}
+
+export const sellerDeclinedNegotiationExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'seller',
+  dealState: 'declined',
+  photoUrl: '/assets/vehicle-photos/chevrolet-malibu-rs.jpg',
+  dealerName: 'CarMax Boston',
+  vehicleTitle: '2020 Chevrolet Malibu RS',
+  mileage: '38,120 miles',
+  vin: '502398',
+  auctionId: '502398',
+  isNew: false,
+  // 卖家这次拒绝的是买家第二次的还价($16,600),不是买家开盘价——所以
+  // history 里有一轮完整的 bid→counter→counter 才到 declined,和上面
+  // buyerDeclinedNegotiationExample(第一次收到就直接拒绝)刻意做成不同
+  // 的路径,两条都是合法路径,不是同一件事重复两次
+  counterpartyAmount: '$16,600',
+  reservePrice: '$18,500',
+  acvEstimate: '$17,800',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$16,000', timestamp: 'Mon, Aug 24, 09:00 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$17,200', timestamp: 'Mon, Aug 24, 11:30 AM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$16,600', timestamp: 'Mon, Aug 24, 01:15 PM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 02:50 PM' }
+  ]
+}
+
+export const sellerExpiredNegotiationExample = {
+  offerType: 'in-negotiation',
+  viewerRole: 'seller',
+  dealState: 'expired',
+  photoUrl: '/assets/vehicle-photos/hyundai-kona.jpg',
+  dealerName: 'Classic Honda',
+  vehicleTitle: '2022 Hyundai Kona',
+  mileage: '11,540 miles',
+  vin: '287719',
+  auctionId: '287719',
+  isNew: false,
+  counterpartyAmount: '$19,000',
+  expiredAt: '',
+  reservePrice: '$20,000',
+  acvEstimate: '$19,600',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$18,300', timestamp: 'Mon, Aug 24, 08:40 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$19,500', timestamp: 'Mon, Aug 24, 10:05 AM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$19,000', timestamp: 'Mon, Aug 24, 11:20 AM' }
+  ]
+}
+
+export const buyerExpiredMakeOfferExample = {
+  offerType: 'make-offer',
+  viewerRole: 'buyer',
+  dealState: 'expired',
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  vehicleTitle: '2022 BMW X5',
+  mileage: '8,240 miles',
+  vin: '410877',
+  auctionId: '876143',
+  isNew: false,
+  ownAmount: '$25,500',
+  expiredAt: '',
+  reservePrice: '$28,000',
+  acvEstimate: '$27,500',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$25,500', timestamp: 'Mon, Aug 24, 11:40 AM' }
+  ]
+}
+
 export default {
   buyerReceivedExample,
   buyerSentNegotiationExample,
   buyerSentMakeOfferExample,
   buyerDeclinedExample,
+  buyerDeclinedNegotiationExample,
   buyerExpiredExample,
+  buyerExpiredMakeOfferExample,
   sellerReceivedNegotiationExample,
   sellerSentExample,
   sellerReceivedMakeOfferExample,
   sellerDeclinedExample,
-  sellerExpiredExample
+  sellerDeclinedNegotiationExample,
+  sellerExpiredExample,
+  sellerExpiredNegotiationExample
 }

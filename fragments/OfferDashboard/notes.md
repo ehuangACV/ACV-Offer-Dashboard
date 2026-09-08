@@ -1,5 +1,40 @@
 # OfferDashboard — Notes
 
+## 2026-09-03(第三次)Buying/Selling 各扩到15行,补齐全部状态组合
+你要求"Vehicles shown on Buying/Selling 各增加到15个",并且要求新增的
+mockup 数据要把所有状态都用上。问你新车图怎么处理(assets/vehicle-
+photos/ 只剩2张没用过,补满30行还差18张左右)后,你选了"复用现有12张
+真实照片"——这次新增的20行(10 Buying + 10 Selling)车图全部复用这12张
+已有真实照片,每张最多复用3次(换年份/里程/VIN/dealer,当作"同款车的
+另一台"),12张照片在30行里全部至少用过一次。
+
+具体新增了哪20行、每行的 Number rules 合规细节,写在
+[OfferTableRow/mock.js](../OfferTableRow/mock.js) 文件头 2026-09-03 那段
+注释里,这里只记这一层(OfferDashboard)改了什么:
+- `rows` 数组从 10 条扩到 30 条——前 5 条(原 Buying)+ 新增 10 条 Buying
+  = 前 15 条;接着原 5 条(原 Selling)+ 新增 10 条 Selling = 后 15 条。
+  原有 10 行的相对顺序/位置完全不变,新增的都接在各自那一半的后面。
+- `buyingRows = rows.slice(0, 15)`、`sellingRows = rows.slice(15, 30)`
+  (原来是 `slice(0,5)`/`slice(5,10)`)。
+- `buyingVehicleCount`/`sellingVehicleCount` 两个 prop 的默认值从 5 改成
+  15,Controls 面板对应的 number 输入框 `max` 从 5 改成 15——不改这个
+  上限的话,即使 `rows` 数据本身扩到 30 条,Controls 面板也没法真的把
+  截取数量拖到 15,新增的行会一直被截掉看不到。
+
+状态覆盖(Update 列实际会显示的三种 dealState:received/sent/
+declined——表格没有 expired 这个概念,只在 OfferCard 演示过):
+- **Buying(买家视角)15行**:In Negotiation 的 received/sent/declined
+  三种都有(且 received/declined 各有 New 开/关的例子),Make Offer 的
+  sent/declined 两种都有(买家在 Make Offer 上永远不会 received,因为
+  卖家在 Make Offer 上不会 counter)。
+- **Selling(卖家视角)15行**:In Negotiation 的 received/sent/declined
+  三种都有,Make Offer 的 received/declined 两种都有(卖家在 Make
+  Offer 上永远不会 sent,同理)。之前 Selling 侧一行 declined 都没有
+  ——这次补上了,不影响 [FilterChipGroup](../FilterChipGroup/notes.md)
+  "Selling tab 不显示 Declined 筛选 chip"这条你更早给的规则(那条规则
+  只是不给筛选入口,不代表 Update 列不该显示 Declined 这个真实会发生
+  的结局)。
+
 ## 2026-09-03(第二次)Sent/Received/New 三个 filter chip 也是同一类 bug
 你截图指出:Selling tab 同时选中 "Make Offer (2)" + "Sent (3)",结果却是
 "No vehicles match the current filters"——"显示 sent 3 个，具体 filter
@@ -639,3 +674,32 @@ prop（账号本身是不是多经销商）本身没有变，只是这几处消�
 
 rowsAsCards 新增了一个 isMultiDealer 字段（之前没有，OfferCard 本身也
 没有这个 prop）——细节见 OfferCard/notes.md。
+
+## 2026-09-08 删掉 cardVersion prop——tile view 只需要 v2
+
+你确认 OfferCard 的 v1（mileage 行版本）已经完全不需要，OfferCard.vue
+里的 `cardVersion` prop 被整个删掉了（不再是"版本"这个维度需要
+Dashboard 往下透传，细节见 OfferCard/notes.md）。相应地：
+- 删掉了 OfferDashboard 自己的 `cardVersion` prop（原来默认 `'v2'`，
+  给页面自己也提供一个能切 v1/v2 的 control，现在没有 v1 了，这个
+  prop 没有意义了）。
+- 删掉了 `rowsAsCards` 里每张卡片对象上的 `cardVersion: props.cardVersion`
+  字段（OfferCard 已经不认识这个 prop 了）。
+- 删掉了 Playground 里 OfferDashboard 控件面板上的"Tile view card
+  version" segmented 控件。
+`cardBadgeStyle`（In Negotiation 徽标 ring 样式）是完全独立的一个
+prop，这次没有动。
+
+## 2026-09-08 删掉 cardBadgeStyle prop——tile view 徽标只留 Current
+
+你确认 OfferCard 的 In Negotiation 徽标不需要 ring 样式了，只留
+default（Current）。OfferCard.vue 里的 `badgeStyle` prop 被整个删掉了
+（细节见 OfferCard/notes.md）。相应地：
+- 删掉了 OfferDashboard 自己的 `cardBadgeStyle` prop（原来默认
+  `'default'`，给页面自己提供一个能切 Current/Ring 的 control，现在
+  OfferCard 没有 ring 了，这个 prop 没有意义了）。
+- 删掉了 `rowsAsCards` 里每张卡片对象上的 `badgeStyle: props.cardBadgeStyle`
+  字段（OfferCard 已经不认识这个 prop 了）。
+- 删掉了 Playground 里 OfferDashboard 控件面板上的"In Negotiation badge
+  style" segmented 控件,以及 `fragments/OfferDashboard/controls.js`
+  里同名的定义。

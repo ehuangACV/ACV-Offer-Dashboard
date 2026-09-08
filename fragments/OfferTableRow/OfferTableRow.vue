@@ -154,6 +154,21 @@
       hover 机制——表格行只有 80px 高,Update 列背后本来就没有车辆信息
       挡着,直接用 `display:none`/`flex` 切换"chips+日期"和"CTA按钮组"
       两块内容,鼠标移开恢复原状,更简单也不需要模糊任何东西。
+
+    【2026-09-03 新增:VIN 复制图标 + hover tooltip】对照 Figma node
+    7675:28425("Offers - Negotiation" 文件)核实:table view 的 VIN
+    之前一直是纯文字,没有 OfferCard 早就有的"点图标复制到剪贴板"功能。
+    这个节点显示 VIN 数字外面套了一个浅蓝底(#F5FBFF)pill,右边贴着一个
+    复制图标,hover 图标时下方弹出深色 tooltip "Copy full VIN"(背景
+    #1C1D1F,文字 #F7F7F8,和 AppHeader.vue 收缩态 Rewards 图标的 tooltip
+    同一套数值,不是重新设计)。已经把 `.offer-table-row__vin` 从纯文字
+    改成 pill(`display:inline-flex`,右padding 4px,圆角999px),新增
+    `copyVin()` 方法(逻辑同 OfferCard.vue 的 copyVin,两个组件没有共享
+    script,只能各自维护一份)。复制图标的 SVG 直接从这个节点下载的真实
+    资源("Actions/copy",16×16,fill #00558C 和 VIN 文字同色),不是沿用
+    OfferCard 那个 10×12 的旧图标(形状是同一个"两张重叠单据"图案,只是
+    这次这个节点给的是新导出的 16×16 版本,按 G5 资产一致性原则用这次
+    实际下载到的资源,不混用两个不同尺寸的导出)。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
@@ -198,7 +213,15 @@
       <div class="offer-table-row__vehicle-sub">
         <span>{{ mileage }}</span>
         <span>・</span>
-        <span class="offer-table-row__vin">{{ vin }}</span>
+        <span class="offer-table-row__vin" :class="{ 'is-copied': copiedVin }">
+          {{ vin }}
+          <button type="button" class="offer-table-row__vin-copy-btn" :class="{ 'is-copied': copiedVin }" aria-label="Copy full VIN" @click="copyVin">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.37792 11.6C6.05439 11.6 5.77752 11.4826 5.54733 11.2478C5.31674 11.0126 5.20145 10.73 5.20145 10.4V3.2C5.20145 2.87 5.31674 2.5874 5.54733 2.3522C5.77752 2.1174 6.05439 2 6.37792 2H11.672C11.9956 2 12.2726 2.1174 12.5032 2.3522C12.7334 2.5874 12.8485 2.87 12.8485 3.2V10.4C12.8485 10.73 12.7334 11.0126 12.5032 11.2478C12.2726 11.4826 11.9956 11.6 11.672 11.6H6.37792ZM4.02498 14C3.70145 14 3.42439 13.8826 3.1938 13.6478C2.9636 13.4126 2.84851 13.13 2.84851 12.8V5C2.84851 4.83 2.90498 4.6874 3.01792 4.5722C3.13047 4.4574 3.27007 4.4 3.43674 4.4C3.60341 4.4 3.74321 4.4574 3.85615 4.5722C3.9687 4.6874 4.02498 4.83 4.02498 5V12.8H9.90733C10.074 12.8 10.2138 12.8576 10.3267 12.9728C10.4393 13.0876 10.4956 13.23 10.4956 13.4C10.4956 13.57 10.4393 13.7124 10.3267 13.8272C10.2138 13.9424 10.074 14 9.90733 14H4.02498Z" fill="#00558C"/>
+            </svg>
+            <span class="offer-table-row__vin-tooltip">{{ copiedVin ? 'Copied' : 'Copy full VIN' }}</span>
+          </button>
+        </span>
       </div>
     </div>
 
@@ -374,6 +397,30 @@ defineExpose({
   openDialog: () => { dialogOpen.value = true },
   closeDialog: () => { dialogOpen.value = false }
 })
+// 2026-09-03 按 Figma node 7675:28425 新增:table view 的 VIN 一直只是
+// 纯文字,没有 OfferCard 早就有的"复制到剪贴板"功能——这个节点显示 hover
+// 图标时下方弹出深色 tooltip "Copy full VIN",照抄的是同一个动作,逻辑和
+// OfferCard.vue 的 copyVin() 一模一样,这里单独一份是因为两个组件没有
+// 共享的 script,不是故意写了不一样的实现。
+// 2026-09-08 按你的要求新增:点击复制之后 tooltip 文字临时换成
+// "Copied"(1.5秒后自动变回"Copy full VIN"),不管是这里(table)还是
+// OfferCard.vue(card)都要有同样的反馈,两边各自维护一份 copiedVin
+// 状态,逻辑一模一样。`.is-copied` 这个 class 除了让 tooltip 强制保持
+// opacity:1(不然复制完鼠标一移开,tooltip 跟着 hover 状态一起消失,
+// "Copied" 还没看清就没了),还让 pill 底色/padding 和图标本身也强制
+// 保持可见(不依赖 `.offer-table-row:hover`)——否则点完之后鼠标只要
+// 移出这一行,图标会因为 display:none 直接消失,"Copied" 反馈也就跟着
+// 图标一起没了。
+const copiedVin = ref(false)
+let copiedVinTimer = null
+function copyVin() {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(props.vin).catch(() => {})
+  }
+  copiedVin.value = true
+  clearTimeout(copiedVinTimer)
+  copiedVinTimer = setTimeout(() => { copiedVin.value = false }, 1500)
+}
 // 表格行没有 statusExpired 这个字段(过期这个概念目前只在 OfferCard 的
 // mock 里演示过),所以这里只会落到 declined/sent/received 三种之一,
 // 和 OfferDashboard.vue 里 rowsAsCards 用的 rowToDealState() 是同一套
@@ -537,9 +584,74 @@ const hoverButtons = computed(() => {
   letter-spacing: 0.4px;
   color: #757575;
 }
+/* 2026-09-03 对照 Figma node 7675:28425 补上一直缺失的复制图标 + pill
+   底色(之前 VIN 一直是纯文字,没有 OfferCard 早就有的复制到剪贴板
+   功能)。
+   【2026-09-03 更正】你指出默认状态不该变——对照 node 7676:28776(同一
+   套行,默认态)核实,默认状态下 VIN 就是纯文字,没有 pill 底色也没有
+   复制图标,pill 底色 + 图标只在 hover 这一行时才出现(照抄 7675:28425
+   这个 hover 态节点)。之前一直显示是我把"hover 才有的效果"错当成
+   "一直显示的效果"实现了。改成默认不显示(`.offer-table-row__vin` 不带
+   背景/padding,`.offer-table-row__vin-copy-btn` 默认 `display:none`),
+   只在 `.offer-table-row:hover` 时才切换出来——和这一整行本来就有的
+   "hover 换出 CTA 按钮组"是同一个触发时机(hover 整行,不是单独 hover
+   VIN 这几个字),不是新发明一套触发逻辑。 */
 .offer-table-row__vin {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
   font-weight: 500;
   color: #00558C;
+}
+.offer-table-row:hover .offer-table-row__vin,
+.offer-table-row__vin.is-copied {
+  gap: 2px;
+  padding: 0 4px 0 0;
+  background: #F5FBFF;
+}
+.offer-table-row__vin-copy-btn {
+  position: relative;
+  display: none;
+  align-items: center;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.offer-table-row:hover .offer-table-row__vin-copy-btn,
+.offer-table-row__vin-copy-btn.is-copied {
+  display: inline-flex;
+}
+.offer-table-row__vin-copy-btn svg {
+  display: block;
+}
+/* 2026-09-03 新增:hover 图标弹出的说明 tooltip,颜色/圆角/padding 和
+   项目里已有的同一套 tooltip 惯例(AppHeader.vue 的
+   `.app-header__tooltip`,Rewards 收缩态图标 hover 用的那个)完全一样,
+   不是重新设计一套——这个项目里深色 tooltip 的样式已经在别处核实过
+   一次,这里直接复用同一份数值。 */
+.offer-table-row__vin-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: #1C1D1F;
+  color: #F7F7F8;
+  font: 400 12px/18px 'Roboto', sans-serif;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s ease;
+  z-index: 10;
+}
+.offer-table-row__vin-copy-btn:hover .offer-table-row__vin-tooltip,
+.offer-table-row__vin-copy-btn:focus-visible .offer-table-row__vin-tooltip,
+.offer-table-row__vin-copy-btn.is-copied .offer-table-row__vin-tooltip {
+  opacity: 1;
 }
 
 .offer-table-row__cell--time { flex: 124 1 124px; padding-top: 30px; }

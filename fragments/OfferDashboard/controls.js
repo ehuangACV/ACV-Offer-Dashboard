@@ -14,16 +14,5 @@ export default {
     type: 'boolean',
     label: 'Multi-dealer',
     default: true
-  },
-  // 2026-09-02 按 PM 反馈新增,只透传给 tile 视图的 OfferCard,细节见
-  // OfferDashboard.vue 的 cardBadgeStyle prop 注释
-  cardBadgeStyle: {
-    type: 'select',
-    label: 'In Negotiation badge style',
-    options: [
-      { value: 'default', label: 'Current' },
-      { value: 'ring', label: 'Ring' }
-    ],
-    default: 'default'
   }
 }

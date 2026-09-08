@@ -1,5 +1,63 @@
 # OfferTableRow — Notes
 
+## 2026-09-08 点击复制后 tooltip 文字临时变成 "Copied"
+你要求"不管哪个 view,点击后显示 copied"——table/card 两边都要有这个
+反馈,逻辑一模一样(细节见 [OfferCard](../OfferCard/notes.md))。
+
+新增 `copiedVin` ref,`copyVin()` 点击后把它设成 true、1.5秒后
+`setTimeout` 自动清成 false(重复点击会 `clearTimeout` 重新计时,不会
+出现两个定时器互相打架)。tooltip 文字从固定的 "Copy full VIN" 改成
+`{{ copiedVin ? 'Copied' : 'Copy full VIN' }}`。
+
+新增 `.is-copied` 这个 class(绑在 pill 容器和按钮本身上),作用是让
+pill 底色/padding、按钮的 `display`、tooltip 的 `opacity` 在"刚复制完"
+这 1.5 秒内强制保持可见——不加这个的话,点击复制之后鼠标只要移出这一行
+(`.offer-table-row:hover` 失效),图标会立刻 `display:none` 消失,
+"Copied" 反馈还没看清就没了,这是纯靠 `:hover` 驱动可见性时必然会碰到
+的问题,加一个独立于 hover 状态的 class 才能保证反馈能被看到。
+
+## 2026-09-03(第三次)更正:pill 底色 + 复制图标只在 hover 整行时才出现
+你指出"默认状态没变,hover on 才是蓝色背景和显示 copy icon",给了 node
+7676:28776(和上一条的 7675:28425 是同一套行,这个是默认态)。核实后
+确认:默认状态下 VIN 就是纯文字,没有 `#F5FBFF` pill 底色,也没有复制
+图标——上一次(第二次)实现时把"hover 才有的效果"当成"一直显示的效果"
+做了,是我看错了状态。
+
+改法:`.offer-table-row__vin` 默认不带背景/padding(只保留
+`inline-flex`+文字颜色/字重),`.offer-table-row__vin-copy-btn` 默认
+`display:none`;pill 背景/padding 和图标的显示都挪到
+`.offer-table-row:hover` 下面才生效——触发时机是 hover 整行(这一行本来
+就有"hover 换出 CTA 按钮组"这个机制,细节见上面 2026-09-02 的记录),不是
+单独 hover VIN 这几个字才触发,两者用的是同一个 `:hover` 入口。
+
+## 2026-09-03(第二次)新增 VIN 复制图标 + hover tooltip(对照 Figma node 7675:28425)
+你发了一张 table view hover 时弹出深色 tooltip "Copy full VIN" 的截图 +
+这个 Figma 节点。核实后发现:table view 的 VIN 之前一直是纯文字
+(`.offer-table-row__vin`,只有颜色/字重,没有任何交互),OfferCard 那边
+早就有的"VIN 旁边一个复制图标,点了复制到剪贴板"的功能,table 这边一直
+没做——这次按这个新节点补上,同时这个节点还多了一步 hover 图标弹出说明
+tooltip,是 OfferCard 那边目前也没有的(OfferCard 的复制图标至今没有
+tooltip)。
+
+改法:
+- `.offer-table-row__vin` 从纯文字改成 pill 容器(`display:inline-flex`,
+  背景 `#F5FBFF`,右padding 4px,圆角999px——数值照抄这个节点,不是估的)。
+- pill 内新增一个 `<button>`(复制图标 + 藏在里面的 tooltip),点击调用
+  新增的 `copyVin()` 方法——逻辑和 [OfferCard.vue](../OfferCard/notes.md)
+  的 `copyVin()` 完全一样(`navigator.clipboard.writeText(props.vin)`),
+  两个组件各自维护自己的 script,没有共享,所以是复制了一份而不是引用
+  同一个函数。
+- tooltip 的样式(深色背景 #1C1D1F、白字 #F7F7F8、4px 10px padding、
+  4px 圆角、hover 时 opacity 0→1)直接复用项目里
+  [AppHeader.vue](../AppHeader/notes.md) 收缩态 Rewards 图标已经核实过
+  的同一套 tooltip 惯例的数值,不是重新设计一套,只是这次用在了不同的
+  触发元素上(那边是圆形图标按钮,这里是复制图标)。
+- 复制图标本身用的是这次从 Figma 节点 7675:28494("Actions/copy")
+  实际下载到的 16×16 SVG(fill #00558C,和 VIN 文字同色),不是沿用
+  OfferCard 那个尺寸不同(10×12)的旧图标资源——两者是同一个"两张重叠
+  单据"图案,只是导出尺寸不一样,按资产一致性原则用这次实际拿到的
+  那份,不混用。
+
 ## 2026-09-03 hover 按钮简化成单一 "Manage Offer"
 同 [OfferCard](../OfferCard/notes.md) 那边的改动,你要求 table/tile 两种
 视图一起改:除了 `declined` 状态(表格行没有 `statusExpired`,只会落到

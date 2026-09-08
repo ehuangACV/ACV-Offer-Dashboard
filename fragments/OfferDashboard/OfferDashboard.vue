@@ -361,18 +361,10 @@ const props = defineProps({
   // 就互相覆盖。各自范围 1~5(2026-09-01 删掉两行 mock 之后,Buying/
   // Selling 现在各自只有 5 条数据,原来是 6),用于演示"车辆数量变化时
   // 页面长什么样",不是真实分页,细节见下面 rowsLimited 的注释
-  buyingVehicleCount: { type: Number, default: 5 },
-  sellingVehicleCount: { type: Number, default: 5 },
-  // 2026-09 按你的要求,Dashboard 页面自己也要有能切 OfferCard v1/v2 的
-  // control,不再把 'v2' 写死在 rowsAsCards 里
-  cardVersion: { type: String, default: 'v2' },
-  // 2026-09-02 按 PM 反馈新增:In Negotiation 徽标的两个样式(Current/
-  // Ring),细节见 fragments/OfferCard/OfferCard.vue 的 badgeStyle prop
-  // 注释。这里的 prop 名字加了 card 前缀(cardBadgeStyle)是为了避免和
-  // OfferDashboard 自己以后可能会有的其它 "badgeStyle" 概念混在一起
-  // (比如 StatusChip/OfferTypeBadge 那些表格徽标),同 cardVersion 一样
-  // 只透传给 tile 视图的 OfferCard,不影响 table 视图。
-  cardBadgeStyle: { type: String, default: 'default' }
+  // 2026-09-03 按你的要求默认值从 5 改成 15,配合下面 rows 扩到 30 条
+  // (15 Buying + 15 Selling)
+  buyingVehicleCount: { type: Number, default: 15 },
+  sellingVehicleCount: { type: Number, default: 15 }
 })
 
 const dealershipDropdownOpen = ref(false)
@@ -694,34 +686,55 @@ const topPagination = { showViewingText: false, hasPrevPage: false, hasNextPage:
 // Offer+Received,这个组合本身不存在)和 rowFiat500(offerType:'none',
 // 每笔 deal 必须是 In Negotiation 或 Make Offer 之一,没有第三种合法
 // 类型)。行数因此从 12 变成 10,细节见 OfferTableRow/mock.js 文件头注释。
+// 2026-09-03:按你的要求 Buying/Selling 各扩到 15 行,前10行原样不动
+// (已经核实/演示过的原有数据),后面各自新增10行——新增的20行全部是
+// 自编 mockup 数据,补齐了之前缺的状态组合(尤其是 Selling 侧原来一行
+// declined 都没有),细节和状态覆盖表见 OfferTableRow/mock.js 文件头
+// 2026-09-03 那段注释。
 const rows = [
   rowMocks.rowWithNewAndReceived,
   rowMocks.rowWithNoStatusChip,
   rowMocks.rowLexusES,
   rowMocks.rowHyundaiKona,
   rowMocks.rowJeepWrangler,
+  rowMocks.rowToyotaMatrixSent,
+  rowMocks.rowMalibuSent,
+  rowMocks.rowEscapeTitaniumDeclined,
+  rowMocks.rowEscapeSEDeclined,
+  rowMocks.rowChargerSentBuyer,
+  rowMocks.rowBmwX5DeclinedBuyer,
+  rowMocks.rowKonaReceived2,
+  rowMocks.rowRx300Sent,
+  rowMocks.rowFiat500SentBuyer,
+  rowMocks.rowMalibuReceived2,
   rowMocks.rowToyotaMatrix,
   rowMocks.rowFordEscapeTitanium,
   rowMocks.rowChevyMalibu,
   rowMocks.rowDodgeCharger,
-  rowMocks.rowFordEscapeSE
+  rowMocks.rowFordEscapeSE,
+  rowMocks.rowFocusRsReceivedSeller,
+  rowMocks.rowRx300SentSeller,
+  rowMocks.rowFiat500SentSeller,
+  rowMocks.rowKonaDeclinedSeller,
+  rowMocks.rowWranglerDeclinedSeller,
+  rowMocks.rowLexusEsReceivedSeller,
+  rowMocks.rowEscapeSeReceivedSeller,
+  rowMocks.rowBmwX5DeclinedSeller,
+  rowMocks.rowEscapeTitaniumDeclinedSeller,
+  rowMocks.rowChargerSentSeller
 ]
 
-// 2026-08 按你的要求"总共12个vehicle,buying默认显示6个selling6个":前6条
-// 归Buying、后6条归Selling,纯粹是数量上的对半切分。2026-09-01 删掉两行
-// (一行原本在前6/Buying,一行原本在后6/Selling)之后,总数变成10,对半
-// 切分跟着变成 5+5——rowWithMakeOffer 原来在 Buying 里,rowFiat500 原来在
-// Selling 里,删掉后两边正好还是各少一个,所以还是干净的 5+5,不用重新
-// 决定谁归哪一边。
-const buyingRows = rows.slice(0, 5)
-const sellingRows = rows.slice(5, 10)
+// 2026-09-03:15+15 切分——前15条归Buying、后15条归Selling,原有10行
+// (5 Buying + 5 Selling)保持在各自这一半的最前面,不打乱它们的位置。
+const buyingRows = rows.slice(0, 15)
+const sellingRows = rows.slice(15, 30)
 
 // 2026-08 按你的要求:Buying/Selling 各自用自己的 vehicleCount(不再共用
 // 一个),按当前选中的 tab 挑对应那一个,夹在 [1, activeTabRows.length]
-// 之间(现在每个 tab 最多 6 条),避免传入 0 或超过总数时表格/卡片网格
-// 直接空掉或越界。这一步只是"截取演示用的车辆数量",filter chip 的数字
-// (见上面 filters)也是照着这份数据算的,不受下面 chipFilter/dealerFilter
-// 影响。
+// 之间(2026-09-03 起每个 tab 最多 15 条),避免传入 0 或超过总数时表格/
+// 卡片网格直接空掉或越界。这一步只是"截取演示用的车辆数量",filter chip
+// 的数字(见上面 filters)也是照着这份数据算的,不受下面 chipFilter/
+// dealerFilter 影响。
 const activeVehicleCount = computed(() =>
   activeMainTab.value === 'selling' ? props.sellingVehicleCount : props.buyingVehicleCount
 )
@@ -856,16 +869,10 @@ const rowsAsCards = computed(() => {
       counterpartyAmount: counterparty,
       ownAmount: own,
       ownTimestamp: row.updateDate,
-      // 2026-09 按你的要求,tile 视图默认用 card 的 v2 内容规则(去掉
-      // mileage行/两行文案新规则,细节见 OfferCard/notes.md)。
-      // counterpartyTimestamp 是 v2 才用得到的新字段(对方最近一次动作
-      // 的时间),表格行数据里没有单独区分"我方/对方各自的时间戳"这么
-      // 细,只有一个笼统的 updateDate——和 ownTimestamp 借用的是同一个
-      // 字段,不是逐行核实过的真实业务数据,待你确认。
-      cardVersion: props.cardVersion,
-      // 2026-09-02 按 PM 反馈新增,细节见上面 defineProps 的 cardBadgeStyle
-      // 注释和 OfferCard.vue 的 badgeStyle prop 注释
-      badgeStyle: props.cardBadgeStyle,
+      // counterpartyTimestamp 是对方最近一次动作的时间,表格行数据里没有
+      // 单独区分"我方/对方各自的时间戳"这么细,只有一个笼统的
+      // updateDate——和 ownTimestamp 借用的是同一个字段,不是逐行核实过
+      // 的真实业务数据,待你确认。
       counterpartyTimestamp: row.updateDate,
       // 2026-09 修复真实bug:之前这里完全没有把这三个字段传给
       // OfferCard(=没有传给它内部的 InformationDialog),导致从

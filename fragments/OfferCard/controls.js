@@ -94,26 +94,5 @@ export default {
     type: 'text',
     label: 'Expired-at time, optional (expiredAt, empty = omit)',
     default: ''
-  },
-  showGap: {
-    type: 'boolean',
-    label: '[Open question] Show gap instead of timestamp (showGap, Received only)',
-    default: false
-  },
-  gapAmount: {
-    type: 'text',
-    label: 'Gap amount text (gapAmount)',
-    default: '$700 apart'
-  },
-  // 2026-09-02 按 PM 反馈新增,只影响 offerType==='in-negotiation' 时的
-  // 徽标样式,细节见 OfferCard.vue 同一处注释
-  badgeStyle: {
-    type: 'select',
-    label: 'In Negotiation badge style (badgeStyle, in-negotiation only)',
-    options: [
-      { value: 'default', label: 'Current' },
-      { value: 'ring', label: 'Ring' }
-    ],
-    default: 'default'
   }
 }

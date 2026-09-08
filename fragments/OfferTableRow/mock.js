@@ -70,6 +70,15 @@
   行数因此从 12 变成 10(Buying 5 / Selling 5),`OfferDashboard.vue` 的
   `rows` 数组和 buying/selling 的 slice 切分已经同步改过,细节见该文件
   自己的 notes.md。
+
+  === 2026-09-03:Buying/Selling 各从 5 行扩到 15 行,新增20行状态覆盖表 ===
+  见下面这批新增行前面的注释块,这里只记结论:原有10行(前5 Buying/后5
+  Selling)原样保留、位置不变,新增的20行(10 Buying + 10 Selling)全部
+  是自编 mockup 数据,车图复用 assets/vehicle-photos/ 下已有的12张真实
+  照片(每张最多复用3次),没有新增照片素材。`OfferDashboard.vue` 的
+  `rows`/`buyingRows`/`sellingRows` 和 `buyingVehicleCount`/
+  `sellingVehicleCount` 的默认值/上限已经同步改到 15,细节见该文件自己
+  的 notes.md。
 */
 
 // 第一行:CarMax Boston,New + Received 两个 StatusChip 叠加 —— 对应你给的
@@ -398,6 +407,564 @@ export const rowFordEscapeSE = {
   ]
 }
 
+// ── 2026-09-03 扩充:Buying/Selling 各从 5 行扩到 15 行 ──────────────
+// 你要求把 "Vehicles shown on Buying/Selling" 两个控件各增加到15个,并且
+// 要求这批新数据要把所有合法状态都用上,不要只堆同一种状态。问你要不要
+// 补新车图后,你选了"复用现有12张真实照片(推荐)"——assets/vehicle-
+// photos/ 下只有12张真实图,10张已经在原来的10行里用过,这次30行里
+// 每张照片最多复用3次(换年份/里程/VIN/dealer,当作"同款车的另一台"),
+// 12张照片在30行里全部至少用过一次,没有哪张完全没用上。
+//
+// 下面20行(buying新增10行 + selling新增10行)全部是自编的 mockup 数据,
+// 和"第二批照片"那批一样不对应任何 Figma 节点或真实业务记录,但严格照
+// 文件头 Number rules 生成(reserve先定→买家开盘价严格85%–97% of
+// reserve→卖家counter严格落在买家和reserve之间→后续每次counter必须
+// 严格更接近对方,In Negotiation<6h/Make Offer<24h)。
+//
+// 状态覆盖表(dealState 只有 received/sent/declined 三种,表格没有
+// expired 这个概念——只在 OfferCard 演示过,细节见该组件 notes.md):
+// Buying(买家视角)15行 = 原有5行(received×2 + make-offer sent×1 +
+//   make-offer declined×1)+ 新增10行,补齐 in-negotiation sent/declined
+//   各2个(New/无New各一)、make-offer sent/declined各补1个,剩下几行是
+//   已有组合的额外数量(不同车辆/金额,增加体量,不是重复同一行)。
+// Selling(卖家视角)15行 = 原有5行(in-negotiation received×1 +
+//   make-offer received×2 + in-negotiation sent×2)+ 新增10行,补齐
+//   in-negotiation declined、make-offer received/declined 各New/无New
+//   都有例子——之前 Selling 侧一行 declined 都没有(FilterChipGroup 的
+//   Declined chip 本来就按你更早的要求在 Selling tab 隐藏,但那是"不给
+//   筛选入口",不代表数据里不该存在 declined 的卖家行,Update 列一样要
+//   能显示 Declined 这个真实会发生的结局)。买家永远不会在 Make Offer
+//   上出现 received(卖家在 Make Offer 上不会 counter),卖家永远不会在
+//   Make Offer 上出现 sent——同一条规则,这次新增的10个 Selling 行也
+//   没有违反。
+
+export const rowToyotaMatrixSent = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/toyota-matrix.jpg',
+  dealerName: 'DriveTime Mall',
+  auctionId: '481205',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2011 Toyota Matrix',
+  mileage: '132,400 miles',
+  vin: '481205',
+  timeRemaining: '3h 05m',
+  acvEstimate: '$6,000',
+  sentAmount: '$5,700',
+  receivedAmount: '$5,900',
+  statusNew: true,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 09:20 AM',
+  reservePrice: '$6,200',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$5,500', timestamp: 'Yesterday, 02:00 PM' },
+    { speaker: 'seller', kind: 'counter', amount: '$5,900', timestamp: 'Today, 08:10 AM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$5,700', timestamp: 'Today, 09:20 AM' }
+  ]
+}
+
+export const rowMalibuSent = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/chevrolet-malibu-rs.jpg',
+  dealerName: 'Apple Chevrolet',
+  auctionId: '552071',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2019 Chevrolet Malibu RS',
+  mileage: '52,300 miles',
+  vin: '552071',
+  timeRemaining: '4h 45m',
+  acvEstimate: '$15,400',
+  sentAmount: '$14,600',
+  receivedAmount: '$15,200',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 07:50 AM',
+  reservePrice: '$16,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$14,000', timestamp: 'Yesterday, 11:00 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$15,200', timestamp: 'Today, 06:40 AM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$14,600', timestamp: 'Today, 07:50 AM' }
+  ]
+}
+
+export const rowEscapeTitaniumDeclined = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/ford-escape-titanium-red.jpg',
+  dealerName: 'Baxter Auto Mall',
+  auctionId: '693214',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2015 Ford Escape Titanium',
+  mileage: '95,600 miles',
+  vin: '693214',
+  timeRemaining: '4h 00m',
+  acvEstimate: '$10,100',
+  sentAmount: '$9,200',
+  receivedAmount: '--',
+  statusNew: true,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Mon, Aug 24, 02:15 PM',
+  reservePrice: '$10,500',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$9,200', timestamp: 'Mon, Aug 24, 09:30 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Mon, Aug 24, 02:15 PM' }
+  ]
+}
+
+export const rowEscapeSEDeclined = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/ford-escape-se-blue.jpg',
+  dealerName: 'Classic Honda',
+  auctionId: '271556',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2013 Ford Escape SE',
+  mileage: '118,900 miles',
+  vin: '271556',
+  timeRemaining: '2h 50m',
+  acvEstimate: '$8,300',
+  sentAmount: '$7,600',
+  receivedAmount: '--',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Tue, Aug 25, 10:05 AM',
+  reservePrice: '$8,600',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$7,600', timestamp: 'Tue, Aug 25, 08:00 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Tue, Aug 25, 10:05 AM' }
+  ]
+}
+
+export const rowChargerSentBuyer = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/dodge-charger-sxt.jpg',
+  dealerName: 'Asbury Automotive Group',
+  auctionId: '384720',
+  offerType: 'make-offer',
+  vehicleTitle: '2017 Dodge Charger SXT',
+  mileage: '80,150 miles',
+  vin: '384720',
+  timeRemaining: '12h 30m',
+  acvEstimate: '$14,000',
+  sentAmount: '$13,300',
+  receivedAmount: '--',
+  statusNew: true,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 08:15 AM',
+  reservePrice: '$14,500',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$13,300', timestamp: 'Today, 08:15 AM' }
+  ]
+}
+
+export const rowBmwX5DeclinedBuyer = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  auctionId: '905612',
+  offerType: 'make-offer',
+  vehicleTitle: '2021 BMW X5',
+  mileage: '22,700 miles',
+  vin: '905612',
+  timeRemaining: '16h 00m',
+  acvEstimate: '$28,200',
+  sentAmount: '$26,800',
+  receivedAmount: '--',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Sun, Aug 23, 06:40 PM',
+  reservePrice: '$29,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$26,800', timestamp: 'Sun, Aug 23, 01:10 PM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Sun, Aug 23, 06:40 PM' }
+  ]
+}
+
+export const rowKonaReceived2 = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/hyundai-kona.jpg',
+  dealerName: 'DriveTime A',
+  auctionId: '760348',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2020 Hyundai Kona',
+  mileage: '61,200 miles',
+  vin: '760348',
+  timeRemaining: '5h 10m',
+  acvEstimate: '$16,500',
+  sentAmount: '$15,000',
+  receivedAmount: '$16,200',
+  statusNew: false,
+  statusReceived: true,
+  statusSent: false,
+  statusDeclined: false,
+  updateDate: 'Today, 06:05 AM',
+  reservePrice: '$17,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$15,000', timestamp: 'Yesterday, 07:30 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$16,200', timestamp: 'Today, 06:05 AM' }
+  ]
+}
+
+export const rowRx300Sent = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/lexus-rx300.jpg',
+  dealerName: 'Baxter Auto Mall',
+  auctionId: '812934',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2005 Lexus RX300',
+  mileage: '145,700 miles',
+  vin: '812934',
+  timeRemaining: '1h 55m',
+  acvEstimate: '$7,100',
+  sentAmount: '$6,700',
+  receivedAmount: '$7,000',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 10:40 AM',
+  reservePrice: '$7,400',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$6,500', timestamp: 'Yesterday, 09:00 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$7,000', timestamp: 'Today, 09:20 AM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$6,700', timestamp: 'Today, 10:40 AM' }
+  ]
+}
+
+export const rowFiat500SentBuyer = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/fiat-500-sport.jpg',
+  dealerName: 'DriveTime Mall',
+  auctionId: '223019',
+  offerType: 'make-offer',
+  vehicleTitle: '2019 Fiat 500 Sport',
+  mileage: '38,450 miles',
+  vin: '223019',
+  timeRemaining: '20h 10m',
+  acvEstimate: '$9,500',
+  sentAmount: '$8,900',
+  receivedAmount: '--',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 05:30 AM',
+  reservePrice: '$9,800',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$8,900', timestamp: 'Today, 05:30 AM' }
+  ]
+}
+
+export const rowMalibuReceived2 = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/chevrolet-malibu-rs.jpg',
+  dealerName: 'CarMax Boston',
+  auctionId: '447982',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2021 Chevrolet Malibu RS',
+  mileage: '29,800 miles',
+  vin: '447982',
+  timeRemaining: '4h 25m',
+  acvEstimate: '$18,900',
+  sentAmount: '$17,200',
+  receivedAmount: '$18,600',
+  statusNew: true,
+  statusReceived: true,
+  statusSent: false,
+  statusDeclined: false,
+  updateDate: 'Today, 07:15 AM',
+  reservePrice: '$19,500',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$17,200', timestamp: 'Yesterday, 01:00 PM' },
+    { speaker: 'seller', kind: 'counter', amount: '$18,600', timestamp: 'Today, 07:15 AM' }
+  ]
+}
+
+// ── Selling(卖家视角)新增10行 ──────────────────────────────────
+// 卖家视角下 sentAmount 是卖家自己发出的那个数字(自己的 counter),
+// receivedAmount 是卖家收到的买家的数字——和 rowToyotaMatrix/
+// rowChevyMalibu 等原有5行的字段方向一致,不是重新发明的规则。
+
+export const rowFocusRsReceivedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/2018-ford-focus-rs.jpg',
+  dealerName: 'CarMax Boston',
+  auctionId: '518734',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2017 Ford Focus RS',
+  mileage: '41,300 miles',
+  vin: '518734',
+  timeRemaining: '3h 40m',
+  acvEstimate: '$20,200',
+  sentAmount: '$19,800',
+  receivedAmount: '$19,000',
+  statusNew: true,
+  statusReceived: true,
+  statusSent: false,
+  statusDeclined: false,
+  updateDate: 'Today, 08:00 AM',
+  reservePrice: '$21,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$18,300', timestamp: 'Yesterday, 09:00 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$19,800', timestamp: 'Yesterday, 05:00 PM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$19,000', timestamp: 'Today, 08:00 AM' }
+  ]
+}
+
+export const rowRx300SentSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/lexus-rx300.jpg',
+  dealerName: 'Asbury Automotive Group',
+  auctionId: '629480',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2003 Lexus RX300',
+  mileage: '162,300 miles',
+  vin: '629480',
+  timeRemaining: '1h 10m',
+  acvEstimate: '$6,500',
+  sentAmount: '$6,400',
+  receivedAmount: '$5,900',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 09:05 AM',
+  reservePrice: '$6,800',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$5,900', timestamp: 'Yesterday, 03:00 PM' },
+    { speaker: 'seller', kind: 'counter', amount: '$6,400', timestamp: 'Today, 09:05 AM' }
+  ]
+}
+
+export const rowFiat500SentSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/fiat-500-sport.jpg',
+  dealerName: 'Apple Chevrolet',
+  auctionId: '740125',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2020 Fiat 500 Sport',
+  mileage: '19,600 miles',
+  vin: '740125',
+  timeRemaining: '5h 20m',
+  acvEstimate: '$10,800',
+  sentAmount: '$10,700',
+  receivedAmount: '$9,800',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 06:50 AM',
+  reservePrice: '$11,200',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$9,800', timestamp: 'Yesterday, 08:20 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$10,700', timestamp: 'Today, 06:50 AM' }
+  ]
+}
+
+export const rowKonaDeclinedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/hyundai-kona.jpg',
+  dealerName: 'Classic Honda',
+  auctionId: '835201',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2019 Hyundai Kona',
+  mileage: '54,900 miles',
+  vin: '835201',
+  timeRemaining: '2h 30m',
+  acvEstimate: '$14,500',
+  sentAmount: '$14,200',
+  receivedAmount: '$13,500',
+  statusNew: true,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Wed, Aug 26, 11:15 AM',
+  reservePrice: '$15,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$13,000', timestamp: 'Wed, Aug 26, 08:00 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$14,200', timestamp: 'Wed, Aug 26, 09:10 AM' },
+    { speaker: 'buyer', kind: 'counter', amount: '$13,500', timestamp: 'Wed, Aug 26, 10:30 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Wed, Aug 26, 11:15 AM' }
+  ]
+}
+
+export const rowWranglerDeclinedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/jeep-wrangler-unlimited.jpg',
+  dealerName: 'DriveTime A',
+  auctionId: '918460',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2019 Jeep Wrangler Unlimited',
+  mileage: '58,300 miles',
+  vin: '918460',
+  timeRemaining: '5h 55m',
+  acvEstimate: '$23,200',
+  sentAmount: '--',
+  receivedAmount: '$21,000',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Thu, Aug 27, 01:20 PM',
+  reservePrice: '$24,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$21,000', timestamp: 'Thu, Aug 27, 09:00 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Thu, Aug 27, 01:20 PM' }
+  ]
+}
+
+export const rowLexusEsReceivedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/lexus-es350-fsport.jpg',
+  dealerName: 'Apple Chevrolet',
+  auctionId: '602847',
+  offerType: 'make-offer',
+  vehicleTitle: '2020 Lexus ES 350 F Sport',
+  mileage: '25,400 miles',
+  vin: '602847',
+  timeRemaining: '18h 40m',
+  acvEstimate: '$30,200',
+  sentAmount: '--',
+  receivedAmount: '$28,600',
+  statusNew: true,
+  statusReceived: true,
+  statusSent: false,
+  statusDeclined: false,
+  updateDate: 'Today, 07:00 AM',
+  reservePrice: '$31,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$28,600', timestamp: 'Today, 07:00 AM' }
+  ]
+}
+
+export const rowEscapeSeReceivedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/ford-escape-se-blue.jpg',
+  dealerName: 'Baxter Auto Mall',
+  auctionId: '374690',
+  offerType: 'make-offer',
+  vehicleTitle: '2016 Ford Escape SE',
+  mileage: '88,700 miles',
+  vin: '374690',
+  timeRemaining: '22h 05m',
+  acvEstimate: '$8,900',
+  sentAmount: '--',
+  receivedAmount: '$8,300',
+  statusNew: false,
+  statusReceived: true,
+  statusSent: false,
+  statusDeclined: false,
+  updateDate: 'Today, 04:45 AM',
+  reservePrice: '$9,200',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$8,300', timestamp: 'Today, 04:45 AM' }
+  ]
+}
+
+export const rowBmwX5DeclinedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/2022-bmw-x5.jpg',
+  dealerName: 'Asbury Automotive Group',
+  auctionId: '460193',
+  offerType: 'make-offer',
+  vehicleTitle: '2019 BMW X5',
+  mileage: '48,100 miles',
+  vin: '460193',
+  timeRemaining: '9h 30m',
+  acvEstimate: '$24,700',
+  sentAmount: '--',
+  receivedAmount: '$23,400',
+  statusNew: true,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Fri, Aug 28, 03:50 PM',
+  reservePrice: '$25,500',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$23,400', timestamp: 'Fri, Aug 28, 10:00 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Fri, Aug 28, 03:50 PM' }
+  ]
+}
+
+export const rowEscapeTitaniumDeclinedSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/ford-escape-titanium-red.jpg',
+  dealerName: 'Baxter Auto Mall',
+  auctionId: '857031',
+  offerType: 'make-offer',
+  vehicleTitle: '2016 Ford Escape Titanium',
+  mileage: '102,500 miles',
+  vin: '857031',
+  timeRemaining: '14h 15m',
+  acvEstimate: '$11,600',
+  sentAmount: '--',
+  receivedAmount: '$11,000',
+  statusNew: false,
+  statusReceived: false,
+  statusSent: false,
+  statusDeclined: true,
+  updateDate: 'Sat, Aug 29, 09:40 AM',
+  reservePrice: '$12,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'offer', amount: '$11,000', timestamp: 'Sat, Aug 29, 04:00 AM' },
+    { speaker: 'seller', kind: 'declined', timestamp: 'Sat, Aug 29, 09:40 AM' }
+  ]
+}
+
+export const rowChargerSentSeller = {
+  isMultiDealer: true,
+  photoUrl: '/assets/vehicle-photos/dodge-charger-sxt.jpg',
+  dealerName: 'Classic Honda',
+  auctionId: '291847',
+  offerType: 'in-negotiation',
+  vehicleTitle: '2015 Dodge Charger SXT',
+  mileage: '91,200 miles',
+  vin: '291847',
+  timeRemaining: '5h 05m',
+  acvEstimate: '$12,500',
+  sentAmount: '$12,400',
+  receivedAmount: '$11,300',
+  statusNew: true,
+  statusReceived: false,
+  statusSent: true,
+  statusDeclined: false,
+  updateDate: 'Today, 06:20 AM',
+  reservePrice: '$13,000',
+  reportUrl: '#',
+  history: [
+    { speaker: 'buyer', kind: 'bid', amount: '$11,300', timestamp: 'Yesterday, 07:40 AM' },
+    { speaker: 'seller', kind: 'counter', amount: '$12,400', timestamp: 'Today, 06:20 AM' }
+  ]
+}
+
 // 单经销商账号示例:对应 Figma 帧 6837:16538 里的行(6837:16674),和
 // rowWithNewAndReceived 是同一辆车(264578 / Ford Focus RS / 同一张照片),
 // 只是 isMultiDealer=false 时不显示 dealerName,第二列主标题直接显示 264578
@@ -437,5 +1004,25 @@ export default {
   rowChevyMalibu,
   rowDodgeCharger,
   rowFordEscapeSE,
+  rowToyotaMatrixSent,
+  rowMalibuSent,
+  rowEscapeTitaniumDeclined,
+  rowEscapeSEDeclined,
+  rowChargerSentBuyer,
+  rowBmwX5DeclinedBuyer,
+  rowKonaReceived2,
+  rowRx300Sent,
+  rowFiat500SentBuyer,
+  rowMalibuReceived2,
+  rowFocusRsReceivedSeller,
+  rowRx300SentSeller,
+  rowFiat500SentSeller,
+  rowKonaDeclinedSeller,
+  rowWranglerDeclinedSeller,
+  rowLexusEsReceivedSeller,
+  rowEscapeSeReceivedSeller,
+  rowBmwX5DeclinedSeller,
+  rowEscapeTitaniumDeclinedSeller,
+  rowChargerSentSeller,
   rowSingleDealer
 }

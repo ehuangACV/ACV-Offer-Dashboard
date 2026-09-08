@@ -1,5 +1,152 @@
 # OfferCard 核实记录
 
+## 2026-09-08(第三次)更正:hover VIN 时背景和图标颜色也要跟着变
+上一次(第一次)把 [OfferTableRow](../OfferTableRow/notes.md) 的
+"hover 才出现复制图标"搬过来时,明确没有加浅蓝底 pill、没有把图标改成
+蓝色——理由是"card 的 VIN 不是链接样式"。你这次直接给了一张截图(浅蓝底
+pill + 深蓝色文字/图标),要求 hover 时背景和图标颜色也要做,等于是要
+table 那一整套"浅蓝底 + 蓝色"的视觉,不只是"图标默认隐藏、hover 才出现"
+这一层行为。
+
+改法:
+- `.offer-card__vin` 默认颜色还是原来的 `#55575C`(没有变),hover
+  卡片(或刚点过复制,`.is-copied`)时套上和 table 同一套
+  `background:#F5FBFF`(浅蓝底)+ `color:#00558C`(链接蓝),padding
+  右侧留 4px——数值直接照抄 table 那边已经核实过的 pill 数值,没有
+  重新设计一套。
+- 复制图标的 SVG `fill` 从写死的 `#55575C` 改成 `currentColor`,让
+  图标颜色跟着 `.offer-card__vin` 的 `color` 一起变(hover 时自动变蓝,
+  不需要再单独写一条"图标专属"的颜色规则)。
+- "VIN {{vin}}" 这几个字本身就是 `.offer-card__vin` 的直接文字子节点,
+  颜色靠 CSS 继承自动跟着变,不需要额外包一层 span。
+
+## 2026-09-08(第二次)点击复制后 tooltip 文字临时变成 "Copied"
+你要求"不管哪个 view,点击后显示 copied"。新增 `copiedVin` ref,
+`copyVin()` 点击后设成 true、1.5秒后 `setTimeout` 自动清成
+false(重复点击会 `clearTimeout` 重新计时)。tooltip 文字从固定的
+"Copy full VIN" 改成 `{{ copiedVin ? 'Copied' : 'Copy full VIN' }}`。
+
+新增 `.is-copied` class(绑在按钮本身上),让按钮的 `display` 和
+tooltip 的 `opacity` 在"刚复制完"这 1.5 秒内强制保持可见——不加的话,
+点击复制之后鼠标只要移出卡片(`.offer-card:hover` 失效),图标立刻
+`display:none` 消失,"Copied" 反馈还没看清就没了。逻辑和
+[OfferTableRow.vue](../OfferTableRow/notes.md) 的同名改动一模一样,
+两边各自维护一份。
+
+## 2026-09-08 复制图标改成 hover 才出现,补上 tooltip(同步 OfferTableRow 那边刚做的效果)
+你要求把 [OfferTableRow](../OfferTableRow/notes.md) 刚做的"复制图标默认
+不显示,hover 才出现 + hover 图标弹出 tooltip"这个效果也搬到 card 上。
+
+之前这个复制图标是无条件常驻显示的(从最早做 VIN 复制功能起就一直是这样,
+没有 hover 门槛)。改法:
+- `.offer-card__copy-btn` 默认 `display:none`,`.offer-card:hover
+  .offer-card__copy-btn` 才切换成 `inline-flex`——触发时机是 hover 整张
+  卡片(卡片本来就有 hover 效果——模糊 flex-section、浮出按钮块,这个
+  是同一个 `:hover` 入口,不是新发明的触发范围),不是单独 hover VIN
+  这几个字。
+- 新增 `.offer-card__vin-tooltip`,样式和 OfferTableRow.vue 的
+  `.offer-table-row__vin-tooltip`、AppHeader.vue 的
+  `.app-header__tooltip` 是同一套已核实数值(深色 #1C1D1F 背景、白字
+  #F7F7F8、4px 10px padding、4px 圆角),不是重新设计一套。
+
+**没有跟着做的**:table 那边的复制图标是蓝色(#00558C,和 VIN 链接色
+文字同色),外面还套了一个浅蓝底(#F5FBFF)pill——这里没有照搬这两点,
+因为 card 的 VIN 文字本来就是灰色系(不是链接样式),图标颜色沿用它
+本来就有的 #55575C,没有必要为了"效果一致"把颜色也换成 table 那边的
+蓝色;也没有加浅色 pill 底——没有链接语义就不需要额外的底色衬托。
+"同样的效果"这次理解成"默认隐藏、hover 才出现、hover 图标弹 tooltip"
+这套交互行为,不是连颜色数值也照抄另一个组件。
+
+## 2026-09-03(第五次)hover 模糊范围反了:改成模糊最下面3行,车辆信息不模糊
+你反馈"现在 hover on 时只 blur 最下面3行,就是除 vehicle title 和
+auction ID + VIN 都 blur"——上一次(第四次)只修了按钮块的位置(不再
+盖住 VIN copy icon),没有改模糊范围本身,这次核对发现模糊范围一直是
+反的。
+
+之前(2026-08)的规则直接给 `.offer-card__vehicle`(标题+Auction
+ID+VIN+copy icon)加 `filter:blur`,车辆信息区被模糊;同时特意不模糊
+消息块("message stays readable"),这是照抄当时给的一份规范文档
+("Offer card — content & interaction spec"第4节)。这次给的 Figma
+node 7672:20143(核实过完整 code,不是只看缩略元数据)显示的是反过来
+的规则:车辆信息区(标题/Auction ID/VIN/copy icon)从来没有被模糊,
+一直清晰;真正被 `blur-[2px]` 包住的是 `.offer-card__flex-section`
+这个容器(倒计时/状态chip 那一行 + 分隔线 + 消息两行)——正好是"最下面
+3行"(倒计时/chip行算1行,消息主/副两行各算1行),和你这次反馈的要求
+完全对上。
+
+改法:CSS 从按 `.offer-card--v1-btn-1/2/3` 分三条规则、各自模糊
+`.offer-card__vehicle`+`.offer-card__flex-row`,改成一条规则——
+`.offer-card--v1:hover .offer-card__flex-section { filter: blur(2px); }`
+(不再模糊车辆信息区,模糊对象从 `.offer-card__flex-row` 换成整个
+`.offer-card__flex-section`,把消息块也包进去)。之前"按钮数量决定
+模糊范围"这套区分(1/2/3按钮各自不同范围)不再需要——这次的 Figma
+参照节点给了1按钮/2按钮两个真实实例,模糊的是同一个容器,不随按钮
+数量变化,所以顺带把模板上 `offer-card--v1-btn-1/2/3` 这三个不再被
+任何 CSS 规则引用的修饰类也删掉了,只留 `offer-card--v1`
+(`hoverButtons.length>0`,现在恒为真)。
+
+## 2026-09-03(第四次)hover 按钮块位置改成对照 Figma 核实,修 VIN copy icon 被遮挡
+你反馈"hover on 后 VIN 旁边的 copy icon 被遮挡",给了 Figma node
+7672:20143("Hover" 分区,"Offers - Negotiation" 文件)。核实这个节点
+(拉了里面两个真实 hover 态卡片实例的完整 code,不是只看缩略元数据):
+- 车辆信息区(标题+Auction ID+VIN+copy icon,对应我们的
+  `.offer-card__vehicle`)自己**没有** blur,一直保持清晰;只有它下面
+  那一块(倒计时/状态chip行 + 分隔线 + 消息)才被 `filter:blur(2px)`。
+- 按钮块紧贴车辆信息区下边缘往下铺,顶边完全不会进入车辆信息区的范围
+  ——两个实例(2按钮/1按钮)换算出来的顶边位置是同一个数字,说明这个
+  块是钉在车辆信息区正下方,按钮数量只影响它往下伸多长,不是钉在卡片
+  底部再往上长。
+
+之前(第三次)"上移12px"改成 208px 是你直接给的调整量,当时没有对照
+Figma 数值。这次核对后发现问题:原来的 220px、以及改小之后的 208px 都
+定得太靠上了,按钮块的顶部一直伸进车辆信息区里,VIN 旁边的 copy icon
+因此被压在按钮块透明的 padding 区域下面,看起来像被遮挡——这正是你这次
+反馈的问题,根因不是"该不该上移",是这个坐标从最开始就没有对准车辆
+信息区的下边缘。
+
+换算到我们卡片自己的真实结构算出正确值:`.offer-card` 根节点
+`gap:12px`,子元素依次是 `.offer-card__image`(210px)→
+`.offer-card__info`(`padding:0 16px`、`gap:12px`),第一个子元素
+`.offer-card__vehicle` 在 v2 版本下高度是标题行24px+VIN行21px=45px
+(不含 v1 才有的单独 Auction ID 行)。车辆信息区下边缘 =
+210(图片)+12(卡片根 gap)+45(车辆信息区自身高度)= **267px**。改成
+`top:267px`,正好贴着车辆信息区下边缘,按钮块自己的 `padding-top:8px`
+再往下多空 8px,不会有任何重叠。同时把 `padding-bottom` 从 16px 改成
+8px(照抄这个 Figma 节点的 `pb-[8px]`,不是之前沿用车辆信息区左右
+padding估的16px)。
+
+## 2026-09-03(第三次)hover 按钮块整体上移 12px
+你直接要求把 hover 时出现的按钮块往上移 12px——`.offer-card__hover-
+buttons` 的 `top` 从 `220px` 改成 `208px`,不是重新核实的 Figma 数值,
+是你给的调整量。其余(left/right 11px、按钮本身的样式、按钮数量对应的
+模糊范围)都没有变。
+
+## 2026-09-03(第二次)去掉 hover 按钮块自己的 backdrop-filter,不再误伤消息块
+你截图指出 declined 状态(Make Offer · Declined 例子)hover 时,"Remove
+From List" 按钮下面的消息块("You declined the offer" / "Buyer offered
+$24,200")看起来被模糊了,要求"hover on 不要 blur 最下面2行"。
+
+根因:`.offer-card__hover-buttons`(装 View Details/Remove From
+List/Manage Offer 这些按钮的绝对定位容器)自己身上一直有一条
+`backdrop-filter: blur(2px)`——这条模糊的不是按钮本身(按钮有自己的
+背景色/渐变,不需要背后模糊衬底),是"这个容器矩形范围内、按钮之间的
+gap 和底部 padding 空隙里透出来的卡片内容"。这个容器一直写死
+`top:220px`(2026-08 按 Figma 三个按钮数量各自核实到的中间值),对
+declined/expired 这种不显示倒计时的卡片(`isClosed` 时 `hasCountdown`
+永远 false,`.offer-card__info` 整体比原来核实这个数字时的卡片矮),
+容器的底部边缘会伸到消息块第一行的位置——"车辆信息/倒计时·状态chip"
+那一行本身已经各自用 `filter:blur()` 模糊过了(见 `.offer-card--v1-
+btn-1/2/3` 那几条规则),不需要靠这个容器的 backdrop-filter 重复模糊;
+真正的问题是这个 backdrop-filter 的模糊范围比它该覆盖的范围更大,把
+不该模糊的消息块也捎带模糊了——这直接违反了这份卡片规范第4节自己写的
+"identity + status dimmed, message stays readable"这条规则。
+
+改法:直接删掉 `.offer-card__hover-buttons` 上的
+`backdrop-filter: blur(2px)`。该模糊的部分(车辆信息/倒计时行)靠它们
+自己身上的 `filter:blur()` 已经模糊了,视觉上没有变化;不该模糊的部分
+(容器底部 padding 伸到消息块的那一小截)现在正常清晰显示,不再被
+误伤。
+
 ## 2026-09-03 hover 按钮简化成单一 "Manage Offer"
 你要求:"hover on 的interaction，除了decline or expired 这2种状态，其他
 的都改成一个button. manage offer. 点击后依旧打开infomation dialog"——
@@ -548,3 +695,58 @@ v1（旧版本，保留对比用）没有动。
   金额} · {差额} apart"——和 received 状态的 line2（"Your counter +
   差额"）结构对称，只是这次换成显示对方的数字。Make Offer 的 sent
   分支没有变。
+
+## 2026-09-08 删除 v1，只保留 v2
+
+你确认 tile view 只需要 v2，v1（车辆信息第二行显示 mileage、message
+两行用旧文案规则）已经完全不需要，可以去除。
+
+改动：
+- 删掉了 `cardVersion` prop 本身——组件不再有版本分支的概念，不是把
+  默认值锁死成 'v2'，而是这个 prop 从 defineProps 里彻底消失了。
+- 车辆信息第二行原来是
+  `cardVersion === 'v2' ? ('Auction ID: ' + auctionId) : mileage` 的
+  三元表达式，改成恒定显示 `Auction ID: {{ auctionId }}`。原来只在
+  `cardVersion !== 'v2'` 时才渲染的独立"Auction ID: xxx"那一行（本来
+  就是死代码，因为默认值和唯一在用的值一直都是 'v2'）一并删掉。
+- `messageLine1V1`/`messageLine2V1` 这两个 v1 专属的文案 computed 整个
+  删掉，`messageLine1V2`/`messageLine2V2` 改名成 `messageLine1`/
+  `messageLine2`（不再需要一层按 cardVersion 选择用哪套的外层
+  computed）。`messageLine1Timestamp` 里原来 `if (cardVersion !== 'v2')
+  return ''` 这行判断也删了。
+- `showGap`/`gapAmount` 这两个只服务于 v1 message line2（"· {gapAmount}
+  apart" vs 时间戳）的 prop，v1 分支删掉之后没有任何代码再读它们，一起
+  删掉了。
+- `mileage` prop **没有删**——它还要原样传给 `InformationDialog`
+  显示"Odometer: {mileage}"，卡片本身"要不要显示 mileage 这一行"和
+  "这个字段本身还有没有用"是两件不同的事，`mock.js`/Dashboard 那边的
+  `mileage` 数据也都没有动。
+- 同步删掉了 `OfferDashboard.vue` 的 `cardVersion` prop 和它给
+  `rowsAsCards` 里每张卡片传的 `cardVersion: props.cardVersion`（tile
+  视图现在没有"版本"这个维度需要从 Dashboard 往下透传了），细节见
+  `fragments/OfferDashboard/notes.md`。Playground 里原来 OfferCard 和
+  OfferDashboard 各自的"Card version"/"Tile view card version"
+  segmented 控件也一并从 index.html 删掉。
+
+## 2026-09-08 删除 In Negotiation 徽标的 ring 样式，只保留 Current
+
+你确认 tile view 的徽标只留 default（Current）样式，2026-09-02 加的
+ring（深色底不变、加一圈白色描边+投影）这个方向不需要了。
+
+改动：
+- 删掉了 `badgeStyle` prop 本身——不是把默认值锁死成 'default'，是这个
+  prop 从 defineProps 里彻底消失了。
+- `<ImageBadge>` 原来传的 `:ring="offerType === 'in-negotiation' &&
+  badgeStyle === 'ring'"` 也删了，现在完全不传 `ring` 这个 prop，交给
+  `ImageBadge.vue` 自己的默认值（`false`）。
+- `ImageBadge.vue` 组件本身的 `ring` 能力**没有删**——它是一个独立的
+  通用组件（自己的 Playground 页面 order 39），`ring` 是它自己一直保留
+  的一个 variant 选项,只是 OfferCard 不会再用它。
+- 同步删掉了 `OfferDashboard.vue` 的 `cardBadgeStyle` prop 和它给
+  `rowsAsCards` 里每张卡片传的 `badgeStyle: props.cardBadgeStyle`，
+  细节见 `fragments/OfferDashboard/notes.md`。Playground 里 OfferCard
+  和 OfferDashboard 各自的"In Negotiation badge style" segmented 控件
+  （Current/Ring 两个选项）也一并从 index.html 删掉。
+- 顺手清理了 `fragments/OfferCard/controls.js` 里同样早就没在用的
+  `showGap`/`gapAmount`/`badgeStyle` 三个控件定义（上一轮删 v1 时漏掉
+  了这个文件，这次一起补上）。
