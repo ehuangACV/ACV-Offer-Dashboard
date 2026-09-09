@@ -1096,3 +1096,24 @@ Received）全部改成固定像素宽度（不再用 `fr`），宽屏时不再�
 恢复成每列都用 `minmax(Npx, Nfr)`——8列（含Update）宽屏时重新一起
 按比例变宽。这条记录保留下来只是为了留痕（当时的诊断/改法/验证过程），
 不代表现在的实际状态，现在的状态见本文件更晚的条目。
+
+## 2026-09-08（第十一次）Reserve/Sent/Received 三列最小列宽各加12px
+
+按你的要求，`tableGridColumns` 里这三列的 `minmax()` 数值分别从
+66/61/69 改成 78/73/81（各+12px），跟 `OfferTableHeader.vue`/
+`OfferTableRow.vue` 的同名列宽同步改了。用浏览器实测：三列表头和
+数据行的宽度精确等于78/73/81px，且 `left`/`width` 依然完全对齐。
+
+## 2026-09-08（第十二次）Reserve/Sent/Received 三列最小列宽再加12px
+
+按你的要求再加一次12px，三列变成90/85/93（78/73/81 + 12），
+`OfferTableHeader.vue`/`OfferTableRow.vue` 同步改了。用浏览器实测：
+三列表头和数据行的宽度精确等于90/85/93px，`left`/`width` 依然完全
+对齐。
+
+## 2026-09-08（第十三次）Reserve/Sent/Received 三列最小列宽再加12px
+
+按你的要求再加一次12px，三列变成102/97/105（90/85/93 + 12），
+`OfferTableHeader.vue`/`OfferTableRow.vue` 同步改了。用浏览器实测：
+三列表头和数据行的宽度精确等于102/97/105px，`left`/`width` 依然完全
+对齐，无 console 报错。

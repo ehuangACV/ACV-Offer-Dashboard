@@ -280,9 +280,9 @@
   .offer-table-header__cell--dealer--wide { flex: 0 0 176px; }
   .offer-table-header__cell--vehicle { flex: 0 0 176px; padding-left: 14px; }
   .offer-table-header__cell--time { flex: 0 0 100px; padding-left: 4px; padding-right: 4px; }
-  .offer-table-header__cell--estimate { flex: 0 0 66px; padding-left: 4px; padding-right: 4px; }
-  .offer-table-header__cell--sent { flex: 0 0 61px; padding-left: 4px; padding-right: 4px; }
-  .offer-table-header__cell--received { flex: 0 0 69px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--estimate { flex: 0 0 102px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--sent { flex: 0 0 97px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--received { flex: 0 0 105px; padding-left: 4px; padding-right: 4px; }
   .offer-table-header__cell--update { flex: 0 0 217px; min-width: 0; }
   .offer-table-header__title-row { display: flex; align-items: center; gap: 4px; }
   .offer-table-header__title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #212121; white-space: nowrap; }
@@ -334,9 +334,9 @@
   .offer-table-row__vin-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/18px 'Roboto', sans-serif; letter-spacing: 0.4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; z-index: 10; }
   .offer-table-row__vin-copy-btn:hover .offer-table-row__vin-tooltip, .offer-table-row__vin-copy-btn:focus-visible .offer-table-row__vin-tooltip, .offer-table-row__vin-copy-btn.is-copied .offer-table-row__vin-tooltip { opacity: 1; }
   .offer-table-row__cell--time { flex: 0 0 100px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
-  .offer-table-row__cell--estimate { flex: 0 0 66px; padding-top: 30px; padding-left: 4px; padding-right: 4px; font-weight: 400; }
-  .offer-table-row__cell--sent { flex: 0 0 61px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
-  .offer-table-row__cell--received { flex: 0 0 69px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-row__cell--estimate { flex: 0 0 102px; padding-top: 30px; padding-left: 4px; padding-right: 4px; font-weight: 400; }
+  .offer-table-row__cell--sent { flex: 0 0 97px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-row__cell--received { flex: 0 0 105px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
   .offer-table-row__cell--update { flex: 0 0 217px; min-width: 0; display: flex; align-items: center; padding: 0 16px 0 16px; }
   .offer-table-row__update-default { display: flex; flex-direction: column; }
   .offer-table-row__status-pills { display: flex; align-items: center; gap: 4px; }
@@ -2121,7 +2121,7 @@
     // 注释,这里只保持镜像同步。
     rowToyotaMatrixSent: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/toyota-matrix.jpg', dealerName: 'DriveTime Mall', auctionId: '481205', offerType: 'in-negotiation',
-      vehicleTitle: '2011 Toyota Matrix', mileage: '132,400 miles', vin: '481205', timeRemaining: '3h 05m',
+      vehicleTitle: '2011 Toyota Matrix', mileage: '132,400 miles', vin: '481205', timeRemaining: '35m',
       acvEstimate: '$6,000', sentAmount: '$5,700', receivedAmount: '$5,900',
       statusNew: true, statusReceived: false, statusSent: true, statusDeclined: false, updateDate: 'Today, 09:20 AM',
       reservePrice: '$6,200', reportUrl: '#', history: [
@@ -2182,7 +2182,7 @@
     },
     rowKonaReceived2: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/hyundai-kona.jpg', dealerName: 'DriveTime A', auctionId: '760348', offerType: 'in-negotiation',
-      vehicleTitle: '2020 Hyundai Kona', mileage: '61,200 miles', vin: '760348', timeRemaining: '5h 10m',
+      vehicleTitle: '2020 Hyundai Kona', mileage: '61,200 miles', vin: '760348', timeRemaining: '20m',
       acvEstimate: '$16,500', sentAmount: '$15,000', receivedAmount: '$16,200',
       statusNew: false, statusReceived: true, statusSent: false, statusDeclined: false, updateDate: 'Today, 06:05 AM',
       reservePrice: '$17,000', reportUrl: '#', history: [
@@ -2222,7 +2222,7 @@
     },
     rowFocusRsReceivedSeller: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/2018-ford-focus-rs.jpg', dealerName: 'CarMax Boston', auctionId: '518734', offerType: 'in-negotiation',
-      vehicleTitle: '2017 Ford Focus RS', mileage: '41,300 miles', vin: '518734', timeRemaining: '3h 40m',
+      vehicleTitle: '2017 Ford Focus RS', mileage: '41,300 miles', vin: '518734', timeRemaining: '50m',
       acvEstimate: '$20,200', sentAmount: '$19,800', receivedAmount: '$19,000',
       statusNew: true, statusReceived: true, statusSent: false, statusDeclined: false, updateDate: 'Today, 08:00 AM',
       reservePrice: '$21,000', reportUrl: '#', history: [
@@ -2233,7 +2233,7 @@
     },
     rowRx300SentSeller: {
       isMultiDealer: true, photoUrl: 'assets/vehicle-photos/lexus-rx300.jpg', dealerName: 'Asbury Automotive Group', auctionId: '629480', offerType: 'in-negotiation',
-      vehicleTitle: '2003 Lexus RX300', mileage: '162,300 miles', vin: '629480', timeRemaining: '1h 10m',
+      vehicleTitle: '2003 Lexus RX300', mileage: '162,300 miles', vin: '629480', timeRemaining: '40m',
       acvEstimate: '$6,500', sentAmount: '$6,400', receivedAmount: '$5,900',
       statusNew: false, statusReceived: false, statusSent: true, statusDeclined: false, updateDate: 'Today, 09:05 AM',
       reservePrice: '$6,800', reportUrl: '#', history: [
@@ -2539,9 +2539,9 @@
           'minmax(' + dealerWidth + 'px,' + dealerWidth + 'fr)',
           'minmax(176px,176fr)',
           'minmax(100px,100fr)',
-          'minmax(66px,66fr)',
-          'minmax(61px,61fr)',
-          'minmax(69px,69fr)',
+          'minmax(102px,102fr)',
+          'minmax(97px,97fr)',
+          'minmax(105px,105fr)',
           'minmax(217px,217fr)'
         ].join(' ');
       });

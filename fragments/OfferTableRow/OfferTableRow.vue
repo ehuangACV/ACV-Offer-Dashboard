@@ -718,9 +718,12 @@ const hoverButtons = computed(() => {
    fragments/OfferDashboard/notes.md 同名条目。收窄到90px。
    2026-09-08(第八次)再压缩左右padding到4px(16px→4px),宽度跟着
    再收窄24px变成66px。 */
-.offer-table-row__cell--estimate { flex: 0 0 66px; padding-top: 30px; padding-left: 4px; padding-right: 4px; font-weight: 400; }
-.offer-table-row__cell--sent { flex: 0 0 61px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
-.offer-table-row__cell--received { flex: 0 0 69px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+/* 2026-09-08(第十一次)按你的要求,三列的最小列宽各增加12px,跟
+   OfferTableHeader.vue/OfferDashboard.vue 的改动同步。
+   2026-09-08(第十二次)按你的要求再加12px。 */
+.offer-table-row__cell--estimate { flex: 0 0 102px; padding-top: 30px; padding-left: 4px; padding-right: 4px; font-weight: 400; }
+.offer-table-row__cell--sent { flex: 0 0 97px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+.offer-table-row__cell--received { flex: 0 0 105px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
 
 /* 2026-09-02:原来是纯 padding-top 撑开内容,现在要在同一块地方切换
    "chips+日期"和"CTA按钮组"两种内容,改成 flex + align-items:center

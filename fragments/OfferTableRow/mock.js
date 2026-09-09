@@ -447,7 +447,12 @@ export const rowToyotaMatrixSent = {
   vehicleTitle: '2011 Toyota Matrix',
   mileage: '132,400 miles',
   vin: '481205',
-  timeRemaining: '3h 05m',
+  // 2026-09-08 按你的要求改成 <1小时(纯分钟、不带"h"),这一行是自编
+  // mockup 数据,不是核实过的真实数据,细节见 OfferDashboard/notes.md
+  // 同名条目——OfferTableRow.vue 的 timeLeftUrgent 是从这个字符串自动
+  // 判断的(没有"h"/"d"、只有"m" 就算 urgent,变红色),不需要额外传
+  // 别的字段。
+  timeRemaining: '35m',
   acvEstimate: '$6,000',
   sentAmount: '$5,700',
   receivedAmount: '$5,900',
@@ -604,7 +609,9 @@ export const rowKonaReceived2 = {
   vehicleTitle: '2020 Hyundai Kona',
   mileage: '61,200 miles',
   vin: '760348',
-  timeRemaining: '5h 10m',
+  // 2026-09-08 按你的要求改成 <1小时,细节见同一处 rowToyotaMatrixSent
+  // 的注释,原因一样。
+  timeRemaining: '20m',
   acvEstimate: '$16,500',
   sentAmount: '$15,000',
   receivedAmount: '$16,200',
@@ -713,7 +720,9 @@ export const rowFocusRsReceivedSeller = {
   vehicleTitle: '2017 Ford Focus RS',
   mileage: '41,300 miles',
   vin: '518734',
-  timeRemaining: '3h 40m',
+  // 2026-09-08 按你的要求改成 <1小时,细节见 rowToyotaMatrixSent 同一处
+  // 注释,原因一样。
+  timeRemaining: '50m',
   acvEstimate: '$20,200',
   sentAmount: '$19,800',
   receivedAmount: '$19,000',
@@ -740,7 +749,9 @@ export const rowRx300SentSeller = {
   vehicleTitle: '2003 Lexus RX300',
   mileage: '162,300 miles',
   vin: '629480',
-  timeRemaining: '1h 10m',
+  // 2026-09-08 按你的要求改成 <1小时,细节见 rowToyotaMatrixSent 同一处
+  // 注释,原因一样。
+  timeRemaining: '40m',
   acvEstimate: '$6,500',
   sentAmount: '$6,400',
   receivedAmount: '$5,900',

@@ -334,12 +334,13 @@ onBeforeUnmount(() => {
    Remaining/Reserve/Sent 之间间距太大"的真正来源,细节见
    fragments/OfferDashboard/notes.md 同名条目。收窄到90px(实测"Reserve"
    标题+最长金额数据只需要约85px,留5px余量)。 */
-.offer-table-header__cell--estimate { flex: 0 0 66px; padding-left: 4px; padding-right: 4px; }
-.offer-table-header__cell--sent { flex: 0 0 61px; padding-left: 4px; padding-right: 4px; }
-/* 2026-09-08(第八次)按 66px 压缩(和 estimate/received 同一套算法)会
-   让"Received"这个标题(比"Reserve"/"Sent"长)裁掉3px——用浏览器实测
-   `scrollWidth` 确认过,补回3px变成69px,刚好不裁切。 */
-.offer-table-header__cell--received { flex: 0 0 69px; padding-left: 4px; padding-right: 4px; }
+/* 2026-09-08(第十一次)按你的要求,Reserve/Sent/Received 三列的最小
+   列宽各增加12px(66→78 / 61→73 / 69→81),跟 OfferTableRow.vue/
+   OfferDashboard.vue 的改动同步。
+   2026-09-08(第十二次)按你的要求再加12px(78→90 / 73→85 / 81→93)。 */
+.offer-table-header__cell--estimate { flex: 0 0 102px; padding-left: 4px; padding-right: 4px; }
+.offer-table-header__cell--sent { flex: 0 0 97px; padding-left: 4px; padding-right: 4px; }
+.offer-table-header__cell--received { flex: 0 0 105px; padding-left: 4px; padding-right: 4px; }
 /* 2026-09-08(第五次)按你的要求,OfferTableRow.vue 的 Update 列左
    padding 从24px压缩到16px(触发横向滚动前先把留白压到16px,细节见
    fragments/OfferDashboard/notes.md 同名条目)——现在和这个组件默认的

@@ -532,3 +532,47 @@ Estimate)明确写的是"同上,Regular 字重"——两者刻意不一样,不�
 --strong { font-weight: 500; }`)现在没有任何地方在用,一并删掉。用
 浏览器 `getComputedStyle` 实测确认 Sent/Received/Reserve/Time 四列
 现在的 `fontWeight` 都是 `"400"`,统一了。
+
+## 2026-09-08（第十次）Buying/Selling 各挑2行改成 <1小时倒计时
+
+你要求"buying 和 selling tab 下的deal time remaining 都有1-2个少于
+1小时的time"。之前30行 mock 数据里没有一行是纯分钟(全部是"Xh Ym"
+格式),`timeLeftUrgent`(判断是否<1小时、该不该显示成urgent红色的
+computed,定义:`!/[hd]/.test(timeRemaining) && /m/.test(timeRemaining)`
+——不含"h"/"d"、只有"m"就算urgent)一直没有true过的机会。
+
+改法：从 Buying(前15行)/Selling(后15行)里各挑了2行**自编mockup
+数据**(不是已核实的真实行数据,细节见本文件"已核实"表格上方的历史
+说明——特意避开了最前面1-2行真实数据,不去动那些)，把 `timeRemaining`
+改成纯分钟格式：
+- Buying：`rowToyotaMatrixSent`(3h 05m→35m)、`rowKonaReceived2`
+  (5h 10m→20m)。
+- Selling：`rowFocusRsReceivedSeller`(3h 40m→50m)、
+  `rowRx300SentSeller`(1h 10m→40m)。
+这4行都不是 Declined 状态(Declined 整块不显示倒计时,改了也看不出
+效果),细节见 `fragments/OfferDashboard/OfferDashboard.vue` 的 `rows`
+数组顺序(用来确认哪些行属于 Buying/Selling 哪一半)。
+
+用浏览器实测：Buying/Selling 两个 tab 的 Time Remaining 列各自出现了
+2个纯分钟值；这个表格本身的 Time Remaining 单元格没有urgent红色样式
+(那是 OfferCard/tile view 才有的效果，`timeLeftUrgent` 在这个文件里
+只是透传给 InformationDialog，没有用来给这一列上色，一直是这样，不是
+这次改漏了）；切到 tile view 确认这两行确实变成了红色的"35m Left"/
+"20m Left"（`offer-card__time-left` 没有 `--grey` 修饰类，颜色是
+`rgb(204,67,58)`），证明数据改动正确地经过 `rowTimeLeftUrgent()` 传到
+了 OfferCard。
+
+## 2026-09-08（第十一次）Reserve/Sent/Received 三列最小列宽各加12px
+
+按你的要求，这三列的 `flex` 宽度分别从66/61/69px改成78/73/81px（各+
+12px），跟 `OfferTableHeader.vue`/`OfferDashboard.vue` 的同名列宽同步。
+
+## 2026-09-08（第十二次）Reserve/Sent/Received 三列最小列宽再加12px
+
+按你的要求再加一次12px，三列变成90/85/93px，跟 `OfferTableHeader.vue`/
+`OfferDashboard.vue` 的同名列宽同步。
+
+## 2026-09-08（第十三次）Reserve/Sent/Received 三列最小列宽再加12px
+
+按你的要求再加一次12px，三列变成102/97/105px，跟 `OfferTableHeader.vue`/
+`OfferDashboard.vue` 的同名列宽同步。

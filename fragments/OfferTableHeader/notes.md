@@ -154,6 +154,21 @@ Received 五列的左右padding从16px压缩到4px,内容区宽度不变,列宽�
 图片。Received这一列额外补了3px(66→69px)避免"Received"标题被裁切
 (比"Reserve"/"Sent"长,实测`scrollWidth`量出来正好差3px)。
 
+## 2026-09-08（第十一次）Reserve/Sent/Received 三列最小列宽各加12px
+
+按你的要求，这三列的 `flex` 宽度分别从66/61/69px改成78/73/81px（各+
+12px），跟 `OfferTableRow.vue`/`OfferDashboard.vue` 的同名列宽同步。
+
+## 2026-09-08（第十二次）Reserve/Sent/Received 三列最小列宽再加12px
+
+按你的要求再加一次12px，三列变成90/85/93px，跟 `OfferTableRow.vue`/
+`OfferDashboard.vue` 的同名列宽同步。
+
+## 2026-09-08（第十三次）Reserve/Sent/Received 三列最小列宽再加12px
+
+按你的要求再加一次12px，三列变成102/97/105px，跟 `OfferTableRow.vue`/
+`OfferDashboard.vue` 的同名列宽同步。
+
 ## 待你确认
 1. 只有 Dealer Name 和 Time Remaining 两列在 Figma 里有排序图标的实例,
    其余列(Vehicle / ACV Estimate / Sent / Received / Update)是否也应该

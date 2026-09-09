@@ -583,6 +583,11 @@ const effectiveMultiDealer = computed(() => props.isMultiDealer && activeMainTab
 // 2026-09-08(第十次,已撤销)你反馈宽屏下 Reserve/Sent/Received 间距
 // 比其它列小、显得不均衡,当时把除 Update 外全部改成固定像素——你指出
 // 这次改动"全错了",已经撤销,恢复成每列都用 `minmax(Npx, Nfr)`。
+// 2026-09-08(第十一次)按你的要求:Reserve/Sent/Received 三列的最小
+// 列宽各增加12px(78/73/81,原来是66/61/69),跟 OfferTableHeader.vue/
+// OfferTableRow.vue 的改动同步。
+// 2026-09-08(第十二次)按你的要求再加12px(90/85/93)。
+// 2026-09-08(第十三次)按你的要求再加12px(102/97/105)。
 const tableGridColumns = computed(() => {
   const dealerWidth = effectiveMultiDealer.value ? 176 : 116
   return [
@@ -590,9 +595,9 @@ const tableGridColumns = computed(() => {
     `minmax(${dealerWidth}px,${dealerWidth}fr)`,
     'minmax(176px,176fr)',
     'minmax(100px,100fr)',
-    'minmax(66px,66fr)',
-    'minmax(61px,61fr)',
-    'minmax(69px,69fr)',
+    'minmax(102px,102fr)',
+    'minmax(97px,97fr)',
+    'minmax(105px,105fr)',
     'minmax(217px,217fr)'
   ].join(' ')
 })
