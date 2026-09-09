@@ -476,19 +476,24 @@ const header = {
   avatarLetter: 'A'
 }
 
-// [2026-08 按你的要求更正] Buying/Selling tab 旁边红点里的数字、以及
-// sidebar "Offers" 旁边的 badge,不是"这个tab总共有几条"(之前是
-// buyingRows.length/sellingRows.length,固定6/6),而是"这个tab里有几条
-// New(未处理)的",用来提醒用户还有几个新 deal 没处理。sidebar 的
-// Offers badge = Buying 的 New 数 + Selling 的 New 数(两个tab红点数字
-// 加起来)。这个数字统计的是 buyingRows/sellingRows 全部6条(不受下面
-// buyingVehicleCount/sellingVehicleCount 演示用的截取数量影响),因为
-// 现实里"还有几个新的没处理"这个提醒不应该因为你在Playground里调小了
-// 演示行数就跟着变少。
+// [2026-08 按你的要求更正,2026-09-08 反过来又改回联动] Buying/Selling
+// tab 旁边红点里的数字、以及 sidebar "Offers" 旁边的 badge,统计的是
+// "这个tab里有几条 New(未处理)的",用来提醒用户还有几个新 deal 没
+// 处理。sidebar 的 Offers badge = Buying 的 New 数 + Selling 的 New 数
+// (两个tab红点数字加起来)。
 // 2026-09-02 按你的要求改成 isRowNew(r)(= statusNew 且没被标记"看过"),
-// 不再直接读 r.statusNew——看过的 deal 不该继续算在这两个数字里
-const buyingNewCount = computed(() => buyingRows.filter(isRowNew).length)
-const sellingNewCount = computed(() => sellingRows.filter(isRowNew).length)
+// 不再直接读 r.statusNew——看过的 deal 不该继续算在这两个数字里。
+// 【2026-09-08 第二次更正】上一版故意统计 buyingRows/sellingRows 全部
+// 15条,不受 buyingVehicleCount/sellingVehicleCount 演示用的截取数量
+// 影响(理由是"现实里提醒不该因为调小演示行数就变少")——你反馈调小
+// "Vehicles shown"之后这两个数字和 filter chip 的数字不一致,"显示
+// 不对",要求改成和 filter chip 一样跟着"Vehicles shown"滑块联动。
+// 改成基于下面新增的 buyingRowsLimited/sellingRowsLimited(按各自的
+// buyingVehicleCount/sellingVehicleCount 截取,不看当前是在 Buying 还是
+// Selling tab——sidebar/两个tab的红点要同时反映两侧各自的数字,不能像
+// rowsLimited 那样只算"当前激活的那个tab")。
+const buyingNewCount = computed(() => buyingRowsLimited.value.filter(isRowNew).length)
+const sellingNewCount = computed(() => sellingRowsLimited.value.filter(isRowNew).length)
 
 // 2026-08 按你的要求新增,对照节点 7432:69595 核实:"My ACV" nav tab 旁
 // 边的红点,只要 Buying/Selling 任意一边有 New 状态的 deal 就显示,复用
@@ -538,25 +543,57 @@ const effectiveMultiDealer = computed(() => props.isMultiDealer && activeMainTab
 // 2026-09-08(第三次)按你的要求新增:table view 表头+所有数据行共享的
 // grid 列宽定义,细节和为什么要改成 CSS Grid 见下面
 // `.offer-dashboard__table-scroll` CSS 注释和 notes.md 同名条目。每一列
-// `minmax(Npx, Nfr)`——Npx 是 Figma 核实过的自然宽度(永远不会缩得更
-// 窄,不够宽时靠这个容器横向滚动),Nfr 让宽屏时每一列按同一个比例一起
-// 变宽(这个数值和 px 部分保持一样,效果等价于原来 flex-grow:N 的比例
-// 缩放,只是现在是整个 grid 只算一次,不会再和数据行分别算出不同的
-// 浮点像素值)。Dealer/Auction ID 这一列的宽度按 `effectiveMultiDealer`
-// 在 140px(只有Auction ID+Type徽标)和200px(可能是长经销商名)之间
-// 切换,和 OfferTableHeader.vue/OfferTableRow.vue 里 isMultiDealer 版本
-// 的 --dealer--wide 修饰类是同一个判断条件、同一组数值。
+// `minmax(Npx, Nfr)`——Npx 是每一列真正的最小宽度(内容宽度+左右各16px
+// 留白,永远不会缩得更窄,不够宽时靠这个容器横向滚动),Nfr 让宽屏时
+// 每一列按同一个比例一起变宽(这个数值和 px 部分保持一样,效果等价于
+// 原来 flex-grow:N 的比例缩放,只是现在是整个 grid 只算一次,不会再和
+// 数据行分别算出不同的浮点像素值)。Dealer/Auction ID 这一列的宽度按
+// `effectiveMultiDealer` 在 140px(只有Auction ID+Type徽标)和200px
+// (可能是长经销商名)之间切换,和 OfferTableHeader.vue/OfferTableRow.vue
+// 里 isMultiDealer 版本的 --dealer--wide 修饰类是同一个判断条件、同一
+// 组数值。
+// 2026-09-08(第五次)按你的要求:触发横向滚动之前,先把每一列自己的
+// 左右留白统一压缩到16px,尽量多撑一会儿再滚动——Vehicle 列原来右
+// padding是35px(核实自Figma,不是常见的16px),内容宽度146px不变,
+// 压完宽度从195px收窄到146+14+16=176px;Update 列原来左padding是24px
+// (2026-09-02定的既有值),内容区宽度185px不变,压完宽度从225px收窄到
+// 185+16+16=217px。其余列本来就已经是左右各16px,不用再压。两处压缩
+// 后的具体CSS改动见 OfferTableHeader.vue/OfferTableRow.vue 各自同一处
+// 注释。
+// 2026-09-08(第六次,已撤销)你指出你说的"间距太大"根本不是宽屏场景,
+// 是屏幕过小、快要触发横向滚动条的场景——上面那次改动(除 Update 外全部
+// 固定像素、不跟着宽屏变宽)解决的是一个你没有在问的问题,已经撤回,
+// 恢复成每列都用 minmax(Npx, Nfr) 的写法。
+// 2026-09-08(第七次)真正的根因:Reserve 这一列的 123px 是从
+// "ACV Estimate"(11个字符)这个旧标题核实来的历史数值——后来标题先改成
+// "Reserve Price"、这次又缩短成"Reserve"(7个字符),但列宽从来没有跟着
+// 缩短过,一直沿用123px。用浏览器实测过:"Reserve"标题+这一列实际数据
+// (比如"$27,000")需要的真实宽度只要约85px(53px文字+16+16padding),
+// 123px里有约38px是纯历史遗留的多余空白——这多出来的38px正好会让
+// "Time Remaining→Reserve"和"Reserve→Sent"两段视觉间距都显得特别大,
+// 这就是你反馈"reserve/sent/time remaining间距太大"的真正来源(Time/
+// Sent 两列自己实测已经很紧凑,不需要再压)。改法:把这一列的宽度从
+// 123px收窄到90px(85px最小需求+5px余量,不是压到刚好卡边的85px)。
+// 2026-09-08(第八次)按你的要求:除 Vehicle/Update 外,其余列(Dealer/
+// Time/Reserve/Sent/Received)的左右padding都从16px压缩到4px——不是
+// 直接把列宽减32px(那样会砍进内容区,裁切金额/标题,实测过 Reserve/
+// Sent/Received 三列本来就已经接近内容最小宽度,直接减32px肯定裁切,
+// 细节见 fragments/OfferDashboard/notes.md 同名条目),只压缩纯留白,
+// 内容区宽度不变,每列跟着减少24px(12+12)。
+// 2026-09-08(第十次,已撤销)你反馈宽屏下 Reserve/Sent/Received 间距
+// 比其它列小、显得不均衡,当时把除 Update 外全部改成固定像素——你指出
+// 这次改动"全错了",已经撤销,恢复成每列都用 `minmax(Npx, Nfr)`。
 const tableGridColumns = computed(() => {
-  const dealerWidth = effectiveMultiDealer.value ? 200 : 140
+  const dealerWidth = effectiveMultiDealer.value ? 176 : 116
   return [
     'minmax(80px,80fr)',
     `minmax(${dealerWidth}px,${dealerWidth}fr)`,
-    'minmax(195px,195fr)',
-    'minmax(124px,124fr)',
-    'minmax(123px,123fr)',
-    'minmax(85px,85fr)',
-    'minmax(90px,90fr)',
-    'minmax(225px,225fr)'
+    'minmax(176px,176fr)',
+    'minmax(100px,100fr)',
+    'minmax(66px,66fr)',
+    'minmax(61px,61fr)',
+    'minmax(69px,69fr)',
+    'minmax(217px,217fr)'
   ].join(' ')
 })
 
@@ -811,6 +848,18 @@ const rowsLimited = computed(() =>
   activeTabRows.value.slice(0, Math.max(1, Math.min(activeTabRows.value.length, activeVehicleCount.value)))
 )
 
+// 2026-09-08(第二次)新增,给上面 buyingNewCount/sellingNewCount 用——
+// 和 rowsLimited 用的是同一套夹在 [1, 总行数] 之间的截取逻辑,区别是
+// rowsLimited 只算"当前激活的那个tab",这两个是"不管现在在哪个tab,
+// Buying/Selling 各自按自己的 vehicleCount 截取"，因为 sidebar/两个
+// tab 的红点需要同时反映两侧的数字,不能只有当前tab那一侧是对的。
+const buyingRowsLimited = computed(() =>
+  buyingRows.slice(0, Math.max(1, Math.min(buyingRows.length, props.buyingVehicleCount)))
+)
+const sellingRowsLimited = computed(() =>
+  sellingRows.slice(0, Math.max(1, Math.min(sellingRows.length, props.sellingVehicleCount)))
+)
+
 // 真正渲染到 table/tile 的行:在 rowsLimited 基础上再按当前选中的
 // filter chip / dealership 筛一遍,筛完为空就是空(不会强行凑数）。
 const visibleRows = computed(() => rowsLimited.value.filter(matchesFilters))
@@ -1049,8 +1098,20 @@ const cardGridStyle = computed(() =>
    margin-right:100px,视觉效果等同于给它们套一个共同外层容器再加
    margin——不改动这两块内部任何已有的 padding/gap,也没有动 SidebarNav
    的宽度或位置。 */
+/* 2026-09-08(第九次)发现这个 .vue 文件之前记的是"16px 左边距 + 16px
+   内容区左padding"这套静态数值,但实际跑起来的 index.html 早就不是
+   这套了(右边这段 sidebar→内容区的间距被改成了
+   `clamp(48px, ..., 100px)` 这种随容器宽度变化的响应式公式,和这里
+   记的历史注释完全不一致,应该是之前某次会话直接改了 index.html 没有
+   同步回这个文件)。第一次尝试把这段响应式间距改成固定24px,你指出
+   "不要fixed,我要responsive,不过最小间距改为24-100px"——保留响应式,
+   只是把原来的最小值48px改成24px,最大值100px不变。284px = 24
+   (margin-left,这一段你没要求改成响应式,保持固定)+260(sidebar宽度),
+   后面 clamp(24px,...,100px) 是响应式的那一段,和下面
+   .offer-dashboard__content 的 padding-left 用的是同一个表达式。 */
 .offer-dashboard__breadcrumb-row {
-  padding: 32px 0 14px 292px;
+  padding: 32px 0 14px 0;
+  padding-left: calc(284px + clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px));
   margin-right: 100px;
 }
 
@@ -1076,15 +1137,22 @@ const cardGridStyle = computed(() =>
    的 `padding-left` 用来对齐主内容区起始位置的数值(下面那条规则)也跟着
    从 276px(=sidebar宽260+间距16)改成 292px(=16新增左边距+260+16),
    保持文字对齐关系不变。 */
+/* 2026-09-08 按你的要求从16px改成24px,细节见上面
+   .offer-dashboard__breadcrumb-row 同一处注释。 */
 .offer-dashboard__body :deep(.sidebar-nav) {
   margin-top: -54px;
-  margin-left: 16px;
+  margin-left: 24px;
 }
 
+/* 2026-09-08(第九次)恢复响应式,最小值从48px改成24px,最大值100px
+   不变——frame宽度到1422px(cqw)时精确等于24px,之后跟着变宽,到约
+   1900px(cqw)封顶在100px,细节见上面 .offer-dashboard__breadcrumb-row
+   同一处注释。 */
 .offer-dashboard__content {
   flex: 1;
   min-width: 0;
-  padding: 0 24px 24px 16px;
+  padding: 0 24px 24px 0;
+  padding-left: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px);
   margin-right: 100px;
   display: flex;
   flex-direction: column;
@@ -1137,6 +1205,13 @@ const cardGridStyle = computed(() =>
    比例一起变宽(还原你之前明确要过的"Dashboard 全屏 presentation 时
    表格要跟着变宽"这个效果)。完整根因分析见
    fragments/OfferDashboard/notes.md 同名条目。 */
+/* 2026-09-08(第四次,已撤销 column-gap 方案)按你的要求 undo——
+   column-gap 会在 grid 的列轨道之间留出真正的空白缝,这段缝不属于
+   任何一个 cell,cell 自己的背景色(表头灰底 #FAFAFA / 数据行白底+
+   hover蓝)盖不到这段空白上,导致表头/整行背景被切成一段一段、中间
+   露出缝,这是不对的——不应该在背景/边框上开缝,只是想要"列内容之间
+   看起来更松一点"。改法待重新确认,细节见 fragments/OfferDashboard/
+   notes.md 同名条目。 */
 .offer-dashboard__table-scroll {
   display: grid;
   overflow-x: auto;

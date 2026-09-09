@@ -480,3 +480,55 @@ Figma 核实过的宽度，不再靠挤宽度适应窄屏——不够宽时靠
   规则叠加，视觉上没有差别。用浏览器实测确认过 `:hover` 状态本身不
   依赖盒子——hover 变色、CTA 按钮组切换（`.offer-table-row:hover
   .offer-table-row__ctas`）这两个效果在 grid 模式下都正常触发。
+
+## 2026-09-08（第五次）Vehicle/Update 两列的留白压缩到16px
+
+你反馈"列与列之间要有最小间距（可以更大，不能更小）"，第一次尝试用
+CSS Grid 的 `column-gap` 实现被你否掉了（会在列轨道之间留出真正的
+空白缝，把整行背景切成一段一段，细节见
+`fragments/OfferDashboard/notes.md` 同名条目）；正确方向是"触发横向
+滚动之前先把每列自己的留白压到16px"。梳理清楚后，这个文件里只有两处
+留白比16px更大：
+- Vehicle 列右padding 35px→16px（`.offer-table-row__cell--vehicle`）,
+  内容宽度146px不变，列宽从195px收窄到176px。
+- Update 列左padding 24px→16px（`.offer-table-row__cell--update`）,
+  内容区宽度185px不变，列宽从225px收窄到217px。
+两处都只是压缩"留白"本身,没有改内容区可用宽度,所以车辆标题文字、
+Update 列 hover 出来的 CTA 按钮组都还放得下,用浏览器实测过
+`scrollWidth` 没有超出 `clientWidth`。`OfferTableHeader.vue`/
+`OfferDashboard.vue` 的对应列宽/`tableGridColumns` 数值同步改了,否则
+只改这个文件的 padding 不改宽度数值,触发横向滚动的临界点是不会变的。
+
+## 2026-09-08（第七次）Reserve/estimate 列宽收窄到90px
+
+你反馈"reserve/sent/time remaining间距太大"，第一次诊断猜成宽屏场景
+（已撤销）。真正根因：这个文件里 `.offer-table-row__cell--estimate`
+的123px是它还叫"ACV Estimate"时核实的历史宽度，标题缩短成"Reserve"
+之后宽度一直没跟着改，多留了约38px的空白，完整分析见
+`fragments/OfferDashboard/notes.md` 同名条目。收窄到90px，跟
+`OfferTableHeader.vue`/`OfferDashboard.vue` 的改动同步。
+
+## 2026-09-08（第八次）除 Vehicle/Update/Photo 外，其余列 padding 压缩到4px
+
+你要求"除了vehicle和update这列，所有列宽减少32px"——用浏览器实测过,
+Reserve/Sent/Received 三列直接砍32px会硬裁切金额/标题,细节和裁切
+数据见 `fragments/OfferDashboard/notes.md` 同名条目。改成"压缩padding
+而不是砍列宽":这个文件里 Dealer/Time/Reserve/Sent/Received 五列的
+左右padding从16px压缩到4px,内容区宽度不变,列宽跟着减少24px(不是
+32px)。Photo列没有动(64px固定图片,砍了会裁切)。Received这一列额外
+补了3px(66→69px)避免标题被裁切。
+
+## 2026-09-08（第九次）Sent/Received 字重从 Medium 统一改成 Regular
+
+你反馈"Sent 和 Received 下面row里的字体好像是medium,和其他的字体不
+一样"。核对后确认：这两列之前确实是 Medium(500)字重,是对照 Figma
+真实行实例核实过的既有设计(见本文件"已核实"表格,`283-284`行:"Sent |
+...Medium 字重" / "Received | 同 Sent"),Reserve(当时叫 ACV
+Estimate)明确写的是"同上,Regular 字重"——两者刻意不一样,不是漏改。
+
+你确认要统一成 Regular。改法：模板里 Sent/Received 两个 `<div>` 去掉
+了 `offer-table-row__cell--strong` 这个 class(原来专门加上去让这两列
+用 `font-weight:500` 的);这个 class 定义本身(`.offer-table-row__cell
+--strong { font-weight: 500; }`)现在没有任何地方在用,一并删掉。用
+浏览器 `getComputedStyle` 实测确认 Sent/Received/Reserve/Time 四列
+现在的 `fontWeight` 都是 `"400"`,统一了。

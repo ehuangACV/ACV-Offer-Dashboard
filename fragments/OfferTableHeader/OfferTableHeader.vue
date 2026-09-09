@@ -158,9 +158,12 @@
     <!-- 2026-09-02 按你的要求:这一列改成显示 Reserve Price,不再是 ACV
          Estimate(OfferTableRow.vue 那边的数据绑定也同步改了,细节见该
          文件注释)。class 名字暂时还叫 --estimate,历史命名,不影响
-         页面上显示的文字。 -->
+         页面上显示的文字。
+         2026-09-08(第四次)按你的要求把标题文字从 "Reserve Price"
+         缩短成 "Reserve",去掉 "Price" 这个字——这一列本身显示的数据
+         (reservePrice)没有变,只是表头这两个字去掉了。 -->
     <div class="offer-table-header__cell offer-table-header__cell--estimate">
-      <span class="offer-table-header__title">Reserve Price</span>
+      <span class="offer-table-header__title">Reserve</span>
     </div>
     <div class="offer-table-header__cell offer-table-header__cell--sent">
       <span class="offer-table-header__title">Sent</span>
@@ -306,23 +309,43 @@ onBeforeUnmount(() => {
    isMultiDealer 时保持 200px 不变,否则收窄到 140px(92px 徽标 + 左右
    各16px padding=124px,留一点余量)。OfferTableRow.vue 同一列也做了
    同样的切换,细节见该文件同一处注释。 */
-.offer-table-header__cell--dealer { flex: 0 0 140px; }
-.offer-table-header__cell--dealer--wide { flex: 0 0 200px; }
+/* 2026-09-08(第八次)按你的要求:除 Vehicle/Update 外,其余列的左右
+   padding 各减少12px(16px→4px),内容区宽度不变,列宽跟着各减少24px
+   (12+12)——不是直接砍列宽(那样会砍进内容区,裁切金额/标题,细节见
+   fragments/OfferDashboard/notes.md 同名条目的裁切分析),只是把
+   留白压得更紧。 */
+.offer-table-header__cell--dealer { flex: 0 0 116px; padding-left: 4px; padding-right: 4px; }
+.offer-table-header__cell--dealer--wide { flex: 0 0 176px; }
 /* 2026-09-08:OfferTableRow.vue 的 Vehicle 列本来就是左14px/右35px的
    非对称 padding(核实自节点 7448:9966,见该文件同一处注释),不是常见
    的左右各16px——这里补上同样的 padding-left:14px,让表头"Vehicle"
    文字和数据行车辆标题文字的左边缘真正对齐(之前两边都是默认16px,
-   表头本身没错,但和数据行的真实14px不一致,差2px)。 */
-.offer-table-header__cell--vehicle { flex: 0 0 195px; padding-left: 14px; }
-.offer-table-header__cell--time { flex: 0 0 124px; }
-.offer-table-header__cell--estimate { flex: 0 0 123px; }
-.offer-table-header__cell--sent { flex: 0 0 85px; }
-.offer-table-header__cell--received { flex: 0 0 90px; }
-/* 2026-09-08:OfferTableRow.vue 的 Update 列左 padding 是 24px(2026-09-02
-   就有的既有数值,"保持24px不变"),不是其它列常见的16px——这里补上同样
-   的 padding-left:24px,让表头"Update"文字和数据行 New/Received chip
-   的左边缘对齐(之前两边都是默认16px,和数据行的24px差了8px)。 */
-.offer-table-header__cell--update { flex: 0 0 225px; min-width: 0; padding-left: 24px; }
+   表头本身没错,但和数据行的真实14px不一致,差2px)。
+   2026-09-08(第五次)按你的要求,数据行右padding从35px压缩到16px,
+   宽度从195px收窄到176px(触发横向滚动前先把留白压到16px,细节见
+   fragments/OfferDashboard/notes.md 同名条目)——这里只改宽度数值跟着
+   同步,padding-left:14px 不受影响(压缩的是右侧,不是左侧,对齐关系
+   没有变)。 */
+.offer-table-header__cell--vehicle { flex: 0 0 176px; padding-left: 14px; }
+.offer-table-header__cell--time { flex: 0 0 100px; padding-left: 4px; padding-right: 4px; }
+/* 2026-09-08(第七次)123px 是"ACV Estimate"(11字符)这个旧标题核实来
+   的历史宽度——标题后来先改成"Reserve Price"、这次又缩短成"Reserve"
+   (7字符),宽度一直没跟着缩短,多留了约38px的空白,这正是"Time
+   Remaining/Reserve/Sent 之间间距太大"的真正来源,细节见
+   fragments/OfferDashboard/notes.md 同名条目。收窄到90px(实测"Reserve"
+   标题+最长金额数据只需要约85px,留5px余量)。 */
+.offer-table-header__cell--estimate { flex: 0 0 66px; padding-left: 4px; padding-right: 4px; }
+.offer-table-header__cell--sent { flex: 0 0 61px; padding-left: 4px; padding-right: 4px; }
+/* 2026-09-08(第八次)按 66px 压缩(和 estimate/received 同一套算法)会
+   让"Received"这个标题(比"Reserve"/"Sent"长)裁掉3px——用浏览器实测
+   `scrollWidth` 确认过,补回3px变成69px,刚好不裁切。 */
+.offer-table-header__cell--received { flex: 0 0 69px; padding-left: 4px; padding-right: 4px; }
+/* 2026-09-08(第五次)按你的要求,OfferTableRow.vue 的 Update 列左
+   padding 从24px压缩到16px(触发横向滚动前先把留白压到16px,细节见
+   fragments/OfferDashboard/notes.md 同名条目)——现在和这个组件默认的
+   16px左padding一致,不再需要单独覆盖,原来的 padding-left:24px 直接
+   删掉;宽度跟着从225px收窄到217px。 */
+.offer-table-header__cell--update { flex: 0 0 217px; min-width: 0; }
 
 .offer-table-header__title-row {
   display: flex;

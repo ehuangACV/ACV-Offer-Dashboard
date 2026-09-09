@@ -883,3 +883,216 @@ flex 更适合"多个独立组件需要对齐成表格"这个场景的地方）�
   对齐；hover 一行确认背景变色、CTA按钮组切换、`:hover` 状态匹配都
   正常；两个组件各自独立的 Playground 预览页（order 30/31，flex 模式）
   渲染不受影响。
+
+## 2026-09-08（第四次）列与列之间要保证至少16px的可见间距
+
+你截图用红色标出了"上一列内容结束"到"下一列内容开始"之间的空白，指出
+这段空白应该有一个最小值——宽屏时可以更大（本来就会，因为宽屏下每列
+按 fr 比例变宽，文字两侧多出来的留白本来就会跟着变大），但不能比这个
+最小值更小。
+
+改法（第一次尝试，已撤销）：给 `.offer-dashboard__table-scroll` 加了
+`column-gap: 16px`。这个数值本身（列边界间距16px）量出来是对的，但你
+反馈"完全错误，中间不应该有间隔"——column-gap 是 CSS Grid 自带的"列
+轨道之间"的真空隙，这段空隙不属于任何一个 cell，表头的灰底
+（`#FAFAFA`）、数据行的白底/hover蓝底 都是画在各自 cell 自己身上的，
+盖不到 column-gap 这段空隙上，结果就是表头/整行背景被硬生生切成一段
+一段、中间露出白缝——这是背景/边框层面的真实缝隙，不是"文字内容之间
+看起来更松"，两者是完全不同的效果，用 column-gap 从根上就是选错了
+机制，已经撤销（删掉这一行）。
+
+正确方向（你确认为"选项1"）：不引入任何结构性缝隙，而是在真正触发
+横向滚动之前，先让每一列自己的左右留白（padding）压缩到16px，尽量
+多撑一会儿再滚动。
+
+## 2026-09-08（第五次）实施"选项1"：压缩 Vehicle/Update 两列的留白到16px
+
+梳理清楚之后确认：8列里只有 Vehicle（右padding 35px）和 Update（左
+padding 24px）两列的留白比16px更大，其余列本来就已经是左右各16px，
+不需要动。跟你确认过"这两处专门加大过的留白要不要跟着压"，你选了
+"全部统一压到16px"。
+
+改法（不改变任一列的"内容区宽度",只压缩留白本身，所以不影响文字/
+按钮是否能放下）：
+- Vehicle 列：右padding 35px→16px，内容区宽度（195-14-35=146px）不变，
+  列宽跟着从195px收窄到 146+14(左padding不变)+16=176px。
+- Update 列：左padding 24px→16px，内容区宽度（225-24-16=185px）不变，
+  列宽跟着从225px收窄到 185+16+16=217px。`OfferTableHeader.vue` 原来
+  为了对齐单独覆盖的 `padding-left:24px` 也删掉了——现在和这个组件
+  默认的16px左padding一致，不需要再单独覆盖。
+- `tableGridColumns` 里这两列的 `minmax()` 数值同步从195/225改成
+  176/217，触发横向滚动的临界总宽度从1122px降到1035px（Auction ID
+  模式,dealer=140px）——这才是真正让"能多撑一会儿再滚动"生效的地方,
+  只改CSS padding不改这个数值的话,滚动临界点是不会变的。
+- 用浏览器实测：Vehicle/Update 两列在1400px/2000px两个宽度下表头和
+  数据行的 left/width 依然完全相等；"2018 Ford Focus RS" 车辆标题
+  `scrollWidth`(146px)等于`clientWidth`(146px),没有被压出裁切;hover
+  一行后 Update 列的 CTA 按钮组`scrollWidth`(185px)等于`clientWidth`
+  (185px),没有溢出；850px 宽度下横向滚动正常触发,`scrollWidth`量出来
+  正好是1035px,和改动前的1062px相比确实收窄了27px。
+
+## 2026-09-08（第六次，诊断错误，已撤销）误判成宽屏场景
+
+你反馈"reserve 和 sent 还有 time remaining 直接间距还是太大"。第一次
+诊断猜成"宽屏下每列按比例变宽导致短内容列显得空"，把除 Update 外的7
+列全部改成固定像素、只让 Update 用 `minmax(217px, 1fr)` 吸收多余空间。
+你指出这个诊断完全错了——你给的截图根本不是宽屏场景，讨论的一直是
+屏幕过小、快要触发横向滚动条的场景。已经撤销，`tableGridColumns` 恢复
+成每列都用 `minmax(Npx, Nfr)` 的写法。
+
+## 2026-09-08（第七次）真正根因：Reserve 列宽是"ACV Estimate"的历史遗留值
+
+重新核对之后找到真正的根因：Reserve 这一列的 123px 宽度,是这一列
+还叫"ACV Estimate"(11个字符)时核实来的历史数值——这个标题后来先改成
+"Reserve Price",这次(第四次改动)又缩短成"Reserve"(7个字符),但列宽
+从来没有跟着缩短过,一直沿用123px。用浏览器实测过:"Reserve"标题本身
++这一列最长的真实数据(比如"$34,000")需要的宽度只要约85px(53px文字
++16+16padding),123px里有约38px是纯历史遗留的多余空白——这正是
+"Time Remaining→Reserve"和"Reserve→Sent"两段视觉间距显得特别大的
+真正来源(Time/Sent 两列自己实测已经很紧凑,内容宽度和floor几乎完全
+贴合,不需要再压)。
+
+改法：把 Reserve/estimate 列的宽度从123px收窄到90px(85px最小需求+5px
+余量)，`tableGridColumns`/`OfferTableHeader.vue`/`OfferTableRow.vue`
+三处同步改。用浏览器实测：850px屏幕宽度（触发横向滚动）下，Reserve
+列头/数据行的 left/width 完全相等，宽度精确等于90px；"Reserve"标题
+和所有金额数据的 `scrollWidth` 都没有超过 `clientWidth`（没有裁切）；
+表格自然最小总宽度从1035px降到1002px。
+
+## 2026-09-08（第八次）除 Vehicle/Update 外，其余列再收窄——压缩 padding 而不是砍列宽
+
+你要求"除了vehicle和update这列，所有列宽减少32px"。动手前先用浏览器
+量了一遍每列内容实际需要的最小宽度，发现如果真的直接把列宽砍32px，
+Reserve/Sent/Received 三列会硬裁切金额和标题（不是留白变少，是文字/
+数字真的显示不全，比如"Received"标题会被切掉3个字母）——因为这三列
+上一轮（第七次）已经收窄过一次，本来就已经很接近内容最小宽度，再砍
+32px必然砍进内容区。
+
+跟你确认后，改成"压缩 padding 而不是砍列宽"：除 Photo（图片格，
+64px固定图片，砍了会裁切图片）外，Dealer/Time/Reserve/Sent/Received
+这5列的左右 padding 从16px压缩到4px（各减12px，合计24px），列宽跟着
+同步减少24px——内容区宽度完全不变，只是压缩纯留白，所以不会裁切任何
+文字/数字。Vehicle/Update 两列按你的要求没有动。
+
+具体宽度变化：
+- Dealer：Auction ID模式 140→116px，Dealer Name模式 200→176px。
+- Time Remaining：124→100px。
+- Reserve：90→66px。
+- Sent：85→61px。
+- Received：90→66px——**用浏览器实测发现这个值会裁切"Received"这个
+  标题**（比"Reserve"/"Sent"长3px，`scrollWidth`量出来正好差3px），
+  补回3px改成69px，其余4列都没有这个问题。
+
+用浏览器实测：850px屏幕宽度下，8列（含Photo/Vehicle/Update）表头和
+数据行的 left/width 全部相等；Dealer/Time/Reserve/Sent/Received 五列
+的表头文字、数据行金额/徽标全部检查过 `scrollWidth <= clientWidth`，
+没有裁切；切到 Selling+Multi-dealer 模式测了"Asbury Automotive
+Group"这个长经销商名——确认这个截断（省略号）不是这次改动引入的
+新问题，因为这次是"内容区宽度不变，只压padding"，Dealer Name模式的
+内容区从200-16-16=168px 变成176-4-4=168px，完全一样,这个名字本来
+在旧版本里也是刚好卡在截断边缘。
+
+## 2026-09-08（第二次改动，非表格宽度相关）Buying/Selling红点、Offers数字改回跟 Vehicles shown 联动
+
+你反馈：把"Vehicles shown on Buying/Selling"改小之后，filter chip的
+数字（比如"New (2)"）和 Buying/Selling tab 红点、sidebar Offers 数字
+不一致（红点/Offers 还是按全部15行算，chip 已经按截取后的行数算）。
+
+这其实是之前（见更早的"2026-08 按你的要求更正"那条注释）故意做的
+设计——tab红点/Offers 数字统计的是全部15行里 New 的数量，不受
+Vehicles shown 演示用截取滑块影响，理由是"现实里'还有几个新的没处理'
+这个提醒不应该因为在Playground调小演示行数就跟着变少"。你确认现在想
+反过来，改成和 filter chip 一致，跟着 Vehicles shown 联动。
+
+改法：新增 `buyingRowsLimited`/`sellingRowsLimited` 两个computed——和
+已有的 `rowsLimited` 用的是同一套 `[1, 总行数]` 夹逼截取逻辑，区别是
+`rowsLimited` 只算"当前激活的那个tab"，这两个新的是"不管现在在哪个
+tab，Buying/Selling 各自按自己的 vehicleCount 截取"（因为 sidebar
+Offers 数字 = 两个tab的红点加起来，需要同时知道两侧各自的数字，不能
+只知道当前激活的一侧）。`buyingNewCount`/`sellingNewCount` 从原来
+`buyingRows.filter(isRowNew)`（全部15行）改成
+`buyingRowsLimited.value.filter(isRowNew)`（按滑块截取后的行）。
+
+用浏览器实测：把 Buying 滑块调到3，"New (2)" chip 和 Buying tab 红点
+都变成2（之前红点是7，不联动）；把 Selling 滑块也调到2后，sidebar
+Offers 显示3（=Buying的2+Selling的1），两个滑块互相独立、各自只影响
+自己那一侧的数字。
+
+## 2026-09-08（第九次）Sidebar 左边距 + Sidebar→内容区间距统一改成24px，并发现两处历史遗留的 .vue/index.html 不同步
+
+你截图用红色标出了 sidebar 左边的留白、和 sidebar 右边到主内容区之间
+的留白，要求都改成24px。动手前用浏览器量了实际渲染出来的间距,发现:
+- 左边距(sidebar 到视口左边缘):16px。
+- 右边这段(sidebar 右边缘到"My ACV"文字/表格卡片左边缘):**48px**，
+  不是我以为的16px。
+
+往下查才发现:这个文件(`OfferDashboard.vue`)自己记的是"16px 固定
+padding-left"这套旧数值,但实际在跑的 `index.html` 早就不是这个了——
+右边这段间距在 index.html 里被改成了
+`clamp(48px, calc(48px + (100cqw - 1422px) * 0.1088), 100px)`,一个
+随容器宽度变化、48px到100px之间浮动的响应式公式,这个改动应该是更早
+之前某次会话直接改了 index.html、没有同步回这个 `.vue` 源文件,导致
+两个文件长期不一致（这个文件里的注释和真实行为脱节，一直没被发现）。
+
+改法（第一次尝试，已撤销固定值）：不保留这套响应式 clamp,统一改成
+固定24px(不随容器宽度变化)——`.offer-dashboard__body
+:deep(.sidebar-nav)` 的 `margin-left` 从16px改成24px；
+`.offer-dashboard__content` 的 `padding-left` 统一改成固定24px；
+`.offer-dashboard__breadcrumb-row` 的 `padding-left` 跟着重新算成
+260+24+24=308px。
+
+你反馈"你又搞错了。我不要fixed。我要的是responsive.不过最小间距改为
+24-100px"——sidebar→内容区这段本来就该保留响应式,你要的只是把原来的
+最小值48px改成24px,最大值100px不变,不是整段改成固定值。改法（第二次
+修正）：
+- `.offer-dashboard__content` 的 `padding-left` 恢复成
+  `clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px)`——
+  数值范围从"48-100"改成"24-100",斜率(0.1088→0.159)跟着重新算过,
+  保持和原来一样的响应区间(容器宽度1422px到约1900px之间线性变化,
+  1422px以下卡在24px下限,1900px以上卡在100px上限)。
+- `.offer-dashboard__breadcrumb-row` 的 `padding-left` 跟着改成
+  `calc(284px + clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px))`
+  ——284=24(margin-left,这一段你没要求改响应式,保持固定)+260
+  (sidebar宽度),后面这段响应式 clamp 和 content 的完全一样。
+- `.offer-dashboard__body :deep(.sidebar-nav)` 的 `margin-left`
+  保持这次(第一次尝试)已经改好的固定24px不变——你反馈的"要
+  responsive"只针对 sidebar→内容区这一段间距,不包括 sidebar 自己
+  离视口左边的这段距离。
+
+用浏览器实测：容器宽度≤1422px 时,sidebar→内容区间距精确等于24px下限
+(之前是48px);调到2500px 时涨到100px上限,和改动前的响应区间一致；
+sidebar 左边距任何宽度下都保持固定24px；"My ACV"文字和表格卡片左
+边缘在两种宽度下都依然保持左对齐。
+
+## 2026-09-08（第十次，已撤销）宽屏下 Reserve/Sent/Received 间距比其它列小，显得不均衡
+
+你反馈:全屏、屏幕够宽的时候,Reserve/Sent/Received 之间的间距和其它
+地方的间距比起来不均衡、显得偏少;小屏幕时没问题。
+
+根因:这几列(以及 Photo/Dealer/Vehicle/Time)之前都是
+`minmax(Npx,Nfr)`,宽屏时会按各自的 fr 数值比例一起变宽——但 fr 数值
+本身差很多(Reserve/Sent/Received 只有61-69,Vehicle/Update 有
+176/217),同样多出来的一份空间,分到 Reserve/Sent/Received 头上的
+份额天然比分到 Vehicle/Update 头上的少得多,肉眼看就是"这几列的间距
+比别的地方小"——这是"每列都按比例分配"这个机制本身必然造成的效果,
+不是数值算错了。
+
+（这个现象和"第六次"改动很像，但不是同一次误判——第六次撤销的原因是
+那次你反馈的截图根本不是宽屏场景，这次是真的宽屏、真的存在的问题。）
+
+改法：除 Update 外的7列（Photo/Dealer/Vehicle/Time/Reserve/Sent/
+Received）全部改成固定像素宽度（不再用 `fr`），宽屏时不再跟着变宽；
+只有 Update 用 `minmax(217px, 1fr)` 独自吸收多出来的空间——这样7列
+宽屏/窄屏下宽度完全一样，不会再出现"某几列比别的列多长一点"这种比例
+不均衡的视觉效果。
+
+用浏览器实测：屏幕宽度2000px下，7个非Update列宽度精确等于自己的
+固定值（80/116/176/100/66/61/69px，一点没变宽），Update涨到898px；
+850px窄屏下 `scrollWidth` 精确等于885px（=7列固定宽度之和217+其余
+7列，和改动前的自然最小宽度完全一致），横向滚动行为不受影响；表头和
+数据行8列的 left/width 全部相等。
+
+**2026-09-08 追加：你反馈这次改动"全错了"，已撤销。** `tableGridColumns`
+恢复成每列都用 `minmax(Npx, Nfr)`——8列（含Update）宽屏时重新一起
+按比例变宽。这条记录保留下来只是为了留痕（当时的诊断/改法/验证过程），
+不代表现在的实际状态，现在的状态见本文件更晚的条目。

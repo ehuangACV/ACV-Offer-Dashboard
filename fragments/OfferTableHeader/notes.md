@@ -115,6 +115,45 @@ padding数值抵消，一收缩就暴露出来）。
 生效（浏览器直接忽略），只服务于独立预览时的 flex 模式，两套逻辑互不
 干扰。
 
+## 2026-09-08（第四次）"Reserve Price" 标题缩短成 "Reserve"
+
+按你的要求把这一列表头的文字从 "Reserve Price" 改成 "Reserve"，去掉
+"Price" 这个字——这一列本身绑定的数据字段（`reservePrice`）和列宽都
+没有变，只是表头文字变短了。
+
+## 2026-09-08（第五次）Vehicle/Update 两列的留白压缩到16px
+
+你反馈"列与列之间应该有最小间距"——第一次尝试给 grid 加了
+`column-gap:16px`，但这会在列轨道之间留出真正的空白缝，把表头灰底
+背景切成一段一段、露出白缝，你指出"完全错误，不应该有间隔"，已经撤销
+（细节和为什么 column-gap 是错的机制见
+`fragments/OfferDashboard/notes.md` 同名条目）。正确方向是"触发横向
+滚动之前先压缩每列自己的留白"——这个文件里 Vehicle 列的
+`padding-left:14px`没有变（压缩的是数据行那边的右padding，不影响这里
+的左padding），Update 列原来单独覆盖的 `padding-left:24px` 删掉了
+（现在和默认16px一致，不用再覆盖），两列的 `flex` 宽度分别从
+195px/225px 收窄到176px/217px，跟 `OfferTableRow.vue`/
+`OfferDashboard.vue` 的改动同步。
+
+## 2026-09-08（第七次）Reserve 列宽收窄到90px
+
+你反馈"reserve/sent/time remaining间距太大"，第一次诊断猜成宽屏场景
+（已撤销）。真正根因：这一列的123px是它还叫"ACV Estimate"时核实的
+历史宽度，标题缩短成"Reserve"之后宽度一直没跟着改，多留了约38px的
+空白，完整分析见 `fragments/OfferDashboard/notes.md` 同名条目。收窄到
+90px，跟 `OfferTableRow.vue`/`OfferDashboard.vue` 的改动同步。
+
+## 2026-09-08（第八次）除 Vehicle/Update/Photo 外，其余列 padding 压缩到4px
+
+你要求"除了vehicle和update这列，所有列宽减少32px"——用浏览器实测过,
+Reserve/Sent/Received 三列直接砍32px会硬裁切金额/标题(不是留白变少,
+是文字显示不全),细节和裁切数据见 `fragments/OfferDashboard/notes.md`
+同名条目。改成"压缩padding而不是砍列宽":Dealer/Time/Reserve/Sent/
+Received 五列的左右padding从16px压缩到4px,内容区宽度不变,列宽跟着
+减少24px(不是32px)。Photo列(图片格)没有动,砍了会裁切64px的固定
+图片。Received这一列额外补了3px(66→69px)避免"Received"标题被裁切
+(比"Reserve"/"Sent"长,实测`scrollWidth`量出来正好差3px)。
+
 ## 待你确认
 1. 只有 Dealer Name 和 Time Remaining 两列在 Figma 里有排序图标的实例,
    其余列(Vehicle / ACV Estimate / Sent / Received / Update)是否也应该

@@ -233,8 +233,13 @@
          只是表格这一列不再显示它,class 名字暂时还叫 --estimate,是
          历史遗留的内部命名,不影响页面上显示的文字。 -->
     <div class="offer-table-row__cell offer-table-row__cell--estimate">{{ reservePrice }}</div>
-    <div class="offer-table-row__cell offer-table-row__cell--sent offer-table-row__cell--strong">{{ sentAmount }}</div>
-    <div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>
+    <!-- 2026-09-08 按你的要求:去掉 Sent/Received 的 --strong 修饰类,
+         统一成和 Reserve/Time Remaining 一样的 Regular 字重——之前这两列
+         是对照 Figma 真实行实例核实过的 Medium 字重(细节见notes.md
+         "已核实"表格里的记录),这次是你明确要求改成和其它列一致,不是
+         发现核实错了。 -->
+    <div class="offer-table-row__cell offer-table-row__cell--sent">{{ sentAmount }}</div>
+    <div class="offer-table-row__cell offer-table-row__cell--received">{{ receivedAmount }}</div>
 
     <div class="offer-table-row__cell offer-table-row__cell--update">
       <div class="offer-table-row__update-default">
@@ -577,8 +582,12 @@ const hoverButtons = computed(() => {
    明显太宽,收窄到140px(92px徽标+左右各16px padding=124px,留一点
    余量)。isMultiDealer=true 时保持200px不变。OfferTableHeader.vue
    同一列做了同样的切换,细节见该文件同一处注释。 */
-.offer-table-row__cell--dealer { flex: 0 0 140px; }
-.offer-table-row__cell--dealer--wide { flex: 0 0 200px; }
+/* 2026-09-08(第八次)按你的要求:除 Vehicle/Update 外,其余列的左右
+   padding 各减少12px(16px→4px),内容区宽度不变,列宽跟着各减少24px,
+   细节和为什么不直接砍列宽(会裁切内容)见
+   fragments/OfferDashboard/notes.md 同名条目。 */
+.offer-table-row__cell--dealer { flex: 0 0 116px; padding-left: 4px; padding-right: 4px; }
+.offer-table-row__cell--dealer--wide { flex: 0 0 176px; }
 .offer-table-row__dealer-name {
   font-size: 14px;
   line-height: 21px;
@@ -602,11 +611,15 @@ const hoverButtons = computed(() => {
 }
 
 .offer-table-row__cell--vehicle {
-  flex: 0 0 195px;
+  flex: 0 0 176px;
   /* 2026-08 核实自节点 7448:9966(hidden=false):内容框实际是
      left:14px / right:35px(不是其余列常见的左右各16px),换算内容宽度
-     195-14-35=146px,不是对称 padding,已按真实坐标改过来 */
-  padding: 21px 35px 0 14px;
+     195-14-35=146px,不是对称 padding,已按真实坐标改过来。
+     2026-09-08(第五次)按你的要求,右侧35px压缩到16px(触发横向滚动
+     之前先把每列自己的留白统一压到16px,尽量多撑一会儿再滚动),内容
+     宽度146px不变,列宽跟着从195px收窄到 146+14+16=176px,细节见
+     fragments/OfferDashboard/notes.md 同名条目。 */
+  padding: 21px 16px 0 14px;
   text-align: left;
 }
 .offer-table-row__vehicle-title {
@@ -699,23 +712,31 @@ const hoverButtons = computed(() => {
   opacity: 1;
 }
 
-.offer-table-row__cell--time { flex: 0 0 124px; padding-top: 30px; }
-.offer-table-row__cell--estimate { flex: 0 0 123px; padding-top: 30px; font-weight: 400; }
-.offer-table-row__cell--sent { flex: 0 0 85px; padding-top: 30px; }
-.offer-table-row__cell--received { flex: 0 0 90px; padding-top: 30px; }
-.offer-table-row__cell--strong { font-weight: 500; }
+.offer-table-row__cell--time { flex: 0 0 100px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+/* 2026-09-08(第七次)123px 是"ACV Estimate"这个旧标题核实来的历史
+   宽度,标题缩短成"Reserve"之后一直没跟着缩短列宽,细节见
+   fragments/OfferDashboard/notes.md 同名条目。收窄到90px。
+   2026-09-08(第八次)再压缩左右padding到4px(16px→4px),宽度跟着
+   再收窄24px变成66px。 */
+.offer-table-row__cell--estimate { flex: 0 0 66px; padding-top: 30px; padding-left: 4px; padding-right: 4px; font-weight: 400; }
+.offer-table-row__cell--sent { flex: 0 0 61px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+.offer-table-row__cell--received { flex: 0 0 69px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
 
 /* 2026-09-02:原来是纯 padding-top 撑开内容,现在要在同一块地方切换
    "chips+日期"和"CTA按钮组"两种内容,改成 flex + align-items:center
    垂直居中——不管当前显示哪一块,都能在 80px 行高里居中,不用像原来那样
    手动算 padding-top 凑位置。左侧 padding 保持 24px 不变(原来数值),
-   右侧留 16px,和其它列右边留白一致 */
+   右侧留 16px,和其它列右边留白一致。
+   2026-09-08(第五次)按你的要求,左侧24px压缩到16px(触发横向滚动
+   之前先把每列自己的留白统一压到16px),内容区宽度(225-24-16=185px)
+   不变,列宽跟着从225px收窄到 185+16+16=217px,细节见
+   fragments/OfferDashboard/notes.md 同名条目。 */
 .offer-table-row__cell--update {
-  flex: 0 0 225px;
+  flex: 0 0 217px;
   min-width: 0;
   display: flex;
   align-items: center;
-  padding: 0 16px 0 24px;
+  padding: 0 16px 0 16px;
 }
 .offer-table-row__update-default {
   display: flex;

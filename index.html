@@ -276,14 +276,14 @@
      align-items:stretch 一起拉伸、justify-content:center 居中 */
   .offer-table-header__cell { position: relative; background: #FAFAFA; border-bottom: 1px solid #DCDFE8; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
   .offer-table-header__cell--photo { flex: 0 0 80px; padding: 0; }
-  .offer-table-header__cell--dealer { flex: 0 0 140px; }
-  .offer-table-header__cell--dealer--wide { flex: 0 0 200px; }
-  .offer-table-header__cell--vehicle { flex: 0 0 195px; padding-left: 14px; }
-  .offer-table-header__cell--time { flex: 0 0 124px; }
-  .offer-table-header__cell--estimate { flex: 0 0 123px; }
-  .offer-table-header__cell--sent { flex: 0 0 85px; }
-  .offer-table-header__cell--received { flex: 0 0 90px; }
-  .offer-table-header__cell--update { flex: 0 0 225px; min-width: 0; padding-left: 24px; }
+  .offer-table-header__cell--dealer { flex: 0 0 116px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--dealer--wide { flex: 0 0 176px; }
+  .offer-table-header__cell--vehicle { flex: 0 0 176px; padding-left: 14px; }
+  .offer-table-header__cell--time { flex: 0 0 100px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--estimate { flex: 0 0 66px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--sent { flex: 0 0 61px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--received { flex: 0 0 69px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-header__cell--update { flex: 0 0 217px; min-width: 0; }
   .offer-table-header__title-row { display: flex; align-items: center; gap: 4px; }
   .offer-table-header__title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #212121; white-space: nowrap; }
   .offer-table-header__title--two-line { line-height: 20px; }
@@ -318,12 +318,12 @@
   .offer-table-row__cell { position: relative; height: 80px; background: #FFFFFF; box-sizing: border-box; padding: 21px 16px 0; border-bottom: 1px solid #DCDFE8; font-size: 14px; color: #212121; }
   .offer-table-row__cell--photo { flex: 0 0 80px; padding: 8px; display: flex; }
   .offer-table-row__photo { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
-  .offer-table-row__cell--dealer { flex: 0 0 140px; }
-  .offer-table-row__cell--dealer--wide { flex: 0 0 200px; }
+  .offer-table-row__cell--dealer { flex: 0 0 116px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-row__cell--dealer--wide { flex: 0 0 176px; }
   .offer-table-row__dealer-name { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #0E0E0F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .offer-table-row__dealer-sub { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
   .offer-table-row__dealer-id { font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #55575C; }
-  .offer-table-row__cell--vehicle { flex: 0 0 195px; padding: 21px 35px 0 14px; text-align: left; }
+  .offer-table-row__cell--vehicle { flex: 0 0 176px; padding: 21px 16px 0 14px; text-align: left; }
   .offer-table-row__vehicle-title { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .offer-table-row__vehicle-sub { margin-top: 0; display: flex; align-items: center; justify-content: flex-start; gap: 2px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
   .offer-table-row__vin { display: inline-flex; align-items: center; border-radius: 999px; font-weight: 500; color: #00558C; }
@@ -333,12 +333,11 @@
   .offer-table-row__vin-copy-btn svg { display: block; }
   .offer-table-row__vin-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/18px 'Roboto', sans-serif; letter-spacing: 0.4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; z-index: 10; }
   .offer-table-row__vin-copy-btn:hover .offer-table-row__vin-tooltip, .offer-table-row__vin-copy-btn:focus-visible .offer-table-row__vin-tooltip, .offer-table-row__vin-copy-btn.is-copied .offer-table-row__vin-tooltip { opacity: 1; }
-  .offer-table-row__cell--time { flex: 0 0 124px; padding-top: 30px; }
-  .offer-table-row__cell--estimate { flex: 0 0 123px; padding-top: 30px; font-weight: 400; }
-  .offer-table-row__cell--sent { flex: 0 0 85px; padding-top: 30px; }
-  .offer-table-row__cell--received { flex: 0 0 90px; padding-top: 30px; }
-  .offer-table-row__cell--strong { font-weight: 500; }
-  .offer-table-row__cell--update { flex: 0 0 225px; min-width: 0; display: flex; align-items: center; padding: 0 16px 0 24px; }
+  .offer-table-row__cell--time { flex: 0 0 100px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-row__cell--estimate { flex: 0 0 66px; padding-top: 30px; padding-left: 4px; padding-right: 4px; font-weight: 400; }
+  .offer-table-row__cell--sent { flex: 0 0 61px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-row__cell--received { flex: 0 0 69px; padding-top: 30px; padding-left: 4px; padding-right: 4px; }
+  .offer-table-row__cell--update { flex: 0 0 217px; min-width: 0; display: flex; align-items: center; padding: 0 16px 0 16px; }
   .offer-table-row__update-default { display: flex; flex-direction: column; }
   .offer-table-row__status-pills { display: flex; align-items: center; gap: 4px; }
   .offer-table-row__update-date { margin-top: 0; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
@@ -424,16 +423,23 @@
      直接就是48px,不再是16;封顶值仍是100px,新斜率
      (100-48)/(1900-1422)=52/478≈0.1088,保持"屏宽到1900px正好封顶"
      这个规则不变 */
-  .offer-dashboard__breadcrumb-row { padding: 32px 0 14px 0; padding-left: calc(276px + clamp(48px, calc(48px + (100cqw - 1422px) * 0.1088), 100px)); margin-right: 100px; }
+  /* 2026-09-08(第九次,已撤销固定值)你指出 sidebar→内容区这段间距
+     不要改成固定值,还是要保留响应式(随容器宽度变化),只是把原来的
+     最小值48px改成24px,最大值100px不变,细节见
+     fragments/OfferDashboard/notes.md 同名条目。284px = 24(sidebar的
+     margin-left,这个保持固定不变)+260(sidebar宽度),后面
+     clamp(24px,...,100px)是响应式的那一段,和下面
+     .offer-dashboard__content 的 padding-left 用的是同一个表达式。 */
+  .offer-dashboard__breadcrumb-row { padding: 32px 0 14px 0; padding-left: calc(284px + clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px)); margin-right: 100px; }
   .offer-dashboard__body { display: flex; flex: 1; }
-  /* 2026-08 按你的要求新增 margin-left:16px,sidebar 不再贴着页面最左边
-     ——breadcrumb-row 的 padding-left 基准值(上面那条规则)也跟着从
-     276px(=sidebar宽260+间距16)改成 292px,保持对齐关系 */
-  .offer-dashboard__body .sidebar-nav { margin-top: -54px; margin-left: 16px; }
-  /* 左边距(原来写死16px)同样换算成 cqw 响应式公式,frame 正好1422px时
-     精确等于16px,和原来完全一样;变宽后最多长到100px,和 breadcrumb-row
-     用的是同一套公式,斜率同样是 0.1757,屏宽到 1900px 封顶 */
-  .offer-dashboard__content { flex: 1; min-width: 0; padding: 0 24px 24px 0; padding-left: clamp(48px, calc(48px + (100cqw - 1422px) * 0.1088), 100px); margin-right: 100px; display: flex; flex-direction: column; gap: 0; }
+  /* 2026-09-08 按你的要求从16px改成24px,这一段(sidebar自己离视口左边
+     的距离)你没有要求改成响应式,保持固定24px,细节见
+     fragments/OfferDashboard/notes.md 同名条目 */
+  .offer-dashboard__body .sidebar-nav { margin-top: -54px; margin-left: 24px; }
+  /* 2026-09-08(第九次,已撤销固定值)恢复响应式,最小值从48px改成24px,
+     最大值100px不变——frame宽度到1422px(cqw)时精确等于24px,之后跟着
+     变宽,到约1900px(cqw)封顶在100px */
+  .offer-dashboard__content { flex: 1; min-width: 0; padding: 0 24px 24px 0; padding-left: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px); margin-right: 100px; display: flex; flex-direction: column; gap: 0; }
   /* 2026-08 核实自节点 7448:9826:Tabs→搜索框24px,搜索框→筛选chip行16px */
   .offer-dashboard__toolbar { display: flex; flex-direction: column; gap: 16px; padding: 24px 0 0; }
   .offer-dashboard__filters { flex-wrap: wrap; }
@@ -1153,7 +1159,7 @@
       '<div class="offer-table-header__cell offer-table-header__cell--time">' +
       '<div class="offer-table-header__title-row"><span class="offer-table-header__title offer-table-header__title--two-line">Time<br>Remaining</span>' +
       '<button type="button" class="offer-table-header__sort" @click="$emit(\'sort\', \'time-remaining\')" v-html="SORT_ICON"></button></div></div>' +
-      '<div class="offer-table-header__cell offer-table-header__cell--estimate"><span class="offer-table-header__title">Reserve Price</span></div>' +
+      '<div class="offer-table-header__cell offer-table-header__cell--estimate"><span class="offer-table-header__title">Reserve</span></div>' +
       '<div class="offer-table-header__cell offer-table-header__cell--sent"><span class="offer-table-header__title">Sent</span></div>' +
       '<div class="offer-table-header__cell offer-table-header__cell--received"><span class="offer-table-header__title">Received</span></div>' +
       '<div class="offer-table-header__cell offer-table-header__cell--update"><span class="offer-table-header__title">Update</span></div>' +
@@ -1655,8 +1661,8 @@
       '</div>' +
       '<div class="offer-table-row__cell offer-table-row__cell--time">{{ timeRemaining }}</div>' +
       '<div class="offer-table-row__cell offer-table-row__cell--estimate">{{ reservePrice }}</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--sent offer-table-row__cell--strong">{{ sentAmount }}</div>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--received offer-table-row__cell--strong">{{ receivedAmount }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--sent">{{ sentAmount }}</div>' +
+      '<div class="offer-table-row__cell offer-table-row__cell--received">{{ receivedAmount }}</div>' +
       '<div class="offer-table-row__cell offer-table-row__cell--update">' +
       '<div class="offer-table-row__update-default">' +
       '<div class="offer-table-row__status-pills">' +
@@ -2502,11 +2508,20 @@
       var rowsLimited = computed(function () {
         return activeTabRows.value.slice(0, Math.max(1, Math.min(activeTabRows.value.length, activeVehicleCount.value)));
       });
-      // 2026-08 按你的要求更正:tab红点数字/sidebar Offers badge 不是
-      // "总共几条",是"还有几个New(未处理)的",统计全部6条不受
-      // buyingVehicleCount/sellingVehicleCount 演示用截取数量影响
-      var buyingNewCount = computed(function () { return buyingRows.filter(isRowNew).length; });
-      var sellingNewCount = computed(function () { return sellingRows.filter(isRowNew).length; });
+      // 2026-09-08(第二次)新增,给下面 buyingNewCount/sellingNewCount 用,
+      // 细节见 fragments/OfferDashboard/OfferDashboard.vue 同名注释。
+      var buyingRowsLimited = computed(function () {
+        return buyingRows.slice(0, Math.max(1, Math.min(buyingRows.length, props.buyingVehicleCount)));
+      });
+      var sellingRowsLimited = computed(function () {
+        return sellingRows.slice(0, Math.max(1, Math.min(sellingRows.length, props.sellingVehicleCount)));
+      });
+      // 2026-08 按你的要求更正,2026-09-08 第二次反过来又改回联动:tab
+      // 红点数字/sidebar Offers badge 是"还有几个New(未处理)的",现在
+      // 跟着 buyingVehicleCount/sellingVehicleCount 这两个演示用的截取
+      // 数量联动(和 filter chip 一致)
+      var buyingNewCount = computed(function () { return buyingRowsLimited.value.filter(isRowNew).length; });
+      var sellingNewCount = computed(function () { return sellingRowsLimited.value.filter(isRowNew).length; });
       var hasAnyNewDeal = computed(function () { return buyingNewCount.value + sellingNewCount.value > 0; });
       var sidebar = computed(function () { return { activeItem: 'offers', offersCount: buyingNewCount.value + sellingNewCount.value }; });
       var tabs = computed(function () { return { activeTab: activeMainTab.value, buyingCount: buyingNewCount.value, sellingCount: sellingNewCount.value }; });
@@ -2516,17 +2531,18 @@
       // 2026-09-08(第三次)table view 表头+所有数据行共享的 grid 列宽
       // 定义,细节见 fragments/OfferDashboard/OfferDashboard.vue 同名
       // computed 注释和 notes.md 同名条目。
+      // 2026-09-08(第十次,已撤销)恢复成每列都用 minmax(Npx, Nfr)
       var tableGridColumns = computed(function () {
-        var dealerWidth = effectiveMultiDealer.value ? 200 : 140;
+        var dealerWidth = effectiveMultiDealer.value ? 176 : 116;
         return [
           'minmax(80px,80fr)',
           'minmax(' + dealerWidth + 'px,' + dealerWidth + 'fr)',
-          'minmax(195px,195fr)',
-          'minmax(124px,124fr)',
-          'minmax(123px,123fr)',
-          'minmax(85px,85fr)',
-          'minmax(90px,90fr)',
-          'minmax(225px,225fr)'
+          'minmax(176px,176fr)',
+          'minmax(100px,100fr)',
+          'minmax(66px,66fr)',
+          'minmax(61px,61fr)',
+          'minmax(69px,69fr)',
+          'minmax(217px,217fr)'
         ].join(' ');
       });
       // [2026-08 按你的要求更正] 之前故意不跟着 dealerFilter/chipFilter
