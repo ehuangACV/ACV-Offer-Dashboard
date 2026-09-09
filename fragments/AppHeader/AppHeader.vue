@@ -268,8 +268,16 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* 2026-09-09 按你的要求:滚动时 App Header 要固定在页面顶部——用
+   position:sticky(不是 position:fixed)贴住 viewport 顶部,理由跟底部
+   Pagination 的 sticky 选择一样(见 OfferDashboard/notes.md 同名条目):
+   sticky 不脱离文档流,不用像 fixed 那样额外给下面的内容补 padding-top
+   占位、也不用管 sidebar 宽度。z-index 给了个较高的值,保证滚动时表格行/
+   卡片能被它正确盖住,不会透到上面。 */
 .app-header {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 20;
   height: 58px;
   background: #FFFFFF;
   border-bottom: 1px solid #D1D3D6;

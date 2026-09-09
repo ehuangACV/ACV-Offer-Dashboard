@@ -81,3 +81,15 @@ Connect 属性名被截断/乱码了(`="107:37970"`,看不出真实属性名),�
 2. "More" 菜单目前只有在真的发生溢出(容器足够窄)时才会出现,默认宽度
    下 5 个 nav 项通常都能显示,如果你想直接看到 "More" 菜单的样子,把
    组件容器拖到比较窄(比如 500px 左右)就能触发。
+
+## 2026-09-09 按你的要求:滚动时固定在页面顶部
+
+`.app-header` 原来是 `position: relative`,改成 `position: sticky;
+top: 0;`——选 sticky 不选 fixed 的理由和底部 Pagination 那次一样（见
+OfferDashboard/notes.md 同名条目）：sticky 不脱离文档流，不需要给下面
+的内容额外补 padding-top 占位，也不用管 sidebar 宽度对不对齐。加了
+`z-index: 20`，比底部 sticky Pagination 的 `z-index: 1` 更高，保证
+滚动时表格行/卡片会被正确盖在它下面。浏览器实测（"Expand to full page"
+真实页面）往下滚动表格：header 一直贴在视口顶部不动，滚回顶部时和
+sidebar 那条 `-54px` 负 margin 的既有重叠效果（见
+OfferDashboard/notes.md）也没有受影响，无 console 报错。
