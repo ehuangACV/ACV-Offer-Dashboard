@@ -46,3 +46,22 @@ pill,只是换成 Figma 自己标的数值)。
 ## 2026-09-02 追加：view switcher 左右padding再加4px
 按你的要求，`.results-toolbar__view-toggle-btn` 左右padding从12px改成
 16px（上下10px不变）——不是重新核实的Figma数值，是你直接给的覆盖。
+
+## 2026-09-08 修复真实bug：顶部 Pagination 的 rows-per-page 完全没反应
+
+你反馈 table view 顶部/底部的 Pagination 点了都没反应，一页永远显示
+全部。追查发现这个组件本身只透传了 `hasPrevPage`/`hasNextPage` 给内部
+的 `<Pagination>`，从来没有透传 `rows-per-page`——内部 `<Pagination>`
+的 `rowsPerPage` prop 一直落到它自己的默认值 10（从没被父组件的真实
+状态覆盖过），选了下拉菜单里的选项之后 `update:rows-per-page` 事件
+虽然会 emit，但这个组件没有监听、也没有再往上转发，等于这个事件从
+父组件的角度完全"消失"了。上面 2026-09-02 那条注释里"`prev`/`next`
+这两个 emit 目前没有监听，保持原样"现在已经不适用了——`OfferDashboard.
+vue` 这次把这两个 emit 和新增的 `update:rows-per-page` 都接上了真实
+翻页逻辑，细节见 `fragments/OfferDashboard/notes.md` 同名条目。
+
+改法：新增 `rowsPerPage` prop（默认 10，和内部 `<Pagination>` 默认值
+一致）+ `update:rowsPerPage` emit，模板里原样转发给内部 `<Pagination>`
+的 `:rows-per-page`/`@update:rows-per-page`，纯粹的透传，这个组件自己
+不维护任何分页状态（页码/rowsPerPage 的真实状态都在 `OfferDashboard`
+那一层）。

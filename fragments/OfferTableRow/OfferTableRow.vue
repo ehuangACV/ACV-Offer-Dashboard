@@ -172,7 +172,7 @@
   ═══════════════════════════════════════════════════════════
 -->
 <template>
-  <div class="offer-table-row">
+  <div class="offer-table-row" :class="{ 'offer-table-row--grid': gridLayout }">
     <!-- 2026-08 你之前给的那份 VDP 静态 html 信息太碎(另一个团队的页面,
          不是我们组件库的一部分),你决定先删掉那份 html,改用一张真实
          VDP 页面截图当占位——点最左边的图片在新标签页"打开一个页面"
@@ -192,7 +192,7 @@
       <img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo">
     </a>
 
-    <div class="offer-table-row__cell offer-table-row__cell--dealer">
+    <div class="offer-table-row__cell offer-table-row__cell--dealer" :class="{ 'offer-table-row__cell--dealer--wide': isMultiDealer }">
       <template v-if="isMultiDealer">
         <div class="offer-table-row__dealer-name">{{ dealerName }}</div>
         <div class="offer-table-row__dealer-sub">
@@ -365,7 +365,14 @@ const props = defineProps({
   // rowsWithDealerMode)按当前行在可见列表里的位置算好了传进来。默认都是
   // false,不传就是"没有其他 deal 可以切",不影响任何已有用法。
   hasPrevDeal: { type: Boolean, default: false },
-  hasNextDeal: { type: Boolean, default: false }
+  hasNextDeal: { type: Boolean, default: false },
+  // 2026-09-08(第三次)新增:同 OfferTableHeader.vue 的同名 prop,细节见
+  // fragments/OfferDashboard/notes.md 同名条目——OfferDashboard.vue 的
+  // table view 现在把表头+所有数据行放进同一个 CSS Grid 共享列宽,这个
+  // 组件需要从"自己是一个 flex 容器"变成"直接把 8 个 cell 交给外层 grid
+  // 摆放"(display:contents)。默认 false,不影响这个组件自己独立的
+  // Playground 预览(order 31)。
+  gridLayout: { type: Boolean, default: false }
 })
 // 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
 // Previous/Next 之后,原样往上 emit,交给真正维护列表的 OfferDashboard 处理
@@ -492,18 +499,34 @@ const hoverButtons = computed(() => {
   background: #FFFFFF;
 }
 
-/* 2026-09-02 按你的要求 + 对照 Figma node 1:21166 核实:hover 这一行时
-   整行背景变成 #F0F8FF(这个节点里图片/dealer/vehicle/time/estimate/
-   sent/received/update 每个 cell 各自都标了这个背景色,不是只有
-   Update 列——cell 本身没有单独设背景,直接在行这一级设置背景色就能
-   让所有 cell 一起变色,不用逐个 cell 重复写一遍) */
+/* 2026-09-08(第三次)同 OfferTableHeader.vue 的 --grid 修饰类——只在
+   gridLayout=true 时把这个元素自己"拆开",直接把 8 个 __cell 交给外层
+   OfferDashboard.vue 的 `.offer-dashboard__table-scroll`(display:grid)
+   摆放,列宽完全由那个共享的 grid-template-columns 决定。display:
+   contents 的元素自己不再生成盒子,原来直接画在 .offer-table-row 这个
+   盒子上的背景色(整行白底 + hover 变蓝)不会再生效,所以下面单独给
+   .offer-table-row__cell 补了默认白底,并把 hover 变色规则从"整行"
+   改成"整行 hover 时,每个 cell 各自变色"——两条规则并存,flex 模式下
+   视觉结果不变(蓝色背景画在cell上还是画在行上,肉眼看不出差别),grid
+   模式下变成唯一生效的规则。:hover 状态本身不依赖盒子,display:contents
+   元素的悬浮状态照样能正确根据"鼠标是否在它某个子元素上"判断,这条
+   descendant selector 在两种模式下都能正常触发。 */
+.offer-table-row--grid {
+  display: contents;
+}
+
 .offer-table-row:hover {
+  background: #F0F8FF;
+}
+
+.offer-table-row:hover .offer-table-row__cell {
   background: #F0F8FF;
 }
 
 .offer-table-row__cell {
   position: relative;
   height: 80px;
+  background: #FFFFFF;
   box-sizing: border-box;
   padding: 21px 16px 0;
   border-bottom: 1px solid #DCDFE8;
@@ -519,8 +542,23 @@ const hoverButtons = computed(() => {
    的内容宽度(cell 本身的 padding 不变,内容宽度 = flex 算出来的 cell
    宽度减掉 padding,列变宽之后截断的文字会跟着显示得更多,不是列变宽了
    文字还卡在原来那个更窄的宽度截断)。 */
+/* 2026-09-08 按你的要求:table view 在窄屏下不再靠 flex-shrink 把每一列
+   越挤越小——之前每列 shrink 都是1,但表头的图片格子是空 div(几乎没有
+   最小宽度),这里的图片格子里有一张真实64px图片(有实际的最小宽度
+   下限),两边收缩的幅度不一样,越窄越对不上表头;文字类列没做限制,
+   挤太窄还会被迫换行,撑破写死的80px行高。改成 shrink:0,每一列永远
+   保持 Figma 核实过的宽度,不够宽时靠外层新增的
+   `.offer-dashboard__table-scroll` 横向滚动,细节和根因分析见
+   fragments/OfferDashboard/notes.md 同名条目。 */
+/* 2026-09-08(第二次)你反馈宽屏(比如全屏预览)下对齐又出问题、
+   Auction ID 列太宽——根因和改法见 OfferTableHeader.vue 同一处注释:
+   grow 之前一直没归零,宽屏时每列还会按比例被拉宽,浮点比例分配在表头/
+   数据行两个独立 flex 容器里可能算出不完全一致的像素值,列数多、拉得
+   越宽误差越容易被看见;而且拉宽本身也会让 Auction-ID-only 模式(不需要
+   200px)显得空得很不自然。这次连 grow 也归零,每一列永远精确等于自己
+   的 basis 像素值。 */
 .offer-table-row__cell--photo {
-  flex: 80 1 80px;
+  flex: 0 0 80px;
   padding: 8px;
   display: flex;
 }
@@ -533,7 +571,14 @@ const hoverButtons = computed(() => {
   border-radius: 8px;
 }
 
-.offer-table-row__cell--dealer { flex: 200 1 200px; }
+/* 2026-09-08(第二次)按你的要求:isMultiDealer=false 时这一列只显示
+   Auction ID + Type 徽标(最宽的 "In Negotiation" 徽标实测92px),200px
+   是给 Dealer Name 模式(可能是长经销商名)准备的宽度,Auction ID 模式下
+   明显太宽,收窄到140px(92px徽标+左右各16px padding=124px,留一点
+   余量)。isMultiDealer=true 时保持200px不变。OfferTableHeader.vue
+   同一列做了同样的切换,细节见该文件同一处注释。 */
+.offer-table-row__cell--dealer { flex: 0 0 140px; }
+.offer-table-row__cell--dealer--wide { flex: 0 0 200px; }
 .offer-table-row__dealer-name {
   font-size: 14px;
   line-height: 21px;
@@ -557,7 +602,7 @@ const hoverButtons = computed(() => {
 }
 
 .offer-table-row__cell--vehicle {
-  flex: 195 1 195px;
+  flex: 0 0 195px;
   /* 2026-08 核实自节点 7448:9966(hidden=false):内容框实际是
      left:14px / right:35px(不是其余列常见的左右各16px),换算内容宽度
      195-14-35=146px,不是对称 padding,已按真实坐标改过来 */
@@ -654,10 +699,10 @@ const hoverButtons = computed(() => {
   opacity: 1;
 }
 
-.offer-table-row__cell--time { flex: 124 1 124px; padding-top: 30px; }
-.offer-table-row__cell--estimate { flex: 123 1 123px; padding-top: 30px; font-weight: 400; }
-.offer-table-row__cell--sent { flex: 85 1 85px; padding-top: 30px; }
-.offer-table-row__cell--received { flex: 90 1 90px; padding-top: 30px; }
+.offer-table-row__cell--time { flex: 0 0 124px; padding-top: 30px; }
+.offer-table-row__cell--estimate { flex: 0 0 123px; padding-top: 30px; font-weight: 400; }
+.offer-table-row__cell--sent { flex: 0 0 85px; padding-top: 30px; }
+.offer-table-row__cell--received { flex: 0 0 90px; padding-top: 30px; }
 .offer-table-row__cell--strong { font-weight: 500; }
 
 /* 2026-09-02:原来是纯 padding-top 撑开内容,现在要在同一块地方切换
@@ -666,7 +711,7 @@ const hoverButtons = computed(() => {
    手动算 padding-top 凑位置。左侧 padding 保持 24px 不变(原来数值),
    右侧留 16px,和其它列右边留白一致 */
 .offer-table-row__cell--update {
-  flex: 225 1 225px;
+  flex: 0 0 225px;
   min-width: 0;
   display: flex;
   align-items: center;

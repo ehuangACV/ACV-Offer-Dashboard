@@ -269,19 +269,21 @@
 
   /* -- OfferTableHeader -- */
   .offer-table-header { display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; }
+  .offer-table-header--grid { display: contents; }
   /* 2026-08 按你的要求覆盖:表头上下padding改成12px,原来固定
      height:50px(Figma核实值)去掉改成auto,靠内容+padding自己撑高度,
      两行文字的列自然变高,单行列靠 .offer-table-header 的
      align-items:stretch 一起拉伸、justify-content:center 居中 */
   .offer-table-header__cell { position: relative; background: #FAFAFA; border-bottom: 1px solid #DCDFE8; box-sizing: border-box; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-  .offer-table-header__cell--photo { flex: 78 1 78px; padding: 0; }
-  .offer-table-header__cell--dealer { flex: 200 1 200px; }
-  .offer-table-header__cell--vehicle { flex: 197 1 197px; }
-  .offer-table-header__cell--time { flex: 124 1 124px; }
-  .offer-table-header__cell--estimate { flex: 123 1 123px; }
-  .offer-table-header__cell--sent { flex: 85 1 85px; }
-  .offer-table-header__cell--received { flex: 90 1 90px; }
-  .offer-table-header__cell--update { flex: 225 1 225px; min-width: 0; }
+  .offer-table-header__cell--photo { flex: 0 0 80px; padding: 0; }
+  .offer-table-header__cell--dealer { flex: 0 0 140px; }
+  .offer-table-header__cell--dealer--wide { flex: 0 0 200px; }
+  .offer-table-header__cell--vehicle { flex: 0 0 195px; padding-left: 14px; }
+  .offer-table-header__cell--time { flex: 0 0 124px; }
+  .offer-table-header__cell--estimate { flex: 0 0 123px; }
+  .offer-table-header__cell--sent { flex: 0 0 85px; }
+  .offer-table-header__cell--received { flex: 0 0 90px; }
+  .offer-table-header__cell--update { flex: 0 0 225px; min-width: 0; padding-left: 24px; }
   .offer-table-header__title-row { display: flex; align-items: center; gap: 4px; }
   .offer-table-header__title { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #212121; white-space: nowrap; }
   .offer-table-header__title--two-line { line-height: 20px; }
@@ -303,17 +305,25 @@
 
   /* -- OfferTableRow -- */
   .offer-table-row { display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; background: #FFFFFF; }
+  .offer-table-row--grid { display: contents; }
   /* 2026-09-02 按你的要求 + 对照 Figma node 1:21166 核实:hover 整行时
      背景变 #F0F8FF */
   .offer-table-row:hover { background: #F0F8FF; }
-  .offer-table-row__cell { position: relative; height: 80px; box-sizing: border-box; padding: 21px 16px 0; border-bottom: 1px solid #DCDFE8; font-size: 14px; color: #212121; }
-  .offer-table-row__cell--photo { flex: 80 1 80px; padding: 8px; display: flex; }
+  /* 2026-09-08(第三次):display:contents 模式下 .offer-table-row 自己
+     不再生成盒子,上面两条画在"行"本身的背景色不会生效,细节见
+     fragments/OfferTableRow/OfferTableRow.vue 同一处注释——补一条画在
+     每个 cell 上的等价规则,flex 模式下和上面的规则叠加,视觉上没有
+     区别 */
+  .offer-table-row:hover .offer-table-row__cell { background: #F0F8FF; }
+  .offer-table-row__cell { position: relative; height: 80px; background: #FFFFFF; box-sizing: border-box; padding: 21px 16px 0; border-bottom: 1px solid #DCDFE8; font-size: 14px; color: #212121; }
+  .offer-table-row__cell--photo { flex: 0 0 80px; padding: 8px; display: flex; }
   .offer-table-row__photo { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; }
-  .offer-table-row__cell--dealer { flex: 200 1 200px; }
+  .offer-table-row__cell--dealer { flex: 0 0 140px; }
+  .offer-table-row__cell--dealer--wide { flex: 0 0 200px; }
   .offer-table-row__dealer-name { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #0E0E0F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .offer-table-row__dealer-sub { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
   .offer-table-row__dealer-id { font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #55575C; }
-  .offer-table-row__cell--vehicle { flex: 195 1 195px; padding: 21px 35px 0 14px; text-align: left; }
+  .offer-table-row__cell--vehicle { flex: 0 0 195px; padding: 21px 35px 0 14px; text-align: left; }
   .offer-table-row__vehicle-title { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .offer-table-row__vehicle-sub { margin-top: 0; display: flex; align-items: center; justify-content: flex-start; gap: 2px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
   .offer-table-row__vin { display: inline-flex; align-items: center; border-radius: 999px; font-weight: 500; color: #00558C; }
@@ -323,12 +333,12 @@
   .offer-table-row__vin-copy-btn svg { display: block; }
   .offer-table-row__vin-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/18px 'Roboto', sans-serif; letter-spacing: 0.4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; z-index: 10; }
   .offer-table-row__vin-copy-btn:hover .offer-table-row__vin-tooltip, .offer-table-row__vin-copy-btn:focus-visible .offer-table-row__vin-tooltip, .offer-table-row__vin-copy-btn.is-copied .offer-table-row__vin-tooltip { opacity: 1; }
-  .offer-table-row__cell--time { flex: 124 1 124px; padding-top: 30px; }
-  .offer-table-row__cell--estimate { flex: 123 1 123px; padding-top: 30px; font-weight: 400; }
-  .offer-table-row__cell--sent { flex: 85 1 85px; padding-top: 30px; }
-  .offer-table-row__cell--received { flex: 90 1 90px; padding-top: 30px; }
+  .offer-table-row__cell--time { flex: 0 0 124px; padding-top: 30px; }
+  .offer-table-row__cell--estimate { flex: 0 0 123px; padding-top: 30px; font-weight: 400; }
+  .offer-table-row__cell--sent { flex: 0 0 85px; padding-top: 30px; }
+  .offer-table-row__cell--received { flex: 0 0 90px; padding-top: 30px; }
   .offer-table-row__cell--strong { font-weight: 500; }
-  .offer-table-row__cell--update { flex: 225 1 225px; min-width: 0; display: flex; align-items: center; padding: 0 16px 0 24px; }
+  .offer-table-row__cell--update { flex: 0 0 225px; min-width: 0; display: flex; align-items: center; padding: 0 16px 0 24px; }
   .offer-table-row__update-default { display: flex; flex-direction: column; }
   .offer-table-row__status-pills { display: flex; align-items: center; gap: 4px; }
   .offer-table-row__update-date { margin-top: 0; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
@@ -431,6 +441,10 @@
      没有分割线,只有20px纯留白(节点7448:9899 gap-20),之前的border-top
      没有Figma依据,已删掉改成margin-top */
   .offer-dashboard__table-card { margin-top: 20px; }
+  /* 2026-09-08:table view 每一列不再靠 flex-shrink 挤宽度(见
+     OfferTableHeader/OfferTableRow 的 CSS),窄屏下改成这个容器自己横向
+     滚动,细节见 fragments/OfferDashboard/notes.md 同名条目 */
+  .offer-dashboard__table-scroll { display: grid; overflow-x: auto; }
   /* Private Lane行→表头16px(节点7448:9916 "Table" gap-16) */
   /* 2026-09-02:table-top 那一条工具条(Viewing N results / Private
      Lane+Pagination / table-tile 切换按钮)已经抽成独立组件
@@ -1111,12 +1125,12 @@
   var OfferTableHeader = defineComponent({
     name: 'OfferTableHeader',
     components: { OfferTypeBadge: OfferTypeBadge },
-    props: { sortColumn: { type: String, default: null }, isMultiDealer: { type: Boolean, default: true } },
+    props: { sortColumn: { type: String, default: null }, isMultiDealer: { type: Boolean, default: true }, gridLayout: { type: Boolean, default: false } },
     emits: ['sort'],
     template:
-      '<div class="offer-table-header">' +
+      '<div class="offer-table-header" :class="{ \'offer-table-header--grid\': gridLayout }">' +
       '<div class="offer-table-header__cell offer-table-header__cell--photo"></div>' +
-      '<div class="offer-table-header__cell offer-table-header__cell--dealer">' +
+      '<div class="offer-table-header__cell offer-table-header__cell--dealer" :class="{ \'offer-table-header__cell--dealer--wide\': isMultiDealer }">' +
       '<div class="offer-table-header__title-row"><span class="offer-table-header__title">{{ isMultiDealer ? \'Dealer Name\' : \'Auction ID\' }}</span>' +
       '<button v-if="isMultiDealer" type="button" class="offer-table-header__sort" @click="$emit(\'sort\', \'dealer-name\')" v-html="SORT_ICON"></button></div>' +
       '<div class="offer-table-header__subtitle-row"><span class="offer-table-header__subtitle">{{ isMultiDealer ? \'Auction ID・Type\' : \'Type\' }}</span>' +
@@ -1607,13 +1621,14 @@
       // 2026-09-02 同 OfferCard 的 hasPrevDeal/hasNextDeal,细节见
       // fragments/OfferTableRow/notes.md。
       hasPrevDeal: { type: Boolean, default: false },
-      hasNextDeal: { type: Boolean, default: false }
+      hasNextDeal: { type: Boolean, default: false },
+      gridLayout: { type: Boolean, default: false }
     },
     emits: ['prev-deal', 'next-deal', 'remove-from-list', 'viewed'],
     template:
-      '<div class="offer-table-row">' +
+      '<div class="offer-table-row" :class="{ \'offer-table-row--grid\': gridLayout }">' +
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-table-row__cell offer-table-row__cell--photo" @click="$emit(\'viewed\')"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-table-row__photo"></a>' +
-      '<div class="offer-table-row__cell offer-table-row__cell--dealer">' +
+      '<div class="offer-table-row__cell offer-table-row__cell--dealer" :class="{ \'offer-table-row__cell--dealer--wide\': isMultiDealer }">' +
       '<template v-if="isMultiDealer">' +
       '<div class="offer-table-row__dealer-name">{{ dealerName }}</div>' +
       '<div class="offer-table-row__dealer-sub">' +
@@ -2324,13 +2339,14 @@
       viewMode: { type: String, default: 'table' },
       resultsCount: { type: Number, default: 0 },
       hasPrevPage: { type: Boolean, default: false },
-      hasNextPage: { type: Boolean, default: true }
+      hasNextPage: { type: Boolean, default: true },
+      rowsPerPage: { type: [String, Number], default: 10 }
     },
-    emits: ['update:viewMode', 'prev', 'next'],
+    emits: ['update:viewMode', 'update:rowsPerPage', 'prev', 'next'],
     template:
       '<div class="results-toolbar">' +
       '<div v-if="viewMode === \'tile\'" class="results-toolbar__viewing-text">Viewing {{ resultsCount }} results</div>' +
-      '<template v-else><div class="results-toolbar__spacer"><span class="results-toolbar__private-lane"><svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div><Pagination :has-prev-page="hasPrevPage" :has-next-page="hasNextPage" @prev="$emit(\'prev\')" @next="$emit(\'next\')" /></template>' +
+      '<template v-else><div class="results-toolbar__spacer"><span class="results-toolbar__private-lane"><svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div><Pagination :rows-per-page="rowsPerPage" :has-prev-page="hasPrevPage" :has-next-page="hasNextPage" @update:rows-per-page="$emit(\'update:rowsPerPage\', $event)" @prev="$emit(\'prev\')" @next="$emit(\'next\')" /></template>' +
       '<div class="results-toolbar__view-toggle">' +
       '<button type="button" class="results-toolbar__view-toggle-btn" :class="{ \'results-toolbar__view-toggle-btn--active\': viewMode === \'tile\' }" aria-label="Grid view" @click="$emit(\'update:viewMode\', \'tile\')" v-html="gridIcon"></button>' +
       '<button type="button" class="results-toolbar__view-toggle-btn" :class="{ \'results-toolbar__view-toggle-btn--active\': viewMode === \'table\' }" aria-label="List view" @click="$emit(\'update:viewMode\', \'table\')" v-html="listIcon"></button>' +
@@ -2365,20 +2381,22 @@
       '<SearchInput v-model="searchValue" />' +
       '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" class="offer-dashboard__filters" :is-multi-dealer="effectiveMultiDealer" ' +
       ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" :show-declined="activeMainTab !== \'selling\'" ' +
-      '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event" @clear-dealer="dealerFilter = []" />' +
+      '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event; currentTablePage = 1" @clear-dealer="dealerFilter = []; currentTablePage = 1" />' +
       '</div>' +
       '<div v-if="dealershipDropdownOpen" ref="dealerPopoverWrapRef" class="offer-dashboard__dealer-popover-anchor" :style="dealerPopoverStyle">' +
       '<DealershipFilterDropdown :is-multi-dealer="effectiveMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
       '</div>' +
       '<div class="offer-dashboard__table-card">' +
       '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" ' +
-      ':has-prev-page="topPagination.hasPrevPage" :has-next-page="topPagination.hasNextPage" />' +
+      ':rows-per-page="rowsPerPage" :has-prev-page="hasPrevTablePage" :has-next-page="hasNextTablePage" @update:rows-per-page="handleTableRowsPerPageChange" @prev="handlePrevTablePage" @next="handleNextTablePage" />' +
       '<template v-if="viewMode === \'table\'">' +
-      '<OfferTableHeader :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
-      '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
+      '<div class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }">' +
+      '<OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
+      '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" v-show="isRowOnCurrentTablePage(i)" grid-layout :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
       ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" @viewed="markSeen(row.auctionId)" />' +
+      '</div>' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
-      '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="visibleRows.length" :total-count="visibleRows.length" /></div>' +
+      '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="tableViewingCount" :total-count="rowsWithDealerMode.length" :rows-per-page="rowsPerPage" :has-prev-page="hasPrevTablePage" :has-next-page="hasNextTablePage" @update:rows-per-page="handleTableRowsPerPageChange" @prev="handlePrevTablePage" @next="handleNextTablePage" /></div>' +
       '</template>' +
       '<template v-else>' +
       '<div class="offer-dashboard__card-grid" :style="cardGridStyle">' +
@@ -2394,7 +2412,6 @@
       var sortColumn = ref(null);
       var dealershipDropdownOpen = ref(false);
       var viewMode = ref('table');
-      var topPagination = { showViewingText: false, hasPrevPage: false, hasNextPage: true };
 
       // 2026-08 按你的要求,参照真实原型(My-ACV--Dealer-filter-main)
       // 把 DealershipFilterDropdown 改成真正悬浮在 "Dealership" 按钮
@@ -2471,7 +2488,7 @@
       var buyingRows = rows.slice(0, 15);
       var sellingRows = rows.slice(15, 30);
       var activeMainTab = ref('buying');
-      function handleTabSelect(tab) { activeMainTab.value = tab; }
+      function handleTabSelect(tab) { activeMainTab.value = tab; currentTablePage.value = 1; }
       var activeTabRows = computed(function () {
         return activeMainTab.value === 'selling' ? sellingRows : buyingRows;
       });
@@ -2496,15 +2513,33 @@
       // 2026-09-02 按你的要求新增,细节见真实文件 fragments/OfferDashboard/
       // OfferDashboard.vue 同名 computed 注释
       var effectiveMultiDealer = computed(function () { return props.isMultiDealer && activeMainTab.value === 'selling'; });
+      // 2026-09-08(第三次)table view 表头+所有数据行共享的 grid 列宽
+      // 定义,细节见 fragments/OfferDashboard/OfferDashboard.vue 同名
+      // computed 注释和 notes.md 同名条目。
+      var tableGridColumns = computed(function () {
+        var dealerWidth = effectiveMultiDealer.value ? 200 : 140;
+        return [
+          'minmax(80px,80fr)',
+          'minmax(' + dealerWidth + 'px,' + dealerWidth + 'fr)',
+          'minmax(195px,195fr)',
+          'minmax(124px,124fr)',
+          'minmax(123px,123fr)',
+          'minmax(85px,85fr)',
+          'minmax(90px,90fr)',
+          'minmax(225px,225fr)'
+        ].join(' ');
+      });
       // [2026-08 按你的要求更正] 之前故意不跟着 dealerFilter/chipFilter
       // 联动,一直显示 rowsLimited 全量算出来的数字。你指出选了dealership
       // 后数量应该跟着筛选结果变——改成基于 dealerFilteredRows(只按
       // dealerFilter narrow,不按 chipFilter 自己 narrow,避免"选中某个
       // chip后其它chip数字全变0"的死循环)重新算数量。
+      // 2026-09-08 修复真实bug:Remove From List 移除之后 chip 数字没有
+      // 跟着减少,细节见 fragments/OfferDashboard/notes.md 同名条目。
       var dealerFilteredRows = computed(function () {
         return rowsLimited.value.filter(function (r) {
           return !dealerFilter.value.length || dealerFilter.value.indexOf(r.dealerName) !== -1;
-        });
+        }).filter(function (r) { return removedAuctionIds.value.indexOf(r.auctionId) === -1; });
       });
       var filters = computed(function () {
         return {
@@ -2528,11 +2563,13 @@
       function handleApplyDealerFilter(selectedDealers) {
         dealerFilter.value = selectedDealers;
         dealershipDropdownOpen.value = false;
+        currentTablePage.value = 1;
       }
       function handleClearFilters() {
         dealershipDropdownOpen.value = false;
         dealerFilter.value = [];
         chipFilter.value = { negotiation: false, makeOffer: false, single: null };
+        currentTablePage.value = 1;
       }
       // 2026-09-02 新增,配合 Remove From List 二次确认框,细节见
       // fragments/RemoveFromListDialog/notes.md
@@ -2550,7 +2587,7 @@
         }
       }
       function isRowNew(row) {
-        return row.statusNew && seenAuctionIds.value.indexOf(row.auctionId) === -1;
+        return row.statusNew && seenAuctionIds.value.indexOf(row.auctionId) === -1 && removedAuctionIds.value.indexOf(row.auctionId) === -1;
       }
       // 2026-09-03 挪到这里(原来只在下面 rowsAsCards 旁边定义),给
       // filters/matchesFilters 也用,细节见 fragments/OfferDashboard/notes.md
@@ -2592,6 +2629,36 @@
           return Object.assign({}, row, { isMultiDealer: effectiveMultiDealer.value, viewerRole: viewerRoleValue.value, statusNew: isRowNew(row) });
         });
       });
+      // 2026-09-08 修复真实bug:table view 的 Pagination(Rows per page +
+      // 上一页/下一页)之前完全没接状态,细节见 fragments/OfferDashboard/
+      // notes.md 同名条目。用 v-show 而不是切分 v-for 的数据源,是为了不
+      // 破坏 handleTablePrev/handleTableNext 这套按 rowsWithDealerMode
+      // 绝对下标算相邻行的逻辑——Dialog 走 Teleport 渲染,不受它所在行
+      // v-show 隐藏影响,跨页 Prev/Next 不受影响。
+      var rowsPerPage = ref(10);
+      var currentTablePage = ref(1);
+      var totalTablePages = computed(function () { return Math.max(1, Math.ceil(rowsWithDealerMode.value.length / rowsPerPage.value)); });
+      var clampedTablePage = computed(function () { return Math.min(currentTablePage.value, totalTablePages.value); });
+      var hasPrevTablePage = computed(function () { return clampedTablePage.value > 1; });
+      var hasNextTablePage = computed(function () { return clampedTablePage.value < totalTablePages.value; });
+      var tableViewingCount = computed(function () {
+        var start = (clampedTablePage.value - 1) * rowsPerPage.value;
+        return Math.max(0, Math.min(rowsPerPage.value, rowsWithDealerMode.value.length - start));
+      });
+      function isRowOnCurrentTablePage(i) {
+        var start = (clampedTablePage.value - 1) * rowsPerPage.value;
+        return i >= start && i < start + rowsPerPage.value;
+      }
+      function handlePrevTablePage() {
+        if (hasPrevTablePage.value) currentTablePage.value = clampedTablePage.value - 1;
+      }
+      function handleNextTablePage() {
+        if (hasNextTablePage.value) currentTablePage.value = clampedTablePage.value + 1;
+      }
+      function handleTableRowsPerPageChange(value) {
+        rowsPerPage.value = Number(value);
+        currentTablePage.value = 1;
+      }
       // 2026-09-02 Figma 7597:112866 的 dialog Previous/Next 按钮需要跨
       // 卡片/跨行控制,靠 OfferCard/OfferTableRow 各自 expose 出来的
       // openDialog/closeDialog,细节见 fragments/OfferDashboard/notes.md。
@@ -2680,7 +2747,12 @@
         isMultiDealer: toRefs(props).isMultiDealer,
         header: header, sidebar: sidebar, tabs: tabs, filters: filters, searchValue: searchValue,
         sortColumn: sortColumn, dealershipDropdownOpen: dealershipDropdownOpen, viewMode: viewMode,
-        topPagination: topPagination, rows: rows, visibleRows: visibleRows, rowsWithDealerMode: rowsWithDealerMode,
+        rows: rows, visibleRows: visibleRows, rowsWithDealerMode: rowsWithDealerMode,
+        rowsPerPage: rowsPerPage, currentTablePage: currentTablePage,
+        hasPrevTablePage: hasPrevTablePage, hasNextTablePage: hasNextTablePage,
+        tableViewingCount: tableViewingCount, isRowOnCurrentTablePage: isRowOnCurrentTablePage,
+        handlePrevTablePage: handlePrevTablePage, handleNextTablePage: handleNextTablePage,
+        handleTableRowsPerPageChange: handleTableRowsPerPageChange,
         rowsAsCards: rowsAsCards, cardGridStyle: cardGridStyle,
         activeMainTab: activeMainTab, handleTabSelect: handleTabSelect,
         dealerFilter: dealerFilter, chipFilter: chipFilter, dealerChipText: dealerChipText,
@@ -2691,7 +2763,8 @@
         setTableRowRef: setTableRowRef, setCardRef: setCardRef,
         handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
         handleCardPrev: handleCardPrev, handleCardNext: handleCardNext,
-        handleRemoveFromList: handleRemoveFromList, markSeen: markSeen, effectiveMultiDealer: effectiveMultiDealer
+        handleRemoveFromList: handleRemoveFromList, markSeen: markSeen, effectiveMultiDealer: effectiveMultiDealer,
+        tableGridColumns: tableGridColumns
       };
     }
   });

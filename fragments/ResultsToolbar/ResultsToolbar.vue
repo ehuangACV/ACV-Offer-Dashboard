@@ -40,7 +40,14 @@
           Private Lane
         </span>
       </div>
-      <Pagination :has-prev-page="hasPrevPage" :has-next-page="hasNextPage" @prev="$emit('prev')" @next="$emit('next')" />
+      <Pagination
+        :rows-per-page="rowsPerPage"
+        :has-prev-page="hasPrevPage"
+        :has-next-page="hasNextPage"
+        @update:rows-per-page="$emit('update:rowsPerPage', $event)"
+        @prev="$emit('prev')"
+        @next="$emit('next')"
+      />
     </template>
 
     <div class="results-toolbar__view-toggle">
@@ -83,9 +90,15 @@ defineProps({
   // 这是 OfferDashboard 原来就有的设定,抽出来之后原样保留,没有做成
   // 可配置的 prop,因为目前只有这一种用法)
   hasPrevPage: { type: Boolean, default: false },
-  hasNextPage: { type: Boolean, default: true }
+  hasNextPage: { type: Boolean, default: true },
+  // 2026-09-08 新增:之前这里只透传 hasPrevPage/hasNextPage 给内部的
+  // <Pagination>,没有透传 rows-per-page 的值和它的 update 事件,导致
+  // 顶部这份下拉菜单点了选项之后完全没反应(内部 Pagination 组件的
+  // rows-per-page 一直用它自己的默认值 10,从来没被父组件的真实状态
+  // 覆盖过)。细节见 fragments/OfferDashboard/notes.md 同名条目。
+  rowsPerPage: { type: [String, Number], default: 10 }
 })
-defineEmits(['update:viewMode', 'prev', 'next'])
+defineEmits(['update:viewMode', 'update:rowsPerPage', 'prev', 'next'])
 </script>
 
 <style scoped>

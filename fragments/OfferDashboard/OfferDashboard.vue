@@ -259,8 +259,8 @@
             :show-declined="activeMainTab !== 'selling'"
             @toggle-dealership="toggleDealershipDropdown"
             @clear="handleClearFilters"
-            @filter-change="chipFilter = $event"
-            @clear-dealer="dealerFilter = []"
+            @filter-change="chipFilter = $event; currentTablePage = 1"
+            @clear-dealer="dealerFilter = []; currentTablePage = 1"
           />
         </div>
 
@@ -283,31 +283,60 @@
           <ResultsToolbar
             v-model:view-mode="viewMode"
             :results-count="visibleRows.length"
-            :has-prev-page="topPagination.hasPrevPage"
-            :has-next-page="topPagination.hasNextPage"
+            :rows-per-page="rowsPerPage"
+            :has-prev-page="hasPrevTablePage"
+            :has-next-page="hasNextTablePage"
+            @update:rows-per-page="handleTableRowsPerPageChange"
+            @prev="handlePrevTablePage"
+            @next="handleNextTablePage"
           />
 
           <template v-if="viewMode === 'table'">
-            <OfferTableHeader :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
+            <!-- 2026-09-08(第三次)按你的要求:表头+所有数据行现在共享
+                 同一个 CSS Grid 的列宽定义(见下面 tableGridColumns +
+                 .offer-dashboard__table-scroll 的 CSS),不再是表头和
+                 每一行各自独立算一次 flex 宽度——之前那样在宽屏下会各自
+                 算出细微不同的浮点像素值,反复出现对不齐。OfferTableHeader/
+                 OfferTableRow 通过 grid-layout 这个 prop 切换成
+                 display:contents,把它们的 8 个 cell 直接交给这个 grid
+                 摆放,细节见 fragments/OfferDashboard/notes.md 同名条目。
+                 窄屏(容器比表格自然宽度窄)时这个容器横向滚动;宽屏时
+                 每一列按 grid-template-columns 里的 fr 比例一起变宽,不
+                 影响上面的 ResultsToolbar/下面的底部 Pagination。 -->
+            <div class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }">
+              <OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
 
-            <OfferTableRow
-              v-for="(row, i) in rowsWithDealerMode"
-              :key="i"
-              v-bind="row"
-              :ref="(el) => setTableRowRef(el, i)"
-              :has-prev-deal="i > 0"
-              :has-next-deal="i < rowsWithDealerMode.length - 1"
-              @prev-deal="handleTablePrev(i)"
-              @next-deal="handleTableNext(i)"
-              @remove-from-list="handleRemoveFromList(row.auctionId)"
-              @viewed="markSeen(row.auctionId)"
-            />
+              <OfferTableRow
+                v-for="(row, i) in rowsWithDealerMode"
+                v-show="isRowOnCurrentTablePage(i)"
+                grid-layout
+                :key="i"
+                v-bind="row"
+                :ref="(el) => setTableRowRef(el, i)"
+                :has-prev-deal="i > 0"
+                :has-next-deal="i < rowsWithDealerMode.length - 1"
+                @prev-deal="handleTablePrev(i)"
+                @next-deal="handleTableNext(i)"
+                @remove-from-list="handleRemoveFromList(row.auctionId)"
+                @viewed="markSeen(row.auctionId)"
+              />
+            </div>
             <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
               No vehicles match the current filters.
             </p>
 
             <div class="offer-dashboard__table-bottom">
-              <Pagination show-viewing-text :viewing-count="visibleRows.length" :total-count="visibleRows.length" />
+              <Pagination
+                show-viewing-text
+                :viewing-count="tableViewingCount"
+                :total-count="rowsWithDealerMode.length"
+                :rows-per-page="rowsPerPage"
+                :has-prev-page="hasPrevTablePage"
+                :has-next-page="hasNextTablePage"
+                @update:rows-per-page="handleTableRowsPerPageChange"
+                @prev="handlePrevTablePage"
+                @next="handleNextTablePage"
+              />
             </div>
           </template>
 
@@ -479,6 +508,7 @@ const sidebar = computed(() => ({
 const activeMainTab = ref('buying')
 function handleTabSelect(tab) {
   activeMainTab.value = tab
+  currentTablePage.value = 1
 }
 const activeTabRows = computed(() =>
   activeMainTab.value === 'selling' ? sellingRows : buyingRows
@@ -505,6 +535,31 @@ const tabs = computed(() => ({
 // isMultiDealer 的地方。
 const effectiveMultiDealer = computed(() => props.isMultiDealer && activeMainTab.value === 'selling')
 
+// 2026-09-08(第三次)按你的要求新增:table view 表头+所有数据行共享的
+// grid 列宽定义,细节和为什么要改成 CSS Grid 见下面
+// `.offer-dashboard__table-scroll` CSS 注释和 notes.md 同名条目。每一列
+// `minmax(Npx, Nfr)`——Npx 是 Figma 核实过的自然宽度(永远不会缩得更
+// 窄,不够宽时靠这个容器横向滚动),Nfr 让宽屏时每一列按同一个比例一起
+// 变宽(这个数值和 px 部分保持一样,效果等价于原来 flex-grow:N 的比例
+// 缩放,只是现在是整个 grid 只算一次,不会再和数据行分别算出不同的
+// 浮点像素值)。Dealer/Auction ID 这一列的宽度按 `effectiveMultiDealer`
+// 在 140px(只有Auction ID+Type徽标)和200px(可能是长经销商名)之间
+// 切换,和 OfferTableHeader.vue/OfferTableRow.vue 里 isMultiDealer 版本
+// 的 --dealer--wide 修饰类是同一个判断条件、同一组数值。
+const tableGridColumns = computed(() => {
+  const dealerWidth = effectiveMultiDealer.value ? 200 : 140
+  return [
+    'minmax(80px,80fr)',
+    `minmax(${dealerWidth}px,${dealerWidth}fr)`,
+    'minmax(195px,195fr)',
+    'minmax(124px,124fr)',
+    'minmax(123px,123fr)',
+    'minmax(85px,85fr)',
+    'minmax(90px,90fr)',
+    'minmax(225px,225fr)'
+  ].join(' ')
+})
+
 // [2026-08 按你的要求更正] 之前这几个数字故意不跟着 dealerFilter/
 // chipFilter 联动,一直显示 rowsLimited(当前 tab 全部6条)算出来的
 // 总数——你指出选了 dealership 之后,筛选结果明明只剩1条,chip 旁边的
@@ -514,10 +569,18 @@ const effectiveMultiDealer = computed(() => props.isMultiDealer && activeMainTab
 // 多少条",不包含其它 chip(New/Received/Sent/Declined 之间、以及和
 // negotiation/makeOffer 之间)的选中状态,避免选中某个 chip 后其它 chip
 // 的数字全变成 0 这种"数了自己选的东西,把自己也算没了"的死循环。
+// 2026-09-08 修复真实bug:你反馈点 "Remove From List" 把 deal 移除之后,
+// Declined 这个 chip 上的数字没有跟着减少,导致 chip 写着还有4条、点开
+// 却是空的("No vehicles match the current filters.")。原因是这里只按
+// dealerFilter narrow,没有把 removedAuctionIds 过滤掉的行也排除——下面
+// matchesFilters()(决定实际筛出哪些行)一直有这条判断
+// (`if (removedAuctionIds.value.includes(row.auctionId)) return false`),
+// 但算 chip 数字的 dealerFilteredRows 没有跟着排除,两边用的"当前还剩下
+// 哪些行"这个基准数据本身就不一致,不是 filters computed 自己的算法错了。
 const dealerFilteredRows = computed(() =>
   rowsLimited.value.filter(
     (r) => !dealerFilter.value.length || dealerFilter.value.includes(r.dealerName)
-  )
+  ).filter((r) => !removedAuctionIds.value.includes(r.auctionId))
 )
 
 // 2026-09-03 四个 single 筛选(New/Received/Sent/Declined)的计数全部改成
@@ -557,12 +620,14 @@ const dealerChipText = computed(() => {
 function handleApplyDealerFilter(selectedDealers) {
   dealerFilter.value = selectedDealers
   dealershipDropdownOpen.value = false
+  currentTablePage.value = 1
 }
 
 function handleClearFilters() {
   dealershipDropdownOpen.value = false
   dealerFilter.value = []
   chipFilter.value = { negotiation: false, makeOffer: false, single: null }
+  currentTablePage.value = 1
 }
 
 // 2026-09-02 新增,配合 OfferCard/OfferTableRow 的 "Remove From List" 二次
@@ -588,8 +653,14 @@ function markSeen(auctionId) {
     seenAuctionIds.value = [...seenAuctionIds.value, auctionId]
   }
 }
+// 2026-09-08 补上同一个 bug 的另一半:被 "Remove From List" 移除的行不该
+// 再算 New——之前这里没检查 removedAuctionIds,导致 Buying/Selling tab
+// 旁边的红点数字、sidebar "Offers" 的 badge(两者都是靠这个函数算的)在
+// 移除一条 New 状态的 deal 之后不会跟着减少,和下面 dealerFilteredRows
+// 那处 chip 计数是同一类问题(算"现在还剩下哪些行"时漏掉了
+// removedAuctionIds 这个过滤条件)。
 function isRowNew(row) {
-  return row.statusNew && !seenAuctionIds.value.includes(row.auctionId)
+  return row.statusNew && !seenAuctionIds.value.includes(row.auctionId) && !removedAuctionIds.value.includes(row.auctionId)
 }
 // 2026-09-03 挪到这里(原来定义在下面 rowsAsCards 旁边,靠函数声明的
 // hoisting 在这之前也能用,这次为了讲清楚"filter chip 的计数/匹配和
@@ -675,8 +746,6 @@ function matchesFilters(row) {
   if (single === 'declined' && rowToDealState(row) !== 'declined') return false
   return true
 }
-
-const topPagination = { showViewingText: false, hasPrevPage: false, hasNextPage: true }
 
 // 2026-08:扩充成 12 行 —— 前 2 行(rowWithNewAndReceived/rowWithNoStatusChip)
 // 是已核实的真实行数据,其余是你给了 10 张新真实照片后新增的自编 mockup
@@ -765,6 +834,52 @@ const rowsWithDealerMode = computed(() =>
     statusNew: isRowNew(row)
   }))
 )
+
+// 2026-09-08 修复真实bug:你反馈 table view 的顶部/底部 Pagination(Rows
+// per page 下拉 + 上一页/下一页箭头)点击后完全没反应,表格永远一页显示
+// 全部——之前这两处 Pagination 从来没有真的接上任何状态,顶部靠一个写死
+// 的 `topPagination = { hasPrevPage:false, hasNextPage:true }` 常量,
+// 底部 `:viewing-count`/`:total-count` 两个都传的是同一个
+// `visibleRows.length`(所以永远显示"Viewing N out of N"),`rows-per-
+// page`/`prev`/`next` 这三个事件完全没有监听。这次补上真正的分页状态。
+// tile view(rowsAsCards,直接用 visibleRows,没有引入下面这套分页)按你
+// 的要求不动,只影响 table view。
+// 用 v-show(不是把 v-for 的数据源换成分页后的切片)是为了不动
+// InformationDialog 的 Previous/Next 这套已有逻辑——handleTablePrev/
+// handleTableNext 是按 rowsWithDealerMode 的"绝对下标"算相邻行的,如果
+// v-for 换成分页切片,`i` 就变成"页内下标",这两个函数会算错相邻行。
+// Dialog 本身走 Teleport 渲染到 body,不受它所在的行是否 v-show 隐藏
+// 影响,所以"当前页只显示这一页的行,但 Prev/Next 仍可以跨页切到相邻
+// deal"这两件事互不冲突,不需要额外处理跨页的情况。
+const rowsPerPage = ref(10)
+const currentTablePage = ref(1)
+const totalTablePages = computed(() => Math.max(1, Math.ceil(rowsWithDealerMode.value.length / rowsPerPage.value)))
+// 页数变少后(筛选变严格/移除了deal)如果 currentTablePage 还停在一个
+// 已经不存在的页码,自动夹回最后一页,不需要在每个可能改变筛选结果的
+// 地方都记得手动把 currentTablePage 重置回 1(下面几个 handleXxx 里
+// 显式重置到第1页,是为了"换了筛选条件就该从第一页看起"这个更好的
+// 使用体验,不是为了避免越界——越界这里已经保底了)。
+const clampedTablePage = computed(() => Math.min(currentTablePage.value, totalTablePages.value))
+const hasPrevTablePage = computed(() => clampedTablePage.value > 1)
+const hasNextTablePage = computed(() => clampedTablePage.value < totalTablePages.value)
+const tableViewingCount = computed(() => {
+  const start = (clampedTablePage.value - 1) * rowsPerPage.value
+  return Math.max(0, Math.min(rowsPerPage.value, rowsWithDealerMode.value.length - start))
+})
+function isRowOnCurrentTablePage(i) {
+  const start = (clampedTablePage.value - 1) * rowsPerPage.value
+  return i >= start && i < start + rowsPerPage.value
+}
+function handlePrevTablePage() {
+  if (hasPrevTablePage.value) currentTablePage.value = clampedTablePage.value - 1
+}
+function handleNextTablePage() {
+  if (hasNextTablePage.value) currentTablePage.value = clampedTablePage.value + 1
+}
+function handleTableRowsPerPageChange(value) {
+  rowsPerPage.value = Number(value)
+  currentTablePage.value = 1
+}
 
 // 2026-09-02 按 Figma node 7597:112866 新增:InformationDialog 两侧的
 // Previous/Next。每个 OfferTableRow/OfferCard 只认识自己这一行/张,不知道
@@ -1006,6 +1121,25 @@ const cardGridStyle = computed(() =>
    的 margin-top */
 .offer-dashboard__table-card {
   margin-top: 20px;
+}
+
+/* 2026-09-08(第三次)table view 表头+所有数据行现在是同一个 CSS Grid
+   (display:grid),列宽由 `grid-template-columns`(内联样式,值来自上面
+   `tableGridColumns` computed)统一定义——之前两次尝试都还是让
+   OfferTableHeader/OfferTableRow 各自用 flex 独立算一次宽度(先是
+   shrink 不一致、然后是 grow 在两个独立容器里可能算出不同的浮点像素
+   值),宽屏或换算条件一变就又对不齐。现在整个 grid 的列宽只算一次,
+   表头和每一行的 8 个 cell 都是这同一个 grid 的直接子项(靠
+   OfferTableHeader.vue/OfferTableRow.vue 的 grid-layout prop 切换成
+   display:contents 把自己"拆开"),不可能再出现"两边分别算出不同结果"
+   这类问题。`minmax(Npx, Nfr)` 让每列窄屏时不缩过 Figma 核实的自然
+   宽度(不够宽靠这个容器 overflow-x:auto 横向滚动)、宽屏时按同一个
+   比例一起变宽(还原你之前明确要过的"Dashboard 全屏 presentation 时
+   表格要跟着变宽"这个效果)。完整根因分析见
+   fragments/OfferDashboard/notes.md 同名条目。 */
+.offer-dashboard__table-scroll {
+  display: grid;
+  overflow-x: auto;
 }
 
 /* Private Lane/Pagination 行本身贴着上面 20px 留白,下面到表头之间是

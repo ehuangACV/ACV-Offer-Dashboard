@@ -432,3 +432,51 @@ InformationDialog后New应该消失"这条功能时发现数字/chip 都没变�
 这个漏洞。已经改成 handleHoverButtonClick(hoverButtons.infoLink)（这个
 label 永远是"More Info"，不会等于'Remove From List'，走的还是原来的
 dialogOpen=true 分支，只是多了 emit('viewed') 这一步）。
+
+## 2026-09-08 修复真实bug：窄屏下每一列的 flex-shrink 改成0
+
+你反馈窄屏下 table view 内容都乱掉、表头和数据行左对齐不上。根因是这
+一行每一列原来 `flex: N 1 Npx`（shrink=1），和 `OfferTableHeader.vue`
+各自独立收缩，收缩幅度天然不一致（这一行的图片格里有真实64px图片，
+表头对应格是空div，最小宽度不一样），完整分析见
+`fragments/OfferTableHeader/notes.md` 同名条目。
+
+改法：这一行每一列的 shrink 全部改成0（`flex: N 0 Npx`），永远保持
+Figma 核实过的宽度，不再靠挤宽度适应窄屏——不够宽时靠
+`OfferDashboard.vue` 新增的 `.offer-dashboard__table-scroll` 容器横向
+滚动。这也顺带修好了"里程・VIN被挤到换行、撑破写死的80px行高"这个
+视觉问题，因为列宽不会再被压到比原始内容更窄。
+
+## 2026-09-08（第二次）宽屏又对不齐 + Dealer/Auction ID 列太宽
+
+上一条只改了 shrink，没动 flex-grow——宽屏时每列还是按比例被拉宽，
+浮点比例分配在这一行和 `OfferTableHeader.vue` 两个独立的flex容器里
+未必算出完全一致的像素值，又出现对不齐；拉宽本身也让 Auction-ID-only
+模式（isMultiDealer=false，只有ID+Type徽标）显得太宽。完整根因分析和
+改法见 `fragments/OfferDashboard/notes.md` 同名条目，这里只记录这个
+文件自己的改动：grow 全部归零（`flex: 0 0 Npx`）；Dealer/Auction ID
+这一列新增 `--dealer--wide` 修饰类，`isMultiDealer` 为真时才叠加上去
+把宽度从140px覆盖回200px（`OfferTableHeader.vue` 也做了同样的切换，
+判断条件是同一个prop，不会出现两边不同步的情况）。
+
+## 2026-09-08（第三次）改成 CSS Grid，不再自己独立算 flex 宽度
+
+上一条的根因分析还是不完整——即使 grow/basis 数值两边完全一样，这一行
+和 `OfferTableHeader.vue` 仍然是两个各自独立的 flex 容器，各自单独算
+一次"该变多宽"，算出来的浮点像素值在某些宽度下可能有细微差异，这才是
+反复对不齐的真正原因；而且上一条把 grow 归零也带来一个副作用——宽屏下
+表格不再跟着变宽了，这其实是之前明确要过的功能。完整根因分析和改法见
+`fragments/OfferDashboard/notes.md` 同名条目，这里只记录这个文件自己
+的改动：
+- 新增 `gridLayout` prop（默认 false，不影响这一行自己独立的
+  Playground 预览页，那边还是走原来的 flex 布局）；为 true 时给根
+  元素加 `--grid` 修饰类，`display: contents`，把 8 个 `__cell` 交给
+  外层 `OfferDashboard.vue` 的 grid 摆放，不再是自己的 flex 子项。
+- `display: contents` 会让 `.offer-table-row` 自己不再生成盒子，原来
+  画在"整行"这个盒子上的默认白底 + hover 变蓝背景色不会再生效——补了
+  `.offer-table-row__cell { background:#FFFFFF; }` 和
+  `.offer-table-row:hover .offer-table-row__cell { background:#F0F8FF; }`
+  两条画在每个 cell 上的等价规则；flex 模式下这两条和原来画在行上的
+  规则叠加，视觉上没有差别。用浏览器实测确认过 `:hover` 状态本身不
+  依赖盒子——hover 变色、CTA 按钮组切换（`.offer-table-row:hover
+  .offer-table-row__ctas`）这两个效果在 grid 模式下都正常触发。

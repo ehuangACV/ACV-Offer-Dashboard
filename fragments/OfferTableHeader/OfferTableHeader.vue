@@ -70,10 +70,10 @@
   ═══════════════════════════════════════════════════════════
 -->
 <template>
-  <div class="offer-table-header">
+  <div class="offer-table-header" :class="{ 'offer-table-header--grid': gridLayout }">
     <div class="offer-table-header__cell offer-table-header__cell--photo" />
 
-    <div class="offer-table-header__cell offer-table-header__cell--dealer">
+    <div class="offer-table-header__cell offer-table-header__cell--dealer" :class="{ 'offer-table-header__cell--dealer--wide': isMultiDealer }">
       <div class="offer-table-header__title-row">
         <span class="offer-table-header__title">{{ isMultiDealer ? 'Dealer Name' : 'Auction ID' }}</span>
         <button
@@ -188,6 +188,16 @@ defineProps({
   isMultiDealer: {
     type: Boolean,
     default: true
+  },
+  // 2026-09-08(第三次)新增:OfferDashboard.vue 的 table view 现在把
+  // 表头+所有数据行放进同一个 CSS Grid 共享列宽(细节见该文件 notes.md
+  // 同名条目),这个组件需要从"自己是一个 flex 容器"变成"直接把 8 个
+  // cell 交给外层 grid 摆放"——用 display:contents 做到,只在这个 prop
+  // 为 true 时才切换,默认 false 不影响这个组件自己独立的 Playground
+  // 预览页(order 30,那边还是原来的 flex 布局,不受外层 grid 影响)。
+  gridLayout: {
+    type: Boolean,
+    default: false
   }
 })
 defineEmits(['sort'])
@@ -225,6 +235,18 @@ onBeforeUnmount(() => {
   font-family: 'Roboto', sans-serif;
 }
 
+/* 2026-09-08(第三次)display:contents 让这个元素自己不再生成盒子,直接
+   把下面 8 个 __cell 交给外层 OfferDashboard.vue 的
+   `.offer-dashboard__table-scroll`(display:grid)摆放——列宽完全由那个
+   共享的 grid-template-columns 决定,不再是这个组件自己按 flex 算一次。
+   这个类只在 gridLayout=true 时才加,独立 Playground 预览(gridLayout
+   默认 false)还是走上面 .offer-table-header 原来的 flex 布局,不受影响。
+   下面每个 __cell--* 的 flex:声明留着没删——它们对 grid item 完全不
+   生效(浏览器直接忽略),继续只服务于 flex 模式,两套逻辑互不干扰。 */
+.offer-table-header--grid {
+  display: contents;
+}
+
 /* 2026-08 按你的要求覆盖:表头上下 padding 改成 12px。之前
    `height:50px` 是 Figma 核实过的固定值(节点 6837:16185),配的是
    `padding:5px 16px 0`——如果还保留这个固定高度,新的12px上下padding
@@ -256,14 +278,51 @@ onBeforeUnmount(() => {
    Update 列原来是 flex:1(吃掉表格剩余空间,算出来正好是 1122-897=225),
    这里把 225 也写成明确的 basis/grow,让它跟其它列用同一套比例缩放
    逻辑,不再是"跟其他列不同规则"的特例。 */
-.offer-table-header__cell--photo { flex: 78 1 78px; padding: 0; }
-.offer-table-header__cell--dealer { flex: 200 1 200px; }
-.offer-table-header__cell--vehicle { flex: 197 1 197px; }
-.offer-table-header__cell--time { flex: 124 1 124px; }
-.offer-table-header__cell--estimate { flex: 123 1 123px; }
-.offer-table-header__cell--sent { flex: 85 1 85px; }
-.offer-table-header__cell--received { flex: 90 1 90px; }
-.offer-table-header__cell--update { flex: 225 1 225px; min-width: 0; }
+/* 2026-09-08 按你的要求:table view 在窄屏下不再靠 flex-shrink 把每一列
+   越挤越小(那样会导致文字被迫换行、和数据行的收缩幅度不一致,表头和
+   数据行的列错位——细节和根因分析见 fragments/OfferDashboard/notes.md
+   同名条目)。把 shrink 值从 1 改成 0,每一列永远保持自己 Figma 核实过的
+   宽度;容器不够宽时靠外层新增的 `.offer-dashboard__table-scroll`
+   横向滚动,不再让列宽跟着挤。
+   同时把 photo/vehicle 两列的宽度从 78px/197px 改成 80px/195px,和
+   OfferTableRow.vue 对应列的真实宽度对齐(之前这两个数值和数据行不一致,
+   只是刚好在不缩放时靠 padding 数值抵消掉了,没有真的出过问题,但这次
+   顺手修正,避免以后又对不上)。 */
+/* 2026-09-08(第二次)你反馈调宽屏幕之后(比如全屏预览)对齐又出问题、
+   Auction ID 列看起来太宽——根因是每一列的 flex-grow 之前一直没有改
+   (只把 shrink 改成了0),grow 保留着原来"按比例一起变宽"的数值,容器
+   比1122px更宽时,每一列还是会按各自的 grow 比例被拉宽,拉宽的量在
+   浮点数比例分配下不一定能在表头和数据行两个独立的 flex 容器里算出
+   完全一致的像素值,宽屏、列数多的时候这个误差会被放大,看起来又"没对
+   齐"了;而且拉宽本身也会让本来不需要那么宽的列(比如只显示 Auction
+   ID+Type 徽标,不需要200px)显得空得很不自然。改成 grow:0——每一列
+   永远精确等于自己的 basis 像素值,不会再有比例分配和浮点误差,天然
+   保证和数据行像素级对齐;多出来的空间就留白在表格右边,不再拉伸列宽。 */
+.offer-table-header__cell--photo { flex: 0 0 80px; padding: 0; }
+/* 2026-09-08(第二次)按你的要求:Auction ID(isMultiDealer=false)这个
+   模式下内容只有 "264578"+Type 徽标(最宽的 "In Negotiation" 徽标实测
+   92px),200px 这个宽度是给"Dealer Name"模式(可能是长经销商名)准备的,
+   Auction ID 模式下明显太宽,改成按 isMultiDealer 切换宽度:
+   isMultiDealer 时保持 200px 不变,否则收窄到 140px(92px 徽标 + 左右
+   各16px padding=124px,留一点余量)。OfferTableRow.vue 同一列也做了
+   同样的切换,细节见该文件同一处注释。 */
+.offer-table-header__cell--dealer { flex: 0 0 140px; }
+.offer-table-header__cell--dealer--wide { flex: 0 0 200px; }
+/* 2026-09-08:OfferTableRow.vue 的 Vehicle 列本来就是左14px/右35px的
+   非对称 padding(核实自节点 7448:9966,见该文件同一处注释),不是常见
+   的左右各16px——这里补上同样的 padding-left:14px,让表头"Vehicle"
+   文字和数据行车辆标题文字的左边缘真正对齐(之前两边都是默认16px,
+   表头本身没错,但和数据行的真实14px不一致,差2px)。 */
+.offer-table-header__cell--vehicle { flex: 0 0 195px; padding-left: 14px; }
+.offer-table-header__cell--time { flex: 0 0 124px; }
+.offer-table-header__cell--estimate { flex: 0 0 123px; }
+.offer-table-header__cell--sent { flex: 0 0 85px; }
+.offer-table-header__cell--received { flex: 0 0 90px; }
+/* 2026-09-08:OfferTableRow.vue 的 Update 列左 padding 是 24px(2026-09-02
+   就有的既有数值,"保持24px不变"),不是其它列常见的16px——这里补上同样
+   的 padding-left:24px,让表头"Update"文字和数据行 New/Received chip
+   的左边缘对齐(之前两边都是默认16px,和数据行的24px差了8px)。 */
+.offer-table-header__cell--update { flex: 0 0 225px; min-width: 0; padding-left: 24px; }
 
 .offer-table-header__title-row {
   display: flex;

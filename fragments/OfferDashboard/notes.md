@@ -703,3 +703,183 @@ default（Current）。OfferCard.vue 里的 `badgeStyle` prop 被整个删掉了
 - 删掉了 Playground 里 OfferDashboard 控件面板上的"In Negotiation badge
   style" segmented 控件,以及 `fragments/OfferDashboard/controls.js`
   里同名的定义。
+
+## 2026-09-08 修复真实bug：Remove From List 之后 filter chip 数字/New 徽标没跟着减少
+
+你反馈:点某个 Declined 的 deal 的 "Remove From List"、确认移除之后,
+筛选栏上 "Declined (4)" 这个数字没有变,再点这个 chip 反而变成
+"No vehicles match the current filters."——数字和实际内容对不上。
+
+根因:`matchesFilters()`(决定表格/卡片实际显示哪些行)一直有
+`if (removedAuctionIds.value.includes(row.auctionId)) return false` 这条
+判断,但算 chip 数字的 `dealerFilteredRows` 只按 `dealerFilter` narrow,
+没有把已经移除的行也排除掉——两处判断"现在还剩下哪些行"用的基准数据
+不一致,不是 `filters` computed 本身的算法写错了。
+
+同一类问题还存在于 `isRowNew()`(Buying/Selling tab 旁边的红点数字、
+sidebar "Offers" 的 badge 都靠它算)——移除一条还是 New 状态的 deal 之后
+这两处数字也不会跟着减少,一起修了。
+
+改法:
+- `dealerFilteredRows` 追加一层 `.filter((r) =>
+  !removedAuctionIds.value.includes(r.auctionId))`,让
+  negotiationCount/makeOfferCount/newCount/receivedCount/sentCount/
+  declinedCount 这六个 chip 数字全部自动跟着同步(它们都是从
+  `dealerFilteredRows` 算出来的,改一处全修好,不用逐个改)。
+- `isRowNew()` 追加 `&& !removedAuctionIds.value.includes(row.auctionId)`,
+  `buyingNewCount`/`sellingNewCount`/`hasAnyNewDeal`/sidebar
+  `offersCount` 都靠这个函数算,同样一处改全修好。
+
+## 2026-09-08 修复真实bug：table view 的 Pagination 完全没接上真实翻页
+
+你反馈 table view 上下的 Pagination(Rows per page 下拉 + 上一页/下一页
+箭头)点击后没有反应,内容显示和选择也不对应——一页永远显示全部,不管
+选 10/20/50/100 哪个。
+
+根因:这两处 Pagination 之前从来没有真的接上任何状态。顶部靠一个写死
+的 `topPagination = { hasPrevPage:false, hasNextPage:true }` 常量(点了
+也没用,这个对象不会变);底部 `:viewing-count`/`:total-count` 两个都
+传 `visibleRows.length`(所以文案永远是"Viewing N out of N",不是真的
+"当前页/总数");`rows-per-page`/`prev`/`next` 这三个事件从头到尾都没
+被监听过。`ResultsToolbar`(顶部这份 Pagination 的包装层)也只透传了
+`hasPrevPage`/`hasNextPage`,没有透传 `rows-per-page`,细节见
+`fragments/ResultsToolbar/notes.md` 同名条目。
+
+改法:
+- 新增 `rowsPerPage`(默认10)+ `currentTablePage`(默认1)两个 ref。
+- `totalTablePages`/`clampedTablePage` 两个 computed——`clampedTablePage`
+  在筛选结果变少、`currentTablePage` 还停在一个已经不存在的页码时自动
+  夹回最后一页,不需要在每个可能改变筛选结果的地方都手动重置页码
+  (下面几处显式重置到第1页,是"换了筛选条件应该从第一页看起"这个更好
+  的体验,不是为了防止越界——越界已经靠这个 computed 保底了)。
+- `hasPrevTablePage`/`hasNextTablePage`/`tableViewingCount` 三个
+  computed,分别喂给两处 Pagination 的箭头禁用状态和"Viewing X out of
+  Y"文案(X 现在是"这一页实际显示了几条",Y 是"筛选后总共几条",不再
+  是同一个数字)。
+- **没有把 `<OfferTableRow v-for="... in rowsWithDealerMode">` 的数据源
+  换成分页切片**,而是加了 `v-show="isRowOnCurrentTablePage(i)"` 只隐藏
+  不在当前页的行——换数据源会让 `handleTablePrev`/`handleTableNext`
+  (InformationDialog 的 Previous/Next,按 `rowsWithDealerMode` 的绝对
+  下标算相邻行)算错相邻行,`v-show` 保留了原来的绝对下标,不需要改这
+  两个函数。InformationDialog 走 `Teleport` 渲染到 body,不受它所在的
+  行是否被 `v-show` 隐藏影响,所以"当前页只显示这一页,但 Previous/
+  Next 仍可以跨页切到相邻 deal"这两件事互不冲突。
+- 换 tab(`handleTabSelect`)、应用/清空 Dealership 筛选
+  (`handleApplyDealerFilter`/`@clear-dealer`)、点筛选 chip
+  (`@filter-change`)、点 "Clear"(`handleClearFilters`)这几个会改变
+  筛选结果的地方,都加了 `currentTablePage.value = 1`。
+- **tile view 没有动**——`rowsAsCards` 还是直接用 `visibleRows`,不受
+  上面这套分页影响,按你的要求只改 table view。
+
+## 2026-09-08 修复真实bug：窄屏下 table view 内容乱掉、表头和数据行左对齐不上
+
+你反馈窄屏（截图给的例子是屏幕宽1235px）下 table view 内容全乱了，
+而且强调"表头文字要和数据行内容左对齐"这一点很重要，现在完全没对上。
+
+根因（完整分析见 `fragments/OfferTableHeader/notes.md` 同名条目）：
+`OfferTableHeader`/`OfferTableRow` 是两个各自独立的 flex 容器，之前每
+一列都是 `flex: N 1 Npx`（允许收缩），窄屏时各自按自己内容的最小宽度
+收缩——表头的图片格是空 `<div>`，数据行的图片格里有真实64px图片，两边
+收缩幅度不一样，越窄越对不上；里程・VIN 这类没做限制的文字被挤到换行，
+撑破写死的80px行高，看起来"整个乱了"。另外表头和数据行本来就有几处
+历史遗留的像素级数值不一致（图片78px vs 80px，Vehicle 197px vs
+195px，Vehicle/Update 两列的左padding也不一致），这些在不收缩时刚好被
+其它数值抵消掉，一收缩就暴露出来。
+
+改法：
+- `OfferTableHeader.vue`/`OfferTableRow.vue` 每一列的 flex-shrink 全部
+  改成0，不再靠挤宽度"适应"窄屏容器，永远保持 Figma 核实过的宽度；
+  同时修正了图片/Vehicle 两列的宽度不一致（改成和数据行一样的80px/
+  195px）和 Vehicle/Update 两列的左padding不一致（分别补上14px/24px，
+  和数据行对齐）。
+- 新增 `.offer-dashboard__table-scroll` 容器，只包住表头+数据行这一块
+  （不包括上面的 `ResultsToolbar` 和下面的底部 Pagination——这两个本来
+  就能正常适应任意宽度，不需要跟着一起滚动），设 `overflow-x:auto`。
+  容器比表格的自然宽度（1122px）窄的时候，这一块自己横向滚动，不会再
+  把列越挤越小、越挤越错位。
+- 用浏览器实测：把 Playground 的"Screen width"滑块调到1238px，逐列用
+  `getBoundingClientRect()` 核对表头文字和数据行内容的左边缘，现在7列
+  （Dealer/Vehicle/Time/Reserve Price/Sent/Received/Update）全部像素
+  级对齐；横向滚动之后所有列依然保持对齐；tile view 不受影响。
+
+## 2026-09-08（第二次）宽屏下又对不齐 + Auction ID 列太宽
+
+上一条修完之后，你反馈把屏幕调宽（比如全屏预览，截图给的是1518px）
+之后对齐又出问题了，而且 Auction ID 列的宽度明显太宽（"264578" +
+Type 徽标旁边空出一大块）。
+
+根因：上一条只把每一列的 `flex-shrink` 从1改成0，**没有改
+`flex-grow`**——grow 还是原来那套"按比例一起变宽"的数值（比如
+dealer列grow=200,update列grow=225）。容器比表格自然宽度（1122px）更
+宽的时候（宽屏/全屏预览），每一列还是会按各自的grow比例被拉宽,这带来
+两个问题：(1) `OfferTableHeader`/`OfferTableRow`是两个独立的flex容器,
+拉宽时的浮点比例分配在两边未必能算出完全一致的像素值,列越多、拉得
+越宽,误差越容易被看见,又变成"没对齐";(2) 拉宽本身会让本来不需要
+200px的Auction-ID-only模式(只有"264578"+Type徽标,最宽的"In
+Negotiation"徽标实测92px)显得空得很不自然。
+
+改法：
+- 所有列的 `flex-grow` 也改成0(现在是 `flex: 0 0 Npx`,shrink/grow都
+  是0)——每一列永远精确等于自己的 basis 像素值,不会再有比例分配和
+  浮点误差,天然保证和数据行像素级对齐;宽屏时多出来的空间就留白在
+  表格右边,不再拉伸列宽。
+- Dealer/Auction ID 这一列的宽度改成按 `isMultiDealer` 切换:
+  `isMultiDealer=true`(Dealer Name模式,经销商名可能很长)保持200px
+  不变;`isMultiDealer=false`(Auction ID模式,只有ID数字+Type徽标)
+  收窄到140px(92px徽标+左右各16px padding=124px,留一点余量)。
+  `OfferTableHeader.vue`/`OfferTableRow.vue` 都新增了一个
+  `--dealer--wide` 修饰类,`isMultiDealer` 为真时才叠加上去覆盖回
+  200px,两个组件的判断条件完全一致(同一个prop),不会出现表头收窄了
+  但数据行没收窄的情况。
+- 用浏览器实测：Buying tab(isMultiDealer实际生效为false)下8列
+  （连photo一起）表头和数据行的left/width现在完全相等；切到Selling+
+  Multi-dealer开启后Dealer列正确变回200px、依然对齐；把屏幕宽度从
+  800px（触发横向滚动）到1518px（比自然宽度更宽）来回测试，两种情况
+  下对齐都成立。
+
+## 2026-09-08（第三次）宽屏下"表格应该自动变宽"这个功能被误删了
+
+上一条为了修对齐,把 grow 也归零了,代价是宽屏下表格不再跟着变宽——但
+这其实是你之前明确要过的功能("Dashboard 全屏 presentation 时表格要
+跟着变宽",2026-08 就有的既有要求)。你反馈截图（全屏预览，2558px）
+下表格没有变宽，退回到固定1122px不动。
+
+真正的根因（这次才想清楚）：`OfferTableHeader`/`OfferTableRow` 是两个
+各自独立的 flex 容器，即使两边的 flex-grow/basis 数值完全一样，"该
+变宽多少"这个比例分配计算也是各自独立算一次——多数情况下算出来的
+浮点像素值凑巧一致，但某些宽度下两边可能会有1px级别的差异，这才是
+"改了又改还是偶尔对不齐"的真正原因，不是某个数值没改对。
+
+真正稳妥的解法：把表头+所有数据行改成同一个 CSS Grid 共享列宽——宽度
+只由外层 grid 算一次，所有参与这个 grid 的行天然拿到完全一致的列宽，
+不可能出现"两边分别算出不同结果"这类问题（这是灵活性和稳定性上比
+flex 更适合"多个独立组件需要对齐成表格"这个场景的地方）。
+
+改法：
+- 新增 `tableGridColumns` computed，产出 `grid-template-columns` 的值，
+  每列写成 `minmax(Npx, Nfr)`——Npx 是 Figma 核实过的自然宽度（窄屏时
+  的下限，不够宽靠 `.offer-dashboard__table-scroll` 的 overflow-x:auto
+  横向滚动），Nfr 让宽屏时每列按同一个比例一起变宽（还原"全屏铺满"
+  这个效果，等价于之前 flex-grow:N 想做的事，只是现在整个 grid 只算
+  一次）。Dealer/Auction ID 列的宽度还是按 `effectiveMultiDealer` 在
+  140px/200px 之间切换，逻辑不变。
+- `.offer-dashboard__table-scroll` 改成 `display:grid`，列宽绑定这个
+  computed 算出来的值（`:style="{ gridTemplateColumns: tableGridColumns }"`）。
+- `OfferTableHeader.vue`/`OfferTableRow.vue` 各自新增 `gridLayout` prop
+  （默认 false，不影响它们各自独立的 Playground 预览页，那边还是原来
+  的 flex 布局）——为 true 时把组件自己的根元素改成 `display:contents`
+  （细节和为什么这样安全见两个组件各自的 CSS 注释），把它们的 8 个
+  `__cell` 直接"交给"外层这个 grid 摆放，不再是各自的 flex 子项。
+  `OfferDashboard.vue` 在 table view 给两个组件都传了这个 prop。
+- `display:contents` 会让元素自己不再生成盒子，`OfferTableRow.vue` 原来
+  画在"整行"这个盒子上的背景色（默认白底+hover变蓝）不会再生效，改成
+  同时画在每个 `__cell` 上（细节见该文件 notes.md 同名条目）——用浏览器
+  实测确认过 `:hover` 状态本身不依赖盒子，hover 变色/CTA按钮切换这两个
+  依赖 `.offer-table-row:hover` 的效果在 grid 模式下都正常工作。
+- 用浏览器实测：屏幕宽度调到2558px（超过自然宽度），表格整体跟着变宽
+  到2058px，8列（含photo）表头和数据行的 left/width 用
+  `getBoundingClientRect()` 核对完全相等；调到800px（触发横向滚动）
+  依然完全对齐；Selling+Multi-dealer开启后Dealer列正确变宽到200px且
+  对齐；hover 一行确认背景变色、CTA按钮组切换、`:hover` 状态匹配都
+  正常；两个组件各自独立的 Playground 预览页（order 30/31，flex 模式）
+  渲染不受影响。
