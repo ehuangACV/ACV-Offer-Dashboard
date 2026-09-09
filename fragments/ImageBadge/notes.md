@@ -62,3 +62,21 @@ Dialog v1 的徽标)没有任何视觉影响——只有一个文字节点的时
 干脆不传 `ring` 了(细节见
 [InformationDialog/notes.md](../InformationDialog/notes.md)),这条 class
 现在只有 Card 图片上的徽标在用,改动范围是安全的、不会影响到别处。
+
+## 2026-09-09 去掉 Make Offer 徽标的边框
+
+你反馈本地服务器(不是 Figma)上 Card 图片区的 Make Offer 徽标不该有
+stroke,要求去掉。之前这条 `border: 1px solid #8D9199` 是对照真实 Figma
+数据核实过的(见 `OfferCard/notes.md` 里 source_of_truth 那段,节点
+7441:5248/5254,和表格版本 `OfferTypeBadge` 的 Make Offer 数值完全
+一致)——不是这次改错的,是你现在明确要求推翻这条已核实的数值,已经
+按你的要求去掉。
+
+`.image-badge--make-offer` 删掉 `border` 那一行,`padding` 从
+`2px 6px` 改成 `3px 6px`(上下各加1px,补偿去掉的1px边框,让总高度还是
+24px,跟旁边的 dealer 徽标保持一致,不会因为去掉边框变矮2px)。
+
+表格版本 `OfferTypeBadge` 的 Make Offer 同一条边框也一起去掉了,细节见
+[OfferTypeBadge/notes.md](../OfferTypeBadge/notes.md)——你说"去掉stroke
+for make offer badge"没有限定只改卡片,两处数值本来就是特意保持一致的,
+只改一处会造成新的不一致。

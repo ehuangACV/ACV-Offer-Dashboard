@@ -99,6 +99,31 @@ label`)长度不一样,有的换行有的没换行,导致下面的 `OfferCard` �
 ## 2026-09-02 mirror sync fix: added missing counterpartyTimestamp
 While fixing OfferCard's cardVersion default (see OfferCard/notes.md), found that component-playground.html's hand-duplicated buyerItems/sellerItems arrays for this gallery were missing the counterpartyTimestamp field on all three "Received" entries (the real .vue file does not have this gap since it spreads the actual mock objects directly via props: buyerReceivedExample etc.). Added the matching values from fragments/OfferCard/mock.js so the v2 line1-timestamp now renders correctly here too.
 
+## 2026-09-09 修复真实bug：Buyer 视角不该显示 dealership badge
+
+你反馈这个总览页的 Buyer 卡片上出现了 dealership badge(比如 "CarMax
+Boston"),不合理。根因:这里 `<OfferCard v-bind="item.props" />` 只是
+把 `mock.js` 每个 mock 的原始 props 铺给 `OfferCard`,14 个 mock 都只写
+了 `dealerName`,没有一个设了 `isMultiDealer`,所以全部落到 `OfferCard`
+自己的默认值 `isMultiDealer: true`。徽标显示条件是 `dealerName &&
+isMultiDealer`,两边都满足,不管顶部切到 Buyer 还是 Seller,dealer 徽标
+都会显示——这个页面的 Buyer/Seller 切换根本没跟"是否显示 dealer 徽标"
+挂钩。
+
+这跟真正的 `OfferDashboard.vue` 不一致——那边有
+`effectiveMultiDealer = isMultiDealer开关 && 当前在 Selling tab`
+这层派生(细节见 `OfferDashboard/notes.md`),Buying tab 下无论开关状态
+都强制是 false,所以 Buying 卡片从来不显示 dealer 徽标。这个总览页缺了
+这层派生,是这个文件自己的逻辑漏洞。
+
+改法:`<OfferCard v-bind="item.props" :is-multi-dealer="role === 'seller'" />`
+——用页面本来就有的 `role`(buyer/seller)直接当作
+"是否显示 dealer 徽标"的开关,买家视角强制 false、卖家视角强制
+true,不需要再引入一个独立的 isMultiDealer 开关(这个页面本来就没有
+"多经销商 on/off"这个额外维度,只有 buyer/seller 一个维度)。浏览器实测:
+Buyer 视角 7 张卡片 dealer 徽标数量是 0,切到 Seller 视角变成 7,无
+console 报错。
+
 ## 2026-09-02 追加：In Negotiation / Make Offer 分成两个独立分组
 按你的要求："in negotiation 和make offer是2类型，要分开"——每个 item
 新增 type 字段（值直接取自它自己 mock 里的 offerType，不是重新分类），

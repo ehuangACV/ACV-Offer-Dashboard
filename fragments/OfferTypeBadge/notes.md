@@ -52,3 +52,20 @@ hidden=false)里,这个包裹框本身带边框:1px 色
 #8D9199**。这也提醒了一个通用教训:核实一个 chip/badge 的样式时,不能
 只看它自己的节点,还要看它在真实使用场景里的父节点有没有额外叠加样式。
 
+## 2026-09-09 按你的要求去掉 Make Offer 的边框
+
+上面"更正记录二"核实出来的 `#8D9199` 边框虽然是真实核实过的 Figma 数值,
+但你现在明确要求"去掉stroke for make offer badge"——这是你直接给的新
+指示,推翻了之前核实过的数值,不是我又发现了新的 Figma 数据或者之前
+核实错了。
+
+`.offer-type-badge--make-offer` 删掉 `border` 那一行,`padding` 从共用
+基础样式的 `4px 6px` 改成单独覆盖的 `5px 6px`(上下各加1px,补偿去掉的
+1px边框,总高度还是 22px,不会因为去掉边框比 In Negotiation 矮2px)。
+In Negotiation 的白色边框没有动,你只提到 Make Offer。
+
+同一条边框在卡片视图的 `ImageBadge.vue`(`.image-badge--make-offer`)
+里也一起去掉了,因为两处数值本来就是特意保持一致的("和表格版本完全
+一致",见 `OfferCard.vue` 的 source_of_truth),细节见
+[ImageBadge/notes.md](../ImageBadge/notes.md)。
+

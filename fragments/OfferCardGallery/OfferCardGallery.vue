@@ -72,7 +72,7 @@
       <div class="offer-card-gallery__grid">
         <div v-for="item in group.items" :key="item.label" class="offer-card-gallery__item">
           <div class="offer-card-gallery__label">{{ item.label }}</div>
-          <OfferCard v-bind="item.props" />
+          <OfferCard v-bind="item.props" :is-multi-dealer="role === 'seller'" />
         </div>
       </div>
     </div>

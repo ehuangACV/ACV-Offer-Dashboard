@@ -86,8 +86,7 @@ defineProps({
 .image-badge--make-offer {
   background: #FFFFFF;
   color: #0E0E0F;
-  border: 1px solid #8D9199;
-  padding: 2px 6px;
+  padding: 3px 6px;
 }
 
 .image-badge--dealer {

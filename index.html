@@ -369,7 +369,7 @@
   /* -- OfferTypeBadge -- */
   .offer-type-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 6px; border-radius: 4px; font-size: 12px; line-height: 12px; letter-spacing: 0.4px; white-space: nowrap; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   .offer-type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border: 1px solid #FFFFFF; }
-  .offer-type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; }
+  .offer-type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; padding: 5px 6px; }
 
   /* -- Pagination -- */
   /* 2026-08 重做:ACV Pagination(Claude Design 项目 09c-pagination.card.html） */
@@ -478,7 +478,7 @@
   .image-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; border-radius: 8px; box-sizing: border-box; }
   .image-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; padding: 3px 6px; }
   .image-badge--in-negotiation-ring { padding: 3px 6px; outline: 1px solid #FFFFFF; outline-offset: 0; }
-  .image-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; padding: 2px 6px; }
+  .image-badge--make-offer { background: #FFFFFF; color: #0E0E0F; padding: 3px 6px; }
   .image-badge--dealer { backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; text-align: right; padding: 3px 10px; }
 
   /* -- OfferCard -- */
@@ -1951,7 +1951,7 @@
       '<div class="offer-card-gallery__grid">' +
       '<div v-for="item in group.items" :key="item.label" class="offer-card-gallery__item">' +
       '<div class="offer-card-gallery__label">{{ item.label }}</div>' +
-      '<OfferCard v-bind="item.props" />' +
+      '<OfferCard v-bind="item.props" :is-multi-dealer="role === \'seller\'" />' +
       '</div></div></div></div>',
     setup: function () {
       var role = ref('buyer');
