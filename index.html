@@ -451,6 +451,7 @@
      OfferTableHeader/OfferTableRow 的 CSS),窄屏下改成这个容器自己横向
      滚动,细节见 fragments/OfferDashboard/notes.md 同名条目 */
   .offer-dashboard__table-scroll { display: grid; overflow-x: auto; }
+  .offer-dashboard__table-bottom { position: sticky; bottom: 0; z-index: 1; border-top: 1px solid #DCDFE8; }
   /* Private Lane行→表头16px(节点7448:9916 "Table" gap-16) */
   /* 2026-09-02:table-top 那一条工具条(Viewing N results / Private
      Lane+Pagination / table-tile 切换按钮)已经抽成独立组件
@@ -460,11 +461,11 @@
   .offer-dashboard__empty { padding: 40px 16px; text-align: center; color: #757575; font-size: 14px; }
 
   /* -- ResultsToolbar -- */
-  .results-toolbar { display: flex; align-items: center; justify-content: flex-end; min-height: 76px; padding: 0 0 16px; }
-  .results-toolbar__spacer { flex: 1; display: flex; align-items: center; }
+  .results-toolbar { display: flex; align-items: center; justify-content: flex-end; padding: 16px 0; }
+  .results-toolbar__spacer { flex: 1; display: flex; align-items: center; gap: 16px; }
   .results-toolbar__private-lane { display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #545454; }
   .results-toolbar__private-lane-icon { flex-shrink: 0; }
-  .results-toolbar__viewing-text { flex: 1; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
+  .results-toolbar__viewing-text { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
   .results-toolbar__view-toggle { display: flex; align-items: center; }
   /* 2026-09-02 按 Figma node 7320:22065("segmented button") 重做:padding
      驱动尺寸(10px/12px),不再写死 32x32px 正方形,细节见
@@ -2340,19 +2341,14 @@
   // fragments/ResultsToolbar/notes.md,这里只做逐字镜像。
   var ResultsToolbar = defineComponent({
     name: 'ResultsToolbar',
-    components: { Pagination: Pagination },
     props: {
       viewMode: { type: String, default: 'table' },
-      resultsCount: { type: Number, default: 0 },
-      hasPrevPage: { type: Boolean, default: false },
-      hasNextPage: { type: Boolean, default: true },
-      rowsPerPage: { type: [String, Number], default: 10 }
+      resultsCount: { type: Number, default: 0 }
     },
-    emits: ['update:viewMode', 'update:rowsPerPage', 'prev', 'next'],
+    emits: ['update:viewMode'],
     template:
       '<div class="results-toolbar">' +
-      '<div v-if="viewMode === \'tile\'" class="results-toolbar__viewing-text">Viewing {{ resultsCount }} results</div>' +
-      '<template v-else><div class="results-toolbar__spacer"><span class="results-toolbar__private-lane"><svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div><Pagination :rows-per-page="rowsPerPage" :has-prev-page="hasPrevPage" :has-next-page="hasNextPage" @update:rows-per-page="$emit(\'update:rowsPerPage\', $event)" @prev="$emit(\'prev\')" @next="$emit(\'next\')" /></template>' +
+      '<div class="results-toolbar__spacer"><span v-if="viewMode !== \'table\'" class="results-toolbar__viewing-text">Viewing {{ resultsCount }} results</span><span v-if="viewMode === \'table\'" class="results-toolbar__private-lane"><svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>Private Lane</span></div>' +
       '<div class="results-toolbar__view-toggle">' +
       '<button type="button" class="results-toolbar__view-toggle-btn" :class="{ \'results-toolbar__view-toggle-btn--active\': viewMode === \'tile\' }" aria-label="Grid view" @click="$emit(\'update:viewMode\', \'tile\')" v-html="gridIcon"></button>' +
       '<button type="button" class="results-toolbar__view-toggle-btn" :class="{ \'results-toolbar__view-toggle-btn--active\': viewMode === \'table\' }" aria-label="List view" @click="$emit(\'update:viewMode\', \'table\')" v-html="listIcon"></button>' +
@@ -2393,8 +2389,7 @@
       '<DealershipFilterDropdown :is-multi-dealer="effectiveMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
       '</div>' +
       '<div class="offer-dashboard__table-card">' +
-      '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" ' +
-      ':rows-per-page="rowsPerPage" :has-prev-page="hasPrevTablePage" :has-next-page="hasNextTablePage" @update:rows-per-page="handleTableRowsPerPageChange" @prev="handlePrevTablePage" @next="handleNextTablePage" />' +
+      '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" />' +
       '<template v-if="viewMode === \'table\'">' +
       '<div class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }">' +
       '<OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +

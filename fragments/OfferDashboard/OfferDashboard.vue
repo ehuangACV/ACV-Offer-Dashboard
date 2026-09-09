@@ -283,12 +283,6 @@
           <ResultsToolbar
             v-model:view-mode="viewMode"
             :results-count="visibleRows.length"
-            :rows-per-page="rowsPerPage"
-            :has-prev-page="hasPrevTablePage"
-            :has-next-page="hasNextTablePage"
-            @update:rows-per-page="handleTableRowsPerPageChange"
-            @prev="handlePrevTablePage"
-            @next="handleNextTablePage"
           />
 
           <template v-if="viewMode === 'table'">
@@ -1220,6 +1214,23 @@ const cardGridStyle = computed(() =>
 .offer-dashboard__table-scroll {
   display: grid;
   overflow-x: auto;
+}
+
+/* 2026-09-09 按你的要求:去掉顶部 Pagination 之后,翻页只能靠这条底部
+   Pagination,行数一多就要滚到最底才能点下一页——改成 sticky 贴底,滚动
+   时始终留在可视区底部,不用滚到底。position:sticky 不脱离文档流(跟
+   position:fixed 不一样,不用另外算 sidebar 偏移量),没滚到这条本来的
+   位置之前就是正常跟着走,滚过去之后才贴住。<Pagination> 组件自己已经有
+   白底(见 fragments/Pagination/notes.md),不会露出底下滚过的表格行;
+   这里加 z-index 只是保证它盖在表格行上面,不被滚动内容压到下面。
+   顶部补了一条浅灰色 border-top(#DCDFE8,跟 OfferTableHeader 底部描边
+   同一个颜色),贴底浮起来的时候能和上面滚过去的表格行分出一条边界,
+   不是紧贴着content的裸露白块。 */
+.offer-dashboard__table-bottom {
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid #DCDFE8;
+  z-index: 1;
 }
 
 /* Private Lane/Pagination 行本身贴着上面 20px 留白,下面到表头之间是

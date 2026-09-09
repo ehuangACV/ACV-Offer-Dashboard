@@ -1117,3 +1117,39 @@ Received）全部改成固定像素宽度（不再用 `fr`），宽屏时不再�
 `OfferTableHeader.vue`/`OfferTableRow.vue` 同步改了。用浏览器实测：
 三列表头和数据行的宽度精确等于102/97/105px，`left`/`width` 依然完全
 对齐，无 console 报错。
+
+## 2026-09-09 顶部去掉 Pagination，底部改成 sticky
+
+你反馈顶部 Rows per page + 上一页/下一页和底部的 Pagination 完全重复，
+只留底部一套；顶部改成两种视图都显示 "Viewing N results"，table 视图
+再在旁边加上 🔑 Private Lane（原来 Private Lane 只在有顶部 Pagination
+的 table 视图出现，"Viewing N results" 只在没有 Pagination 的 tile
+视图出现，两者互斥,现在改成两个东西可以同时出现）。接口/CSS 层面的改动
+细节都记在 [ResultsToolbar/notes.md](../ResultsToolbar/notes.md)，这里
+只记这个文件自己的两处改动：
+
+1. `<ResultsToolbar>` 的调用去掉了 `:rows-per-page`/`:has-prev-page`/
+   `:has-next-page`/`@update:rows-per-page`/`@prev`/`@next` 这六个绑定
+   （对应的 prop/emit 已经从 `ResultsToolbar.vue` 里删掉了，不是只是不传
+   而已）——`handleTableRowsPerPageChange`/`hasPrevTablePage`/
+   `hasNextTablePage`/`handlePrevTablePage`/`handleNextTablePage` 这几个
+   状态/方法本身没有删，底部 `<Pagination>` 还在用同一套。
+2. 你提到的顾虑——顶部翻页去掉之后，表格行数一多，翻页按钮要滚到最底
+   才能点到——改法是给 `.offer-dashboard__table-bottom`（包着底部
+   `<Pagination>` 的那个 div）加 `position:sticky; bottom:0; z-index:1`。
+   选 `sticky` 不选 `fixed` 是因为 `sticky` 不脱离文档流，不用像 `fixed`
+   那样额外算左侧 sidebar 的宽度/偏移量才能对齐；`<Pagination>` 组件
+   自己已经有白底（见其 notes.md），滚动时不会露出底下滚过去的表格行。
+   浏览器里实测过（"Expand to full page" 真实页面，不是 Playground 窄
+   frame）：往下滚动表格行时，这条 Pagination 一直贴在视口底部不动，
+   没有滚到最底才出现的问题；切回 tile 视图/切换回 table 视图都正常，
+   无 console 报错。
+
+## 2026-09-09（第二次）sticky Pagination 上边缘加一条浅灰色分隔线
+
+你反馈这条 sticky 的底部 Pagination 滚动时浮在表格行上面，想要上边缘
+加一条浅灰色的线把它和上面滚过去的内容分开。给
+`.offer-dashboard__table-bottom` 加了 `border-top: 1px solid #DCDFE8`
+——颜色沿用 `OfferTableHeader` 底部描边同一个 `#DCDFE8`，不是另外挑的
+新颜色。浏览器实测过，往下滚动时这条线跟着 sticky 容器一起贴在视口
+底部，无 console 报错。

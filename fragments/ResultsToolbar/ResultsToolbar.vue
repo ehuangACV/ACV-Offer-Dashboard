@@ -5,10 +5,16 @@
   group: 数据表格 (Offers Table)
   order: 35
   description: >
-    表格/卡片网格上方那一条工具条:tile 视图显示 "Viewing N results"
-    文字,table 视图显示 "🔑 Private Lane" 标签 + 顶部 Pagination(只有
-    rows-per-page 下拉和上一页/下一页箭头,不显示 "Viewing X out of Y"
-    文案),右边永远是切换 table/tile 视图的 pill 分段按钮。
+    表格/卡片网格上方那一条工具条:tile 视图显示 "Viewing N results" 文字,
+    table 视图改成显示 "🔑 Private Lane" 标签(不显示 "Viewing N
+    results"),右边永远是切换 table/tile 视图的 pill 分段按钮。
+    【2026-09-09】按你的要求去掉了顶部的 Pagination(rows-per-page 下拉+
+    上一页/下一页箭头)——和底部的 Pagination 功能重复,只留底部这一套,
+    细节和取舍见 fragments/OfferDashboard/notes.md 同名条目。
+    【2026-09-09 第二次】你又要求 table 视图不要显示 "Viewing N
+    results",只留 Private Lane——两者现在变回互斥,只是判断条件反过来了
+    (原来 Private Lane 依附于"有没有顶部 Pagination"，现在两个都各自
+    独立依附于 viewMode)。
   path: fragments/ResultsToolbar/ResultsToolbar.vue
   source_of_truth: >
     2026-09-02 从 fragments/OfferDashboard/OfferDashboard.vue 里原样抽出来
@@ -28,27 +34,15 @@
 -->
 <template>
   <div class="results-toolbar">
-    <div v-if="viewMode === 'tile'" class="results-toolbar__viewing-text">
-      Viewing {{ resultsCount }} results
+    <div class="results-toolbar__spacer">
+      <span v-if="viewMode !== 'table'" class="results-toolbar__viewing-text">Viewing {{ resultsCount }} results</span>
+      <span v-if="viewMode === 'table'" class="results-toolbar__private-lane">
+        <svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454">
+          <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
+        </svg>
+        Private Lane
+      </span>
     </div>
-    <template v-else>
-      <div class="results-toolbar__spacer">
-        <span class="results-toolbar__private-lane">
-          <svg class="results-toolbar__private-lane-icon" width="16" height="16" viewBox="0 0 24 24" fill="#545454">
-            <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z" />
-          </svg>
-          Private Lane
-        </span>
-      </div>
-      <Pagination
-        :rows-per-page="rowsPerPage"
-        :has-prev-page="hasPrevPage"
-        :has-next-page="hasNextPage"
-        @update:rows-per-page="$emit('update:rowsPerPage', $event)"
-        @prev="$emit('prev')"
-        @next="$emit('next')"
-      />
-    </template>
 
     <div class="results-toolbar__view-toggle">
       <button
@@ -78,52 +72,25 @@
 </template>
 
 <script setup>
-import Pagination from '../Pagination/Pagination.vue'
-
 defineProps({
   // 'tile' | 'table'
   viewMode: { type: String, default: 'table' },
-  // tile 模式下 "Viewing N results" 用的数字
-  resultsCount: { type: Number, default: 0 },
-  // table 模式下顶部 Pagination 用的两个箭头状态——顶部 Pagination 本来
-  // 就不显示 "Viewing X out of Y" 文案(showViewingText 一直是 false,
-  // 这是 OfferDashboard 原来就有的设定,抽出来之后原样保留,没有做成
-  // 可配置的 prop,因为目前只有这一种用法)
-  hasPrevPage: { type: Boolean, default: false },
-  hasNextPage: { type: Boolean, default: true },
-  // 2026-09-08 新增:之前这里只透传 hasPrevPage/hasNextPage 给内部的
-  // <Pagination>,没有透传 rows-per-page 的值和它的 update 事件,导致
-  // 顶部这份下拉菜单点了选项之后完全没反应(内部 Pagination 组件的
-  // rows-per-page 一直用它自己的默认值 10,从来没被父组件的真实状态
-  // 覆盖过)。细节见 fragments/OfferDashboard/notes.md 同名条目。
-  rowsPerPage: { type: [String, Number], default: 10 }
+  // "Viewing N results" 用的数字,table/tile 两种视图现在都会显示
+  resultsCount: { type: Number, default: 0 }
 })
-defineEmits(['update:viewMode', 'update:rowsPerPage', 'prev', 'next'])
+defineEmits(['update:viewMode'])
 </script>
 
 <style scoped>
-/* 2026-08(原本在 OfferDashboard.vue 里,2026-09-02 抽出来时原样带过来）
-   你指出 Private Lane / Pagination / 切换按钮三个要一行横向居中对齐:
-   排查发现这一行的高度是由内容自己撑出来的(table 视图里 Pagination
-   组件本身高 60px,比切换按钮/文字都高,算上 padding-bottom 16px 这一行
-   自然高度是 76px;tile 视图里没有 Pagination,自然高度缩到只剩切换按钮
-   32px+padding 16px=48px),用同一个 align-items:center 的话,行高一变,
-   居中位置就跟着变。改成给这一行本身钉死 min-height:76px(按 table 视图
-   的自然总高设,不是内容区的 60px——量的是 Pagination 组件在这一行里
-   实际撑出来的高度,不是 Figma 核实数值,如果以后 Pagination 组件本身
-   改高度需要回来同步这个值),table/tile 两种模式下这一行的高度都固定
-   一样高,align-items:center 可以放心统一对所有子元素生效——三个元素
-   之间保持居中对齐,行高也不再随模式切换变化,按钮位置也不会再跳。这个
-   组件自己的 `<style scoped>` 没有全局 `box-sizing:border-box` reset
-   (不像 component-playground.html 那边有 `* { box-sizing:border-box }`),
-   所以这里额外显式加了 `box-sizing:border-box`,让 `min-height:76px` 在
-   两边算出来的是同一个数值(含 padding 的整个盒子)。 */
+/* 2026-09-09 去掉顶部 Pagination 之后,table/tile 两种视图这一行的内容
+   高度天然就一样了(都只是文字+图标这一行),不再需要之前那条靠
+   min-height:76px 强制拉齐的 hack(细节见旧版 git history),直接用
+   align-items:center 加一点 padding 就够。 */
 .results-toolbar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 76px;
-  padding: 0 0 16px;
+  padding: 16px 0;
   box-sizing: border-box;
 }
 
@@ -131,6 +98,7 @@ defineEmits(['update:viewMode', 'update:rowsPerPage', 'prev', 'next'])
   flex: 1;
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .results-toolbar__private-lane {
@@ -148,7 +116,6 @@ defineEmits(['update:viewMode', 'update:rowsPerPage', 'prev', 'next'])
 }
 
 .results-toolbar__viewing-text {
-  flex: 1;
   font-size: 14px;
   line-height: 21px;
   letter-spacing: 0.25px;

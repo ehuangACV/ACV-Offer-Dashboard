@@ -65,3 +65,45 @@ vue` 这次把这两个 emit 和新增的 `update:rows-per-page` 都接上了真
 的 `:rows-per-page`/`@update:rows-per-page`，纯粹的透传，这个组件自己
 不维护任何分页状态（页码/rowsPerPage 的真实状态都在 `OfferDashboard`
 那一层）。
+
+## 2026-09-09 去掉顶部 Pagination，table 视图改成"Viewing X results + Private Lane"并排
+
+你反馈顶部这一条（Rows per page 下拉+上一页/下一页箭头）和底部的
+Pagination 功能完全重复，只留底部一套，顶部改成和 tile 视图一样显示
+"Viewing N results"，只是 table 视图要在旁边再加上 🔑 Private Lane 这个
+标签（之前 Private Lane 和顶部 Pagination 是绑在一起的，"Viewing N
+results" 只在 tile 视图出现，两者互斥）。
+
+改法：
+- 模板不再用 `v-if="viewMode==='tile'"`/`v-else` 分两条完全独立的路径，
+  改成两种视图共用同一个 `results-toolbar__spacer` 容器：里面永远显示
+  "Viewing N results"，Private Lane 标签加一个
+  `v-if="viewMode === 'table'"`，跟着显示在它旁边（`gap:16px`）。
+- 删掉了不再使用的 `hasPrevPage`/`hasNextPage`/`rowsPerPage` 这三个
+  prop 和 `update:rowsPerPage`/`prev`/`next` 这三个 emit（顶部不再有
+  `<Pagination>`，这些接口只是死代码了），以及内部对 `<Pagination>`
+  组件的 import/使用。
+- 上面 2026-09-02 那条注释里"三个元素固定 76px 行高保持居中对齐"的
+  hack（专门为了补偿顶部 table 视图 Pagination 组件比 tile 视图内容更高
+  这件事）现在不再需要——两种视图的内容高度天然一样高了（都只是一行
+  文字+图标），`.results-toolbar` 直接用 `padding:16px 0` +
+  `align-items:center`，不用再钉死 `min-height:76px`。
+- `.results-toolbar__viewing-text` 原来有 `flex:1`（因为它以前是
+  `.results-toolbar` 的直接子元素，靠 flex:1 把自己推开占满剩余空间）；
+  现在挪到 `.results-toolbar__spacer` 里面和 Private Lane 并排，`flex:1`
+  移到 `spacer` 自己身上，`viewing-text` 本身不再需要这个属性，删掉了。
+
+底部 Pagination 改成 `position:sticky` 贴底显示，这样"顶部翻页只留一套"
+之后不会出现"表格行数一多，翻页按钮要滚到最底才能点到"的问题，细节见
+[OfferDashboard/notes.md](../OfferDashboard/notes.md) 同名条目。
+
+## 2026-09-09（第二次）table 视图不再显示 "Viewing N results"，只留 Private Lane
+
+上一条改完之后你又要求：table 视图去掉 "Viewing N results"，只留
+🔑 Private Lane；card 视图不变，还是只显示 "Viewing N results"。两者
+变回互斥，只是判断条件反过来了——原来 `viewing-text` 是不管什么视图都
+显示、`private-lane` 只在 `viewMode==='table'` 才加；现在改成
+`viewing-text` 加一个 `v-if="viewMode !== 'table'"`（只在 tile 视图
+显示），`private-lane` 的 `v-if="viewMode === 'table'"` 没有变。浏览器
+实测：切到 table 视图只剩 Private Lane，切到 card/tile 视图变成
+"Viewing 15 results"、没有 Private Lane，无 console 报错。
