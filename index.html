@@ -452,6 +452,8 @@
      滚动,细节见 fragments/OfferDashboard/notes.md 同名条目 */
   .offer-dashboard__table-scroll { display: grid; overflow-x: auto; }
   .offer-dashboard__table-bottom { position: sticky; bottom: 0; z-index: 1; border-top: 1px solid #DCDFE8; }
+  .offer-dashboard__table-hscroll-shadow { position: sticky; z-index: 1; overflow-x: auto; overflow-y: hidden; height: 17px; }
+  .offer-dashboard__table-hscroll-spacer { height: 1px; }
   /* Private Lane行→表头16px(节点7448:9916 "Table" gap-16) */
   /* 2026-09-02:table-top 那一条工具条(Viewing N results / Private
      Lane+Pagination / table-tile 切换按钮)已经抽成独立组件
@@ -2397,13 +2399,16 @@
       '<div class="offer-dashboard__table-card">' +
       '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" />' +
       '<template v-if="viewMode === \'table\'">' +
-      '<div class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }">' +
+      '<div ref="tableScrollRef" class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }" @scroll="handleTableScroll">' +
       '<OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
       '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" v-show="isRowOnCurrentTablePage(i)" grid-layout :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
       ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" @viewed="markSeen(row.auctionId)" />' +
       '</div>' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
-      '<div class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="tableViewingCount" :total-count="rowsWithDealerMode.length" :rows-per-page="rowsPerPage" :has-prev-page="hasPrevTablePage" :has-next-page="hasNextTablePage" @update:rows-per-page="handleTableRowsPerPageChange" @prev="handlePrevTablePage" @next="handleNextTablePage" /></div>' +
+      '<div v-if="showHScrollShadow" ref="hScrollShadowRef" class="offer-dashboard__table-hscroll-shadow" :style="{ bottom: paginationHeight + \'px\' }" @scroll="handleShadowScroll">' +
+      '<div class="offer-dashboard__table-hscroll-spacer" :style="{ width: tableScrollWidth + \'px\' }"></div>' +
+      '</div>' +
+      '<div ref="tableBottomRef" class="offer-dashboard__table-bottom"><Pagination show-viewing-text :viewing-count="tableViewingCount" :total-count="rowsWithDealerMode.length" :rows-per-page="rowsPerPage" :has-prev-page="hasPrevTablePage" :has-next-page="hasNextTablePage" @update:rows-per-page="handleTableRowsPerPageChange" @prev="handlePrevTablePage" @next="handleNextTablePage" /></div>' +
       '</template>' +
       '<template v-else>' +
       '<div class="offer-dashboard__card-grid" :style="cardGridStyle">' +
@@ -2461,17 +2466,65 @@
       function handleRepositionOnScroll() {
         if (dealershipDropdownOpen.value) updateDealerPopoverPosition();
       }
+      // 2026-09-10 影子横向滚动条,细节见 fragments/OfferDashboard/notes.md
+      // 同名条目,这里只做逐字镜像。
+      var tableScrollRef = ref(null);
+      var hScrollShadowRef = ref(null);
+      var tableBottomRef = ref(null);
+      var tableScrollWidth = ref(0);
+      var showHScrollShadow = ref(false);
+      var paginationHeight = ref(0);
+      var isSyncingHScroll = false;
+      function handleTableScroll() {
+        if (isSyncingHScroll || !tableScrollRef.value || !hScrollShadowRef.value) return;
+        isSyncingHScroll = true;
+        hScrollShadowRef.value.scrollLeft = tableScrollRef.value.scrollLeft;
+        isSyncingHScroll = false;
+      }
+      function handleShadowScroll() {
+        if (isSyncingHScroll || !tableScrollRef.value || !hScrollShadowRef.value) return;
+        isSyncingHScroll = true;
+        tableScrollRef.value.scrollLeft = hScrollShadowRef.value.scrollLeft;
+        isSyncingHScroll = false;
+      }
+      function updateHScrollMeasurements() {
+        if (!tableScrollRef.value) return;
+        tableScrollWidth.value = tableScrollRef.value.scrollWidth;
+        showHScrollShadow.value = tableScrollRef.value.scrollWidth > tableScrollRef.value.clientWidth;
+        if (tableBottomRef.value) paginationHeight.value = tableBottomRef.value.offsetHeight;
+      }
+      var hScrollResizeObserver = null;
+      watch(viewMode, function () {
+        nextTick(function () {
+          if (!tableScrollRef.value) return;
+          if (hScrollResizeObserver) {
+            hScrollResizeObserver.disconnect();
+            hScrollResizeObserver.observe(tableScrollRef.value);
+            if (tableBottomRef.value) hScrollResizeObserver.observe(tableBottomRef.value);
+          }
+          updateHScrollMeasurements();
+        });
+      });
+      watch(tableGridColumns, function () { nextTick(updateHScrollMeasurements); });
       onMounted(function () {
         document.addEventListener('mousedown', handleOutsideClick);
         document.addEventListener('keydown', handleEscapeKey);
         window.addEventListener('scroll', handleRepositionOnScroll, { passive: true, capture: true });
         window.addEventListener('resize', handleRepositionOnScroll);
+
+        window.addEventListener('resize', updateHScrollMeasurements);
+        hScrollResizeObserver = new ResizeObserver(updateHScrollMeasurements);
+        if (tableScrollRef.value) hScrollResizeObserver.observe(tableScrollRef.value);
+        if (tableBottomRef.value) hScrollResizeObserver.observe(tableBottomRef.value);
+        nextTick(updateHScrollMeasurements);
       });
       onBeforeUnmount(function () {
         document.removeEventListener('mousedown', handleOutsideClick);
         document.removeEventListener('keydown', handleEscapeKey);
         window.removeEventListener('scroll', handleRepositionOnScroll, { capture: true });
         window.removeEventListener('resize', handleRepositionOnScroll);
+        window.removeEventListener('resize', updateHScrollMeasurements);
+        if (hScrollResizeObserver) hScrollResizeObserver.disconnect();
       });
       // 2026-09-03:Buying/Selling 各扩到15行,前10行(5+5)原样不动,
       // 后面各自新增10行,细节见 fragments/OfferTableRow/mock.js 文件头
@@ -2790,6 +2843,9 @@
         dealerPopoverStyle: dealerPopoverStyle, toggleDealershipDropdown: toggleDealershipDropdown,
         hasAnyNewDeal: hasAnyNewDeal,
         setTableRowRef: setTableRowRef, setCardRef: setCardRef,
+        tableScrollRef: tableScrollRef, hScrollShadowRef: hScrollShadowRef, tableBottomRef: tableBottomRef,
+        tableScrollWidth: tableScrollWidth, showHScrollShadow: showHScrollShadow, paginationHeight: paginationHeight,
+        handleTableScroll: handleTableScroll, handleShadowScroll: handleShadowScroll,
         handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
         handleCardPrev: handleCardPrev, handleCardNext: handleCardNext,
         handleRemoveFromList: handleRemoveFromList, markSeen: markSeen, effectiveMultiDealer: effectiveMultiDealer,

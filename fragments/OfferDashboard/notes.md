@@ -1221,3 +1221,65 @@ max值，而不是尽量多开列，容器宽度不是420px整数倍时，多出
 到只能塞1列的宽度（466px）时，卡片精确封顶420px、左右各留出等宽空白，
 不再无限撑宽；收到330px下限附近时卡片跟着收窄，没有再变窄。无
 console 报错。
+
+## 2026-09-10 排查横向滚动条"被藏起来"——先后两次修法，第一次撤销重做
+
+你反馈屏幕小到一定程度，table view 的横向滚动条会被藏起来。第一次
+诊断（已撤销）：以为是原生横向滚动条（画在 `.offer-dashboard__
+table-scroll` 自己盒子最下面）被 sticky 的底部 Pagination 盖住，加了
+`margin-bottom:24px` 当缓冲区。你反馈"完全不对还是老样子"，用 `git
+checkout` rewind 掉了。
+
+重新排查（用浏览器把 `.pg-stage` 这个滚动容器的 `scrollTop` 从0调到
+最大，每一步量 `getBoundingClientRect()`）才发现真正的问题：只要
+Pagination 后面没有更多内容、且页面比可视区域高，Pagination 几乎从
+一开始（还没滚动）就已经贴底悬浮，并且在几乎整个滚动过程中都固定在
+同一个屏幕位置不动；而每一行数据（80px高）在下面正常随着滚动滑动，
+滚动过程中总会有某一行正好卡在这条线上被压掉一截——不只是滚动条，
+连内容本身都会被压，只有滚到最顶或最底两个极端才短暂避开。24px 缓冲
+区只能解决"滚到最底"这一个点，解决不了滚动过程中持续出现的这个问题，
+所以第一次的修法完全没用。
+
+进一步跟你确认后，发现你要的其实不是"修复被盖住"，而是**横向滚动条的
+出现时机不对**——你希望不管纵向滚动到哪，横向滚动条都应该像底部
+sticky 的 Pagination 一样随时可见、随时能用，不需要先滚到底。这次改法
+细节见下面新的一条记录。
+
+## 2026-09-10（第二次）新增"影子"横向滚动条（sticky，随时可见）
+
+跟你讨论了两个方向，你选了方案A：
+- **方案A（采用）**：额外做一条"影子"横向滚动条——一个高17px、
+  `overflow-x:auto` 的 div，里面塞一个宽度等于真实表格 `scrollWidth`
+  的空 spacer，自己会长出一条原生横向滚动条（拖拽/点击跳转这些原生
+  交互全部免费拿到，不用自己写拖拽逻辑）；这个 div 用
+  `position:sticky`，`bottom` 动态绑定成 Pagination 实际渲染高度，贴在
+  Pagination 正上方，两者作为一组一起贴底；用一小段 JS 把它的
+  `scrollLeft` 和真实 `table-scroll` 的 `scrollLeft` 双向同步。
+- 方案B（备选，未采用）：把表格包进一个固定高度的容器，内部自己滚
+  （零JS，纯CSS），但会把"整页跟着内容一起滚"这个现有体验整个改掉，
+  改动范围更大。
+
+实现细节：
+- 新增 `tableScrollRef`/`hScrollShadowRef`/`tableBottomRef` 三个模板
+  ref，`tableScrollWidth`/`showHScrollShadow`/`paginationHeight` 三个
+  状态由 `updateHScrollMeasurements()` 统一算。
+- `isSyncingHScroll` 这个标志防止"同步对方→对方触发scroll事件→又同步
+  回自己"的双向监听死循环。
+- 用 `ResizeObserver` 盯 `table-scroll`/`table-bottom` 两个元素的盒子
+  尺寸变化；另外单独 `watch(tableGridColumns, ...)`——因为列宽变化
+  (比如切换 multi-dealer)有可能只改变内容的 `scrollWidth`、不改变
+  容器自己盒子的尺寸，`ResizeObserver` 不一定会因此触发，补一个专门
+  的 watch 保证列宽变化后一定会重新量一次。
+- `watch(viewMode, ...)`：table/tile 切换时 `v-if` 会把
+  `table-scroll`/`table-bottom` 整个销毁重建，`ResizeObserver` 原来
+  观察的旧元素已经不存在，需要重新 `observe` 一次新元素。
+- 只在真的有横向溢出(`scrollWidth > clientWidth`)时才渲染这条影子
+  滚动条，宽屏下（不需要横向滚动）不会多出这个元素。
+
+浏览器实测：988px窄屏下，**没有滚动纵向**（页面停在最顶部，之前这个
+状态完全看不到任何滚动条）时，影子滚动条已经清晰可见；拖动/设置影子的
+`scrollLeft` 会同步到真实表格（表格内容跟着横向滚动，截图确认列真的
+换了），反过来设置真实表格的 `scrollLeft` 也会同步回影子；切到卡片
+视图时这个元素直接不存在（`v-if` 生效），切回表格视图后宽度/存在状态
+都正确恢复；1575px宽屏下（不需要横向滚动）这个元素完全不渲染。全程无
+console 报错。

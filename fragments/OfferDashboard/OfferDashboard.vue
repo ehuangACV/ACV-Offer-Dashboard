@@ -305,7 +305,7 @@
                  窄屏(容器比表格自然宽度窄)时这个容器横向滚动;宽屏时
                  每一列按 grid-template-columns 里的 fr 比例一起变宽,不
                  影响上面的 ResultsToolbar/下面的底部 Pagination。 -->
-            <div class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }">
+            <div ref="tableScrollRef" class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }" @scroll="handleTableScroll">
               <OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
 
               <OfferTableRow
@@ -327,7 +327,29 @@
               No vehicles match the current filters.
             </p>
 
-            <div class="offer-dashboard__table-bottom">
+            <!-- 2026-09-10 按你的要求新增:"影子"横向滚动条,sticky 定位,
+                 跟底部 Pagination 用同一套逻辑——不用等整页滚到底、露出
+                 table-scroll 自己盒子最下面那条原生滚动条才能横向滚动,
+                 这条影子滚动条只要表格区域还在视野里就一直可见、随时能
+                 拖。原理:这个 div 自己也是 overflow-x:auto,里面塞一个
+                 宽度跟 table-scroll 的 scrollWidth 一样的空 spacer,自己
+                 长出一条原生横向滚动条(拖拽/点击跳转这些原生交互都是
+                 免费拿到的,不用自己写一套拖拽逻辑);用 handleTableScroll/
+                 handleShadowScroll 把它和真实 table-scroll 的 scrollLeft
+                 双向同步。只在真的有横向溢出时才显示(showHScrollShadow),
+                 sticky 的 bottom 值动态绑定成 Pagination 实际渲染高度,
+                 让它贴在 Pagination 正上方,两者作为一组一起贴底。 -->
+            <div
+              v-if="showHScrollShadow"
+              ref="hScrollShadowRef"
+              class="offer-dashboard__table-hscroll-shadow"
+              :style="{ bottom: paginationHeight + 'px' }"
+              @scroll="handleShadowScroll"
+            >
+              <div class="offer-dashboard__table-hscroll-spacer" :style="{ width: tableScrollWidth + 'px' }" />
+            </div>
+
+            <div ref="tableBottomRef" class="offer-dashboard__table-bottom">
               <Pagination
                 show-viewing-text
                 :viewing-count="tableViewingCount"
@@ -368,7 +390,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import AppHeader from '../AppHeader/AppHeader.vue'
 import Breadcrumb from '../Breadcrumb/Breadcrumb.vue'
 import SidebarNav from '../SidebarNav/SidebarNav.vue'
@@ -462,6 +484,15 @@ onMounted(() => {
   document.addEventListener('keydown', handleEscapeKey)
   window.addEventListener('scroll', handleRepositionOnScroll, { passive: true, capture: true })
   window.addEventListener('resize', handleRepositionOnScroll)
+
+  // 影子横向滚动条要用到的尺寸(表格实际内容宽度/是否溢出/Pagination
+  // 高度)都会随窗口尺寸、列宽变化,用 ResizeObserver 统一盯着这两个
+  // 元素自己的盒子尺寸变化,不用每处改动列宽的地方都手动调一次。
+  window.addEventListener('resize', updateHScrollMeasurements)
+  hScrollResizeObserver = new ResizeObserver(updateHScrollMeasurements)
+  if (tableScrollRef.value) hScrollResizeObserver.observe(tableScrollRef.value)
+  if (tableBottomRef.value) hScrollResizeObserver.observe(tableBottomRef.value)
+  nextTick(updateHScrollMeasurements)
 })
 
 onBeforeUnmount(() => {
@@ -469,6 +500,8 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleEscapeKey)
   window.removeEventListener('scroll', handleRepositionOnScroll, { capture: true })
   window.removeEventListener('resize', handleRepositionOnScroll)
+  window.removeEventListener('resize', updateHScrollMeasurements)
+  if (hScrollResizeObserver) hScrollResizeObserver.disconnect()
 })
 
 const header = {
@@ -982,6 +1015,61 @@ function setTableRowRef(el, i) {
 function setCardRef(el, i) {
   if (el) cardRefs.value[i] = el
 }
+
+// 2026-09-10 新增:横向"影子"滚动条,细节和为什么这么做见模板里这段
+// 注释旁边的 HTML 注释,这里只放实现。tableScrollWidth/showHScrollShadow
+// 由 updateHScrollMeasurements() 统一算,paginationHeight 跟着底部
+// Pagination 实际渲染的高度走(不写死数值,Pagination 自己以后改高度
+// 不用回来同步这里)。isSyncingHScroll 这个标志是防止"我同步对方 →
+// 对方触发 scroll 事件 → 又同步回我自己"这种双向监听常见的死循环。
+const tableScrollRef = ref(null)
+const hScrollShadowRef = ref(null)
+const tableBottomRef = ref(null)
+const tableScrollWidth = ref(0)
+const showHScrollShadow = ref(false)
+const paginationHeight = ref(0)
+let isSyncingHScroll = false
+
+function handleTableScroll() {
+  if (isSyncingHScroll || !tableScrollRef.value || !hScrollShadowRef.value) return
+  isSyncingHScroll = true
+  hScrollShadowRef.value.scrollLeft = tableScrollRef.value.scrollLeft
+  isSyncingHScroll = false
+}
+function handleShadowScroll() {
+  if (isSyncingHScroll || !tableScrollRef.value || !hScrollShadowRef.value) return
+  isSyncingHScroll = true
+  tableScrollRef.value.scrollLeft = hScrollShadowRef.value.scrollLeft
+  isSyncingHScroll = false
+}
+function updateHScrollMeasurements() {
+  if (!tableScrollRef.value) return
+  tableScrollWidth.value = tableScrollRef.value.scrollWidth
+  showHScrollShadow.value = tableScrollRef.value.scrollWidth > tableScrollRef.value.clientWidth
+  if (tableBottomRef.value) paginationHeight.value = tableBottomRef.value.offsetHeight
+}
+let hScrollResizeObserver = null
+// viewMode 在 table/tile 之间切换时,v-if 会把 table-scroll/table-bottom
+// 整个销毁重建,tableScrollRef/tableBottomRef 指向的是全新的元素,
+// ResizeObserver 之前观察的旧元素已经不存在了,需要重新 observe 一次
+// 新元素,不然切回 table 视图之后这条影子滚动条会停在上一次的尺寸不动。
+watch(viewMode, () => {
+  nextTick(() => {
+    if (!tableScrollRef.value) return
+    if (hScrollResizeObserver) {
+      hScrollResizeObserver.disconnect()
+      hScrollResizeObserver.observe(tableScrollRef.value)
+      if (tableBottomRef.value) hScrollResizeObserver.observe(tableBottomRef.value)
+    }
+    updateHScrollMeasurements()
+  })
+})
+// tableGridColumns 变化(比如 multi-dealer 开关切换列宽)只会改变
+// table-scroll 内部内容的 scrollWidth,不一定会改变它自己盒子本身的
+// 尺寸——ResizeObserver 观察的是盒子尺寸变化,不保证这种"盒子大小不变、
+// 内容溢出量变了"的情况也会触发,所以单独再 watch 一次这个值,保证
+// 列宽变化后影子滚动条的宽度一定会跟着重新算。
+watch(tableGridColumns, () => nextTick(updateHScrollMeasurements))
 // 切换逻辑统一是"关掉当前这一行的对话框 → 等一个 tick(让关闭的过渡/状态
 // 先落定,避免同一时间两个对话框的 v-model 互相打架)→ 打开相邻那一行的
 // 对话框"。没有做成"直接把内容换成相邻数据、同一个对话框不关闭"的方案——
@@ -1264,6 +1352,25 @@ const cardGridStyle = computed(() =>
   bottom: 0;
   border-top: 1px solid #DCDFE8;
   z-index: 1;
+}
+
+/* 2026-09-10 按你的要求新增:"影子"横向滚动条,跟上面 table-bottom
+   用同一套 sticky 逻辑,细节见模板里那段 HTML 注释。bottom 的值由
+   JS 动态绑定成 paginationHeight(table-bottom 实际渲染高度),让它
+   贴在 Pagination 正上方,两者作为一组一起贴底,不是写死的像素值。
+   高度只留 17px(比常见的原生横向滚动条高度略宽一点点),这个 div
+   自己也是 overflow-x:auto,滚动条本身还是浏览器原生渲染的。
+   overflow-y:hidden 是防止内部 spacer 意外撑出纵向滚动。 */
+.offer-dashboard__table-hscroll-shadow {
+  position: sticky;
+  z-index: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 17px;
+}
+
+.offer-dashboard__table-hscroll-spacer {
+  height: 1px;
 }
 
 /* Private Lane/Pagination 行本身贴着上面 20px 留白,下面到表头之间是
