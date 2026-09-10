@@ -1153,3 +1153,28 @@ Received）全部改成固定像素宽度（不再用 `fr`），宽屏时不再�
 ——颜色沿用 `OfferTableHeader` 底部描边同一个 `#DCDFE8`，不是另外挑的
 新颜色。浏览器实测过，往下滚动时这条线跟着 sticky 容器一起贴在视口
 底部，无 console 报错。
+
+## 2026-09-09（第三次）filter chip 数字改成"分层联动"
+
+你反馈同时选中 Make Offer(5)+Sent(6)后表格只剩3条，但 Sent 的徽标还是
+显示6，数字和实际筛选结果对不上。这不是新bug，是之前明确讨论过的设计
+（"chip上的数字是选了会筛出多少条的提示，不跟其它chip联动"，见本文件
+2026-08"按你的要求:点filter chip"那条记录），但聊天里重新讨论后你指出
+这条规则不合理，最后确认了新规则——**In negotiation/Make Offer 和
+New/Received/Sent/Declined 不是平级关系，是父子级**：
+
+- 父级（negotiationCount/makeOfferCount）永远只按 dealerFilteredRows
+  算，不受任何 status chip 选中状态影响，两个父级chip之间也互不影响。
+- 子级（newCount/receivedCount/sentCount/declinedCount）改成基于新增的
+  `typeFilteredRows`（在 dealerFilteredRows 基础上再按当前
+  negotiation/makeOffer 的选中范围筛一遍）算——不管子级chip自己有没有
+  被选中，都用这条规则重新算。讨论过为什么不能是"子级选中后自己也跟着
+  联动变成和可见行数一样"——那样算出来的数字永远等于当前表格行数，没有
+  传递新信息，所以子级之间（比如New和Received）还是互相独立，只受父级
+  影响。
+
+浏览器实测：只选 Make Offer 时，New/Received/Sent/Declined 分别变成
+1/0(禁用)/3/2（Make Offer本身还是5，没变）；再加选 Sent 后表格剩3条，
+Make Offer 还是5、Sent 还是3，都不再和之前一样对不上；清空后单独选
+In negotiation，子级数字（4/5/3/2）也正确收窄到 In negotiation 范围内，
+Make Offer 全程没被子级或另一个父级影响过，无 console 报错。

@@ -396,3 +396,24 @@ Split The Difference（showSplitDifference）跟着放宽：原来第3个条件�
 "dealState==='received'"，现在改成直接复用`inputPanel.value==='counter'`
 （等价于"是 In Negotiation 并且当前在走 counter 流程"，覆盖了新增的
 sent 场景），不再单独判断dealState。
+
+## 2026-09-09 修复真实bug：declineProseText / Accept确认框 In Negotiation 里写死用了"offer"
+
+跟 `OfferCard.vue` 那次同一批修的（细节见
+[OfferCard/notes.md](../OfferCard/notes.md) 同名条目），你在 Offer
+Card 卡片上发现 In Negotiation 不该说"offer"该说"counter"之后，我检查
+了这个文件里所有生成文案的地方，确认有两处同一类bug：
+
+1. `declineProseText`——原来不管 `offerType` 都写死"Your offer was
+   declined by the seller."/"You declined the offer."，改成按
+   `isMakeOffer` 分支：In Negotiation 时是"...your counter was
+   declined..."/"...declined the counter."。
+2. Accept 确认框里的复选框文案"Accept Offer"——同样没判断类型，改成
+   `{{ isMakeOffer ? 'Accept Offer' : 'Accept Counter' }}`。
+
+浏览器实测：In Negotiation 的 declined 状态弹层显示"Your counter was
+declined..."，点 Accept 后复选框显示"Accept Counter"；Make Offer 的
+对应文案一个字没变，无 console 报错。
+
+**这次特意没改的（你说先不动）：** 输入面板标题"Counter offer"（固定
+搭配词组）、历史记录区兜底标题"Pending Offer"（泛指名词）。

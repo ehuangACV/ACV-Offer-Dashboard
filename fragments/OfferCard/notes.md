@@ -750,3 +750,71 @@ ring（深色底不变、加一圈白色描边+投影）这个方向不需要了
 - 顺手清理了 `fragments/OfferCard/controls.js` 里同样早就没在用的
   `showGap`/`gapAmount`/`badgeStyle` 三个控件定义（上一轮删 v1 时漏掉
   了这个文件，这次一起补上）。
+
+## 2026-09-09 修复真实bug：sent 状态 line1 人称不统一
+
+你在 "Offer Card — All States" 里看到 buyer 侧 "In Negotiation · Sent"
+这张卡显示 "Buyer countered $4,100"，反馈这样看着很奇怪——你自己刚发的
+counter，却被叫成第三人称的角色名。
+
+检查了 `messageLine1`/`messageLine2` 全部分支后确认统一规则应该是：
+**自己的动作/数字用 You/Your，对方的动作/数字用角色名（Buyer/Seller）**。
+`declined` 分支（卖家自己拒绝时用 "You declined the offer"）、
+`received` 分支（对方的动作用角色名）、`messageLine2` 的所有分支都已经
+符合这条规则——只有 `messageLine1` 的 `sent` + In Negotiation 这一条
+分支例外，用了 `isBuyer.value ? 'Buyer' : 'Seller'` 选角色名，而这个
+分支描述的偏偏永远是"你自己"刚发的counter（sent状态的定义就是"你刚做了
+动作，等对方回复"），是这个文件里唯一没跟上规则的漏网之鱼。
+
+改法：删掉这里的 `who` 判断，固定改成 `` `You countered
+${props.ownAmount}` ``。浏览器实测：buyer 侧 "In Negotiation · Sent"
+卡片变成 "You countered $4,100"，seller 侧同一状态变成 "You countered
+$4,300"，Make Offer 的 sent 分支（"Waiting on the seller/buyer"，描述
+"在等谁"不是"谁做了动作"，不受这条人称规则约束）没有变，无 console
+报错。
+
+## 2026-09-09 分隔线上下间距从12px改成8px
+
+你说的"line 的上下 padding"指的是图片下方信息区里那条分隔线
+（`.offer-card__divider`，倒计时/状态chip那一行和消息文案之间那条灰色
+横线）——这条线本身没有 padding，上下间距其实是它所在的
+`.offer-card__flex-section` 容器的 `gap`（同时控制"倒计时行→分隔线"和
+"分隔线→消息文案"两处间距），已经跟你确认过这个理解。把这个 `gap` 从
+12px 改成8px，浏览器实测两处间距都精确等于8px，无 console 报错。
+
+## 2026-09-09 修复真实bug：In Negotiation 里 declined/expired/received 三个分支写死用了"offer"
+
+你在 "Offer Card — All States" 的 In Negotiation · Declined 卡片上
+看到"Seller declined your offer"/"Your offer $16,900"，反馈 In
+Negotiation 里应该都叫 counter，不叫 offer。让我检查了 `messageLine1`/
+`messageLine2` 全部分支，确认除了上一轮已经修的 `sent` 分支
+（"You countered"）之外，还有3处同样"没判断 offerType 就写死用offer"
+的分支：
+
+1. `messageLine1` 的 `declined` 分支——不管什么类型都是"Seller declined
+   your offer"/"You declined the offer"，改成按 `isMakeOffer` 分支：
+   In Negotiation 时是"...your counter"/"...the counter"，Make Offer
+   保持"offer"不变。
+2. `messageLine2` 的 `declined`/`expired` 分支——同样问题，"Your offer
+   $X"/"Buyer offered $X" 改成 In Negotiation 时用"Your counter
+   $X"/"Buyer countered $X"，Make Offer 不变。
+3. `messageLine2` 的 `received` 分支里 `ownVerb`（原来是
+   `isBuyer.value ? 'offer' : 'counter'`）——买家侧写死用了"offer"，但
+   按业务规则（买家在 Make Offer 上永远不会 received，卖家+Make
+   Offer+received 已经被上面一行单独拦掉返回"Your reserve"），这个分支
+   实际只可能在 In Negotiation 下走到，所以直接固定成"counter"，不再
+   按买家/卖家区分。
+
+`InformationDialog.vue` 的 `declineProseText`（点卡片按钮打开的详情
+弹层里那句 prose 文案）是同一句话在弹层里的版本，同样没判断类型，
+一起改了；弹层"Accept 确认"复选框的文案"Accept Offer"也一样没判断
+类型，改成 `{{ isMakeOffer ? 'Accept Offer' : 'Accept Counter' }}`。
+
+**这次特意没改的两处（你说先不动）：**
+- 输入面板标题"Counter offer"（"counter offer"是固定搭配词组）。
+- 历史记录区没有counter时的兜底标题"Pending Offer"（泛指名词，不分类型）。
+
+浏览器实测：In Negotiation 的 7 个买家/卖家状态全部变成"counter"用词
+（"Seller declined your counter"/"You declined the counter"/"Your
+counter $X"/"Buyer countered $X"/"Accept Counter"），Make Offer 的
+7 个状态一个字没变，无 console 报错。

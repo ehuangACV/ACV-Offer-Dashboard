@@ -599,20 +599,34 @@ const stateChipLabel = computed(() => {
 // Offer 买家只能出一次价,之后只能等卖家回应,不能连续出价——所以这条
 // 改动只影响 In Negotiation,Make Offer 的"Waiting on the seller"原样
 // 保留,没有变。
-// - sent + In Negotiation:line1 = "{你自己的角色} countered {你自己
-//   最新的金额}"(是你刚发的这个counter让你进入"等待"状态,所以"最后
-//   一个动作"就是你自己的);line1 时间用 ownTimestamp。
+// - sent + In Negotiation:line1 = "You countered {你自己最新的金额}"
+//   (是你刚发的这个counter让你进入"等待"状态,所以"最后一个动作"就是
+//   你自己的);line1 时间用 ownTimestamp。
+//   【2026-09-09 更正】这里原来写的是"{你自己的角色} countered ..."
+//   (比如买家侧显示"Buyer countered"),你反馈这样看着很奇怪——你自己
+//   做的动作却被叫成第三人称的角色名。检查了 messageLine1/messageLine2
+//   全部分支后发现统一规则应该是"自己的动作/数字用You/Your,对方的
+//   动作/数字用角色名",而且 declined 分支(卖家自己拒绝时)已经是
+//   "You declined the offer"这个正确写法——sent 分支这里是唯一没跟上
+//   规则的,现在改成固定的"You countered",不再按 isBuyer 选角色名。
 // - sent + Make Offer:不变,还是 "Waiting on the seller/buyer",没有
-//   时间(等待本身没有时间点)。
-// - received:不变,line1 还是对方刚做的动作 + counterpartyTimestamp。
+//   时间(等待本身没有时间点)——这里描述的是"在等谁",不是"谁做了动作",
+//   不受上面这条人称规则约束。
+// - received:不变,line1 还是对方刚做的动作 + counterpartyTimestamp,
+//   对方的动作本来就该用角色名,符合统一规则。
 const messageLine1 = computed(() => {
   const s = props.dealState
-  if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
+  if (s === 'declined') {
+    // 2026-09-09 修复真实bug:这句原来不管 offerType 都写死用"offer"
+    // (比如 In Negotiation 也显示"declined your offer"),你反馈 In
+    // Negotiation 里应该都叫 counter 不叫 offer,已经按 isMakeOffer 分开。
+    if (isMakeOffer.value) return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer'
+    return isBuyer.value ? 'Seller declined your counter' : 'You declined the counter'
+  }
   if (s === 'expired') return `Time ran out${props.expiredAt ? ' · ' + props.expiredAt : ''}`
   if (s === 'sent') {
     if (isMakeOffer.value) return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer'
-    const who = isBuyer.value ? 'Buyer' : 'Seller'
-    return `${who} countered ${props.ownAmount}`
+    return `You countered ${props.ownAmount}`
   }
   if (s === 'received') {
     const who = isBuyer.value ? 'Seller' : 'Buyer'
@@ -649,7 +663,9 @@ function gapBetween(a, b) {
 const messageLine2 = computed(() => {
   const s = props.dealState
   if (s === 'declined' || s === 'expired') {
-    return isBuyer.value ? `Your offer ${props.ownAmount}` : `Buyer offered ${props.counterpartyAmount}`
+    // 2026-09-09 修复真实bug:同上,原来不管 offerType 都写死"offer"。
+    if (isMakeOffer.value) return isBuyer.value ? `Your offer ${props.ownAmount}` : `Buyer offered ${props.counterpartyAmount}`
+    return isBuyer.value ? `Your counter ${props.ownAmount}` : `Buyer countered ${props.counterpartyAmount}`
   }
   if (s === 'sent') {
     // Make Offer:不变,原来的"Your offer/counter + 你自己的时间"。
@@ -663,9 +679,12 @@ const messageLine2 = computed(() => {
   }
   if (s === 'received') {
     if (!isBuyer.value && isMakeOffer.value) return `Your reserve ${props.ownAmount}`
-    const ownVerb = isBuyer.value ? 'offer' : 'counter'
+    // 2026-09-09 修复真实bug:这里原来买家侧写死用"offer"（`isBuyer ?
+    // 'offer' : 'counter'`）——但走到这一行的只可能是 In Negotiation
+    // (Make Offer + 买家 不会 received，Make Offer + 卖家 received 已经
+    // 被上面那行拦掉了)，所以永远该是 counter，不需要再按买家/卖家区分。
     const gap = gapBetween(props.counterpartyAmount, props.ownAmount)
-    return gap ? `Your ${ownVerb} ${props.ownAmount} · ${gap} apart` : `Your ${ownVerb} ${props.ownAmount}`
+    return gap ? `Your counter ${props.ownAmount} · ${gap} apart` : `Your counter ${props.ownAmount}`
   }
   return ''
 })
@@ -1030,10 +1049,14 @@ function copyVin() {
   color: #55575C;
 }
 
+/* 2026-09-09 按你的要求:分隔线(.offer-card__divider)上下的间距从12px
+   改成8px——这个间距不是分隔线自己的padding,是这个容器本身的
+   flex gap,统一控制"倒计时行→分隔线"和"分隔线→消息文案"两处间距,
+   改这一个值两边会一起变。 */
 .offer-card__flex-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .offer-card__flex-row {

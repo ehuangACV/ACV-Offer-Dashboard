@@ -324,7 +324,7 @@
             <span class="info-dialog__accept-confirm-text">Accept {{ counterpartyAmount }} for the {{ vehicleTitle }}?</span>
             <label class="info-dialog__split">
               <input type="checkbox" v-model="acceptChecked">
-              <span>Accept Offer</span>
+              <span>{{ isMakeOffer ? 'Accept Offer' : 'Accept Counter' }}</span>
             </label>
           </div>
         </div>
@@ -518,7 +518,13 @@ const bubbleLabels = { bid: 'Highest Bid', counter: 'Counter', offer: 'Offer' }
 // "Offer States Logic for CC.md":这句只出现在买家看到的历史里(卖家
 // declined 是卖家自己做的动作,措辞不同)——和 OfferCard 卡片上
 // declined 状态 line1 的买家/卖家措辞区分逻辑一致
-const declineProseText = computed(() => (isBuyer.value ? 'Your offer was declined by the seller.' : 'You declined the offer.'))
+// 2026-09-09 修复真实bug:原来不管 offerType 都写死用"offer",In
+// Negotiation 时应该说 counter,已经按 isMakeOffer 分开(跟
+// OfferCard.vue 的 messageLine1 declined 分支同一次改的)。
+const declineProseText = computed(() => {
+  if (isMakeOffer.value) return isBuyer.value ? 'Your offer was declined by the seller.' : 'You declined the offer.'
+  return isBuyer.value ? 'Your counter was declined by the seller.' : 'You declined the counter.'
+})
 
 const lastCounterpartyIndex = computed(() => {
   for (let i = props.history.length - 1; i >= 0; i--) {

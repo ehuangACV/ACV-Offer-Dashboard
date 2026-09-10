@@ -529,7 +529,7 @@
   .offer-card__vin-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/18px 'Roboto', sans-serif; letter-spacing: 0.4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; z-index: 10; }
   .offer-card__copy-btn:hover .offer-card__vin-tooltip, .offer-card__copy-btn:focus-visible .offer-card__vin-tooltip, .offer-card__copy-btn.is-copied .offer-card__vin-tooltip { opacity: 1; }
   .offer-card__auction-id { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
-  .offer-card__flex-section { display: flex; flex-direction: column; gap: 12px; }
+  .offer-card__flex-section { display: flex; flex-direction: column; gap: 8px; }
   .offer-card__flex-row { display: flex; align-items: center; justify-content: space-between; }
   .offer-card__time-left { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #CC433A; }
   /* 2026-08 你指出:倒计时字体不管紧急不紧急都保持14px medium,只换
@@ -1399,7 +1399,7 @@
       '<div v-if="confirmingAccept" class="info-dialog__action-block">' +
       '<div class="info-dialog__input-panel">' +
       '<span class="info-dialog__accept-confirm-text">Accept {{ counterpartyAmount }} for the {{ vehicleTitle }}?</span>' +
-      '<label class="info-dialog__split"><input type="checkbox" v-model="acceptChecked"><span>Accept Offer</span></label>' +
+      '<label class="info-dialog__split"><input type="checkbox" v-model="acceptChecked"><span>{{ isMakeOffer ? \'Accept Offer\' : \'Accept Counter\' }}</span></label>' +
       '</div></div>' +
       '<div v-else-if="inputPanel === \'counter\' || inputPanel === \'offer\'" class="info-dialog__action-block">' +
       '<div class="info-dialog__input-panel">' +
@@ -1469,7 +1469,10 @@
         return hasCounter ? 'Negotiation History' : 'Pending Offer';
       });
       var bubbleLabels = { bid: 'Highest Bid', counter: 'Counter', offer: 'Offer' };
-      var declineProseText = computed(function () { return isBuyer.value ? 'Your offer was declined by the seller.' : 'You declined the offer.'; });
+      var declineProseText = computed(function () {
+        if (isMakeOffer.value) return isBuyer.value ? 'Your offer was declined by the seller.' : 'You declined the offer.';
+        return isBuyer.value ? 'Your counter was declined by the seller.' : 'You declined the counter.';
+      });
       var lastCounterpartyIndex = computed(function () {
         for (var i = props.history.length - 1; i >= 0; i--) {
           if (props.history[i].speaker !== props.viewerRole) return i;
@@ -1848,12 +1851,14 @@
       });
       var messageLine1 = computed(function () {
         var s = props.dealState;
-        if (s === 'declined') return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer';
+        if (s === 'declined') {
+          if (isMakeOffer.value) return isBuyer.value ? 'Seller declined your offer' : 'You declined the offer';
+          return isBuyer.value ? 'Seller declined your counter' : 'You declined the counter';
+        }
         if (s === 'expired') return 'Time ran out' + (props.expiredAt ? ' · ' + props.expiredAt : '');
         if (s === 'sent') {
           if (isMakeOffer.value) return isBuyer.value ? 'Waiting on the seller' : 'Waiting on the buyer';
-          var whoSent = isBuyer.value ? 'Buyer' : 'Seller';
-          return whoSent + ' countered ' + props.ownAmount;
+          return 'You countered ' + props.ownAmount;
         }
         if (s === 'received') {
           var who = isBuyer.value ? 'Seller' : 'Buyer';
@@ -1880,7 +1885,8 @@
       var messageLine2 = computed(function () {
         var s = props.dealState;
         if (s === 'declined' || s === 'expired') {
-          return isBuyer.value ? ('Your offer ' + props.ownAmount) : ('Buyer offered ' + props.counterpartyAmount);
+          if (isMakeOffer.value) return isBuyer.value ? ('Your offer ' + props.ownAmount) : ('Buyer offered ' + props.counterpartyAmount);
+          return isBuyer.value ? ('Your counter ' + props.ownAmount) : ('Buyer countered ' + props.counterpartyAmount);
         }
         if (s === 'sent') {
           if (isMakeOffer.value) return 'Your offer ' + props.ownAmount + ' · ' + props.ownTimestamp;
@@ -1890,9 +1896,8 @@
         }
         if (s === 'received') {
           if (!isBuyer.value && isMakeOffer.value) return 'Your reserve ' + props.ownAmount;
-          var ownVerb = isBuyer.value ? 'offer' : 'counter';
           var gap = gapBetween(props.counterpartyAmount, props.ownAmount);
-          return gap ? ('Your ' + ownVerb + ' ' + props.ownAmount + ' · ' + gap + ' apart') : ('Your ' + ownVerb + ' ' + props.ownAmount);
+          return gap ? ('Your counter ' + props.ownAmount + ' · ' + gap + ' apart') : ('Your counter ' + props.ownAmount);
         }
         return '';
       });
@@ -2552,14 +2557,26 @@
           return !dealerFilter.value.length || dealerFilter.value.indexOf(r.dealerName) !== -1;
         }).filter(function (r) { return removedAuctionIds.value.indexOf(r.auctionId) === -1; });
       });
+      // 2026-09-09 分层联动:negotiation/makeOffer 是父级(type)，
+      // New/Received/Sent/Declined 是子级(status)，子级数字改成跟着
+      // 当前父级选中范围算，细节见 fragments/OfferDashboard/notes.md 和
+      // OfferDashboard.vue 同名注释。
+      var typeFilteredRows = computed(function () {
+        var negotiation = chipFilter.value.negotiation;
+        var makeOffer = chipFilter.value.makeOffer;
+        if (!negotiation && !makeOffer) return dealerFilteredRows.value;
+        return dealerFilteredRows.value.filter(function (r) {
+          return (negotiation && r.offerType === 'in-negotiation') || (makeOffer && r.offerType === 'make-offer');
+        });
+      });
       var filters = computed(function () {
         return {
           negotiationCount: dealerFilteredRows.value.filter(function (r) { return r.offerType === 'in-negotiation'; }).length,
           makeOfferCount: dealerFilteredRows.value.filter(function (r) { return r.offerType === 'make-offer'; }).length,
-          newCount: dealerFilteredRows.value.filter(rowShowsNew).length,
-          receivedCount: dealerFilteredRows.value.filter(function (r) { return rowToDealState(r) === 'received'; }).length,
-          sentCount: dealerFilteredRows.value.filter(function (r) { return rowToDealState(r) === 'sent'; }).length,
-          declinedCount: dealerFilteredRows.value.filter(function (r) { return rowToDealState(r) === 'declined'; }).length
+          newCount: typeFilteredRows.value.filter(rowShowsNew).length,
+          receivedCount: typeFilteredRows.value.filter(function (r) { return rowToDealState(r) === 'received'; }).length,
+          sentCount: typeFilteredRows.value.filter(function (r) { return rowToDealState(r) === 'sent'; }).length,
+          declinedCount: typeFilteredRows.value.filter(function (r) { return rowToDealState(r) === 'declined'; }).length
         };
       });
       // 2026-08 按你的要求:点 filter chip / 应用 Dealership 下拉之后,

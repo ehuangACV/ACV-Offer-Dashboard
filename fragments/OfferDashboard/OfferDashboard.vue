@@ -125,8 +125,16 @@
       chipFilter/dealerFilter 联动——chip 上的数字是"选了会筛出多少条"
       的提示,不应该因为你正在筛选而自己也变,这是有意的设计选择,不是
       漏做。
+      【2026-09-09 更正,分层联动】你反馈这条规则对 New/Received/Sent/
+      Declined 这四个来说不合理——重新讨论后确认:In negotiation/Make
+      Offer 和 New/Received/Sent/Declined 不是平级的关系,前者是父级
+      (type),后者是子级(status)。父级的数字维持原样,永远不联动;
+      子级的数字改成永远跟着"当前父级选中的范围"重新算(不管子级自己
+      有没有被选中都用这条规则,不是"选中了就冻结"),细节和为什么不能
+      做成"子级选中后自己也联动"见 `filters` computed 旁边的注释。
     - `sidebar.offersCount`/`tabs.buyingCount` 同理,仍然只跟 vehicleCount
-      有关,不跟当前筛选结果联动。
+      有关,不跟当前筛选结果联动——这两个不受上面那条"分层联动"更正影响,
+      它们本来就不是 chip,没有父子级关系。
     - 筛选结果为空时,table/tile 下面会显示一行 "No vehicles match the
       current filters." 的提示,不是空白一片。
 
@@ -602,9 +610,13 @@ const tableGridColumns = computed(() => {
 // 数字却还是没筛选时的总数,对不上。现在改成基于 dealerFilteredRows
 // (见下面,只按 dealerFilter narrow 过,不按 chipFilter 本身 narrow)
 // 算数量——这样每个 chip 显示的是"在当前经销商筛选下,点这个chip会筛出
-// 多少条",不包含其它 chip(New/Received/Sent/Declined 之间、以及和
-// negotiation/makeOffer 之间)的选中状态,避免选中某个 chip 后其它 chip
-// 的数字全变成 0 这种"数了自己选的东西,把自己也算没了"的死循环。
+// 多少条",不包含其它 chip 的选中状态。
+// 【2026-09-09 更正】"不包含其它chip的选中状态"这句现在只对
+// negotiation/makeOffer(父级)还成立——New/Received/Sent/Declined 这四个
+// 子级 chip 已经改成会跟着父级(negotiation/makeOffer)的选中状态联动,
+// 细节见下面 `typeFilteredRows`/`filters` 那段注释,这里的
+// `dealerFilteredRows` 本身没有变(还是只按 dealerFilter narrow),只是
+// 它现在不是子级计数唯一的数据源了。
 // 2026-09-08 修复真实bug:你反馈点 "Remove From List" 把 deal 移除之后,
 // Declined 这个 chip 上的数字没有跟着减少,导致 chip 写着还有4条、点开
 // 却是空的("No vehicles match the current filters.")。原因是这里只按
@@ -625,13 +637,34 @@ const dealerFilteredRows = computed(() =>
 // 原始字段——细节和发现的 bug 见下面 matchesFilters 旁边的注释,这里的
 // 计数和那边的匹配逻辑必须用同一套判断,否则又会出现"chip 上写着有几条,
 // 点开却是空/或者混进了 chip 上没写的行"这种数字和内容对不上的问题。
+// 2026-09-09 按你的要求改成"分层联动":In negotiation/Make Offer 是父级
+// (type),New/Received/Sent/Declined 是子级(status),两者不是平级的
+// "谁选了都互相影响"关系:
+// - 父级(negotiationCount/makeOfferCount)永远只按 dealerFilteredRows
+//   算,不受任何 status chip 选中状态影响——不管 New/Received/Sent/
+//   Declined 选了哪个,父级的数字都不变。
+// - 子级(newCount 等四个)改成基于 typeFilteredRows(见下面,在
+//   dealerFilteredRows 基础上再套一层当前 negotiation/makeOffer 的选中
+//   范围)算,不再直接用 dealerFilteredRows——这样选中 Make Offer 之后,
+//   Sent 这类子级chip的数字会跟着收窄成"Make Offer 范围内有多少条
+//   Sent",不管 Sent 自己有没有被选中都用这条规则算,不存在"选中了就
+//   冻结数字"这回事(讨论过为什么不能是"选中的chip自己也联动变成和总数
+//   一样"——那样算出来的数字永远等于当前可见行数,没有传递新信息,细节见
+//   聊天记录,这里不重复)。
+const typeFilteredRows = computed(() => {
+  const { negotiation, makeOffer } = chipFilter.value
+  if (!negotiation && !makeOffer) return dealerFilteredRows.value
+  return dealerFilteredRows.value.filter(
+    (r) => (negotiation && r.offerType === 'in-negotiation') || (makeOffer && r.offerType === 'make-offer')
+  )
+})
 const filters = computed(() => ({
   negotiationCount: dealerFilteredRows.value.filter((r) => r.offerType === 'in-negotiation').length,
   makeOfferCount: dealerFilteredRows.value.filter((r) => r.offerType === 'make-offer').length,
-  newCount: dealerFilteredRows.value.filter(rowShowsNew).length,
-  receivedCount: dealerFilteredRows.value.filter((r) => rowToDealState(r) === 'received').length,
-  sentCount: dealerFilteredRows.value.filter((r) => rowToDealState(r) === 'sent').length,
-  declinedCount: dealerFilteredRows.value.filter((r) => rowToDealState(r) === 'declined').length
+  newCount: typeFilteredRows.value.filter(rowShowsNew).length,
+  receivedCount: typeFilteredRows.value.filter((r) => rowToDealState(r) === 'received').length,
+  sentCount: typeFilteredRows.value.filter((r) => rowToDealState(r) === 'sent').length,
+  declinedCount: typeFilteredRows.value.filter((r) => rowToDealState(r) === 'declined').length
 }))
 
 const searchValue = ref('')
