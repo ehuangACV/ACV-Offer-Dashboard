@@ -818,3 +818,69 @@ Negotiation 里应该都叫 counter，不叫 offer。让我检查了 `messageLin
 （"Seller declined your counter"/"You declined the counter"/"Your
 counter $X"/"Buyer countered $X"/"Accept Counter"），Make Offer 的
 7 个状态一个字没变，无 console 报错。
+
+## 2026-09-09 核对 Roboto Regular 14px 字体spec，修正两处 + 删掉一处死代码
+
+你给了 Figma 里 Roboto Regular 14px 的字体spec截图（行高20px/字间距
+0.1px），要求把卡片上所有 14px Regular 字重的文字都核对一遍。检查结果：
+
+- `.offer-card__message-timestamp`（主消息右边的时间）本来就是
+  20px/0.1px，符合规格，没有改。
+- `.offer-card__vehicle-sub`（mileage・VIN 那一行）和
+  `.offer-card__message-secondary`（消息第二行）原来都是21px/0.25px，
+  不符合规格，已经改成20px/0.1px。
+- `.offer-card__auction-id` 这条 CSS 规则在模板里根本没被用到（死
+  代码，实际渲染 Auction ID 的是 `.offer-card__vehicle-sub`），你确认
+  后直接删掉了整条规则。
+
+（Medium 字重的 `.offer-card__time-left`/`.offer-card__message-primary`
+之前已经核对过是20px/0.1px，符合规格，这次不在范围内，没有再动。）
+
+浏览器实测：两处改动后的 computed style 精确等于 `20px`/`0.1px`，
+`.offer-card__auction-id` 已经从渲染出的 CSS 里消失，无 console 报错。
+
+## 2026-09-09（第二次）对照 Figma Timer 组件核实倒计时颜色
+
+你给了 Figma "Timer" 组件的截图（图标+文字 flex row、align-items:
+center、gap 4px；字体 14px/Medium/行高20/字间距0.1px），要求核对
+`.offer-card__time-left`（倒计时"🕐 4h 30m Left"）。逐项核对下来：
+
+- 布局（flex/align-items:center/gap:4px）本来就跟 Figma 一致，没有
+  改。
+- 字号/字重/行高/字间距（14px/Medium/20px/0.1px）本来就跟 Figma 一致
+  ，没有改。
+- 唯一要改的是颜色：紧急态（<1小时）保持红色 `#CC433A` 不变（你确认
+  过这条规则不动）；不紧急态从灰色 `#55575C` 改成 `#0E0E0F`（跟卡片上
+  大部分正文同一个深色）。图标 `fill` 在模板里跟着文字颜色同步改了。
+- `.offer-card__time-left--grey` 这个类名没有改——虽然颜色已经不是
+  灰色了，但改名要牵动模板里的 `:class` 绑定，属于没必要的额外重构，
+  不是这次要改的范围。
+
+浏览器实测：不紧急的3个状态（4h 30m/2h 40m/18h Left）文字和图标颜色都
+精确等于 `#0E0E0F`；紧急状态（seller sent 那张"45m Left"）文字和图标
+颜色还是 `#CC433A`，没有被这次改动影响，无 console 报错。
+
+## 2026-09-09（第三次）图标颜色改回去，文字颜色不变
+
+你要求"timer icon 改回55575C"——只改图标，不紧急状态下图标 fill 从
+`#0E0E0F` 改回 `#55575C`，文字颜色保持上一条刚改的 `#0E0E0F` 不变。
+现在不紧急状态下图标和文字是两个不同颜色，这是你明确要求的，不是漏改。
+紧急状态（<1小时，红色 `#CC433A`）图标和文字继续保持同一个颜色，没有
+受影响。浏览器实测：文字 `#0E0E0F`、图标 `#55575C`，无 console 报错。
+
+## 2026-09-09（第四次）重新加回 max-width:420px（原因跟上次删掉时不一样）
+
+2026-08 曾经删过一次 `.offer-card` 的 `max-width:400px`（"没有对应的
+Figma 核实记录,是之前随手加的防御性上限",删了让卡片始终100%填满
+格子）。这次是 `OfferDashboard.vue` 卡片宽度改成330-420px范围时，你
+反馈宽屏下卡片区只开2列、右边留出一大块空白（细节和根因见
+[OfferDashboard/notes.md](../OfferDashboard/notes.md) 同名条目）——
+修法是把网格列宽换回 `minmax(330px,1fr)`（让auto-fit继续自己决定开
+几列、不留空白），"最宽420px"这个要求挪到卡片自己身上：新增
+`max-width:420px` + `justify-self:center`。
+
+跟2026-08删掉的那次不一样：这次不是随手加的防御值，是你明确要求的
+420px硬上限；配合 `justify-self:center`，列宽比420px更宽时卡片在
+格子里居中，多出来的空间变成卡片两侧对称的留白，不会整块堆在一边。
+浏览器实测过（细节见OfferDashboard/notes.md）：列宽正常时卡片≈363px
+不受影响，列宽超过420px时卡片精确封顶420px并居中，无 console 报错。

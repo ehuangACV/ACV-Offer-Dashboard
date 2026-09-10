@@ -457,7 +457,7 @@
      Lane+Pagination / table-tile 切换按钮)已经抽成独立组件
      ResultsToolbar,CSS 挪到下面单独一段(class 名字从
      offer-dashboard__* 改成 results-toolbar__*),这里不再重复定义 */
-  .offer-dashboard__card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding-bottom: 16px; }
+  .offer-dashboard__card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; padding-bottom: 16px; }
   .offer-dashboard__empty { padding: 40px 16px; text-align: center; color: #757575; font-size: 14px; }
 
   /* -- ResultsToolbar -- */
@@ -483,7 +483,7 @@
   .image-badge--dealer { backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; text-align: right; padding: 3px 10px; }
 
   /* -- OfferCard -- */
-  .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; justify-self: center; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   /* 2026-08 按你的要求新增,对照节点 7498:68345 的 V1 hover 按钮。只在
      V1 模式下 hover 才模糊——V2 的按钮也在 .offer-card__info 里面,如果
      不限定 .offer-card--v1,V2 模式 hover 卡片会把它自己一直可见的按钮
@@ -521,20 +521,19 @@
   .offer-card__info { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
   .offer-card__vehicle { display: flex; flex-direction: column; }
   .offer-card__vehicle-title { font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.15px; color: #0E0E0F; }
-  .offer-card__vehicle-sub { display: flex; align-items: center; gap: 2px; font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
+  .offer-card__vehicle-sub { display: flex; align-items: center; gap: 2px; font-size: 14px; line-height: 20px; letter-spacing: 0.1px; color: #55575C; }
   .offer-card__vin { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; color: #55575C; }
   .offer-card:hover .offer-card__vin, .offer-card__vin.is-copied { padding: 0 4px 0 0; background: #F5FBFF; color: #00558C; }
   .offer-card__copy-btn { position: relative; display: none; align-items: center; border: none; background: none; padding: 0; cursor: pointer; color: inherit; }
   .offer-card:hover .offer-card__copy-btn, .offer-card__copy-btn.is-copied { display: inline-flex; }
   .offer-card__vin-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/18px 'Roboto', sans-serif; letter-spacing: 0.4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; z-index: 10; }
   .offer-card__copy-btn:hover .offer-card__vin-tooltip, .offer-card__copy-btn:focus-visible .offer-card__vin-tooltip, .offer-card__copy-btn.is-copied .offer-card__vin-tooltip { opacity: 1; }
-  .offer-card__auction-id { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
   .offer-card__flex-section { display: flex; flex-direction: column; gap: 8px; }
   .offer-card__flex-row { display: flex; align-items: center; justify-content: space-between; }
   .offer-card__time-left { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #CC433A; }
   /* 2026-08 你指出:倒计时字体不管紧急不紧急都保持14px medium,只换
      颜色(<1小时红色#CC433A,>=1小时灰色#55575C) */
-  .offer-card__time-left--grey { color: #55575C; }
+  .offer-card__time-left--grey { color: #0E0E0F; }
   /* 2026-09 margin-left:auto,不管有没有倒计时这个兄弟节点陪着,状态chip都贴最右边 */
   .offer-card__status-pills { display: flex; align-items: center; gap: 6px; margin-left: auto; }
   .offer-card__divider { height: 1px; background: #EBEBEB; }
@@ -542,7 +541,7 @@
   .offer-card__message-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .offer-card__message-primary { font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px; color: #0E0E0F; }
   .offer-card__message-timestamp { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; color: #55575C; white-space: nowrap; flex-shrink: 0; }
-  .offer-card__message-secondary { font-size: 14px; line-height: 21px; letter-spacing: 0.25px; color: #55575C; }
+  .offer-card__message-secondary { font-size: 14px; line-height: 20px; letter-spacing: 0.1px; color: #55575C; }
 
   /* -- InformationDialog(见 fragments/InformationDialog/notes.md ——
      2026-09 整体按 "Information Dialog Template.html" + "Offer States

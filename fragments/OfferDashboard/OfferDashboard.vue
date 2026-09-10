@@ -1293,9 +1293,23 @@ const cardGridStyle = computed(() =>
    32px,不是 16px。对照节点 7432:69595 的 "Table" 容器(gap-[16px],
    只有一份 16px,不是两份叠加),删掉顶部这份重复的 padding,只留
    底部,间距交给 table-top 的 padding-bottom 单独负责,不再重复计一次 */
+/* 2026-09-09 按你的要求:卡片宽度下限从320px改成330px,上限封顶
+   420px。第一次改的时候直接把 minmax 第二个参数从 1fr 换成了固定的
+   420px(minmax(330px,420px))——这正好踩中上面那条2026-08注释早就
+   警告过的坑:"不会像 minmax 给固定最大值那样在两端留出多余空白"。
+   固定 max 之后 auto-fit 计算"能塞几列"时会优先让每列尽量接近
+   420px、而不是尽量多开列,容器宽度不是420px的整数倍时,多出来的空间
+   不会拿去多开一列,而是变成右边一大块空白(你截图看到的问题)。
+   改法:`grid-template-columns` 的 minmax 第二个参数换回 `1fr`
+   (`minmax(330px, 1fr)`),恢复"能多塞一列就多塞一列,不留大块空白"
+   这个 auto-fit 自限机制;"最宽420px"这个要求改成加在卡片自己身上——
+   `OfferCard.vue` 的 `.offer-card` 新增 `max-width:420px`,列宽本身
+   仍然可以撑到比420px更宽(比如容器刚好只能塞2列,平分下来每列比
+   420px宽),但卡片内容本身封顶420px、在列内居中,不会无限变宽,也不会
+   再出现大块空白。 */
 .offer-dashboard__card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
   gap: 16px;
   padding-bottom: 16px;
 }

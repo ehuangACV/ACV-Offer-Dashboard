@@ -736,13 +736,24 @@ function copyVin() {
    超过 400px 时把卡片卡住不再撑满,导致卡片和卡片之间看起来空隙比
    16px 更大(卡片本身没填满格子,不是 grid gap 变大了)。既然
    auto-fit 本身就会在卡片快要变太宽的时候自动多开一列、有自限效果,
-   这个额外的 400px 硬上限已经不需要,删掉让卡片始终 100% 填满格子。 */
+   这个额外的 400px 硬上限已经不需要,删掉让卡片始终 100% 填满格子。
+   【2026-09-09 重新加回 max-width,原因不一样】这次不是"防御性上限"
+   ——你明确要求卡片最宽420px。auto-fit 的自限效果只保证"不会无限
+   变宽",不保证"正好封顶420px"(比如容器刚好只能塞2列时,平分下来
+   每列可能远超420px)。这次改法和上面2026-08删掉的那次不一样:
+   `.offer-dashboard__card-grid` 的列宽还是 `minmax(330px,1fr)`(见
+   OfferDashboard/notes.md 同名条目),让 auto-fit 继续自己决定开几列、
+   不留空白;卡片自己额外加 `max-width:420px` + `justify-self:center`,
+   列宽比420px宽时卡片在格子里居中、不再继续变宽,列宽本身仍然可以
+   比420px更宽(那部分变成卡片两侧的留白,不是整块留白)。 */
 .offer-card {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
+  max-width: 420px;
+  justify-self: center;
   padding-bottom: 12px;
   background: #FFFFFF;
   border: 1px solid #E8E9EB;
@@ -967,13 +978,15 @@ function copyVin() {
   color: #0E0E0F;
 }
 
+/* 2026-09-09 按你的要求核对 Roboto Regular 14px 的字体spec(行高20px/
+   字间距0.1px),这里原来是21px/0.25px,已经改成对齐规格。 */
 .offer-card__vehicle-sub {
   display: flex;
   align-items: center;
   gap: 2px;
   font-size: 14px;
-  line-height: 21px;
-  letter-spacing: 0.25px;
+  line-height: 20px;
+  letter-spacing: 0.1px;
   color: #55575C;
 }
 
@@ -1042,13 +1055,6 @@ function copyVin() {
   opacity: 1;
 }
 
-.offer-card__auction-id {
-  font-size: 14px;
-  line-height: 21px;
-  letter-spacing: 0.25px;
-  color: #55575C;
-}
-
 /* 2026-09-09 按你的要求:分隔线(.offer-card__divider)上下的间距从12px
    改成8px——这个间距不是分隔线自己的padding,是这个容器本身的
    flex gap,统一控制"倒计时行→分隔线"和"分隔线→消息文案"两处间距,
@@ -1081,9 +1087,20 @@ function copyVin() {
    字面"1 hour or more: grey, 14px regular"把字重也一起降成了regular,
    你说不对,已经改成只换颜色不换字重,字重统一沿用
    .offer-card__time-left 本身的 500(medium)。图标颜色在模板里用
-   :fill 联动同一个判断。 */
+   :fill 联动同一个判断。
+   【2026-09-09 更正颜色,类名沿用不改】你对照 Figma Timer 组件核实过:
+   14px/Medium/行高20/字间距0.1px 这几项都已经对得上,不用改;紧急时的
+   红色#CC433A也不变;不紧急时的文字颜色改成#0E0E0F(跟卡片上大部分
+   正文同一个深色)。类名还叫"--grey"但文字颜色已经不是灰色了,没有
+   改名——改名要牵动模板里 :class 的绑定和别处可能的引用,属于没必要的
+   额外重构,不是这次要改的范围。
+   【2026-09-09 第二次,你要求 icon 改回去】图标 fill 这次单独改回了
+   #55575C(灰色),不再跟文字颜色(#0E0E0F)绑在一起——不紧急状态下
+   图标和文字现在是两个不同的颜色,这是你明确要求的,不是保留旧代码没
+   改完。紧急状态下图标和文字还是同一个红色#CC433A,没有受这次改动
+   影响。 */
 .offer-card__time-left--grey {
-  color: #55575C;
+  color: #0E0E0F;
 }
 
 /* 2026-09 按你的要求:不管有没有倒计时(比如 declined/expired 没有倒计时,
@@ -1138,10 +1155,12 @@ function copyVin() {
   flex-shrink: 0;
 }
 
+/* 2026-09-09 同上,行高/字间距从21px/0.25px改成对齐 Roboto Regular
+   14px 的字体spec(20px/0.1px)。 */
 .offer-card__message-secondary {
   font-size: 14px;
-  line-height: 21px;
-  letter-spacing: 0.25px;
+  line-height: 20px;
+  letter-spacing: 0.1px;
   color: #55575C;
 }
 </style>
