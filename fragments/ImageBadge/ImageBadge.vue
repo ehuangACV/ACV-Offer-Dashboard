@@ -26,7 +26,11 @@
 <template>
   <span
     class="image-badge"
-    :class="[`image-badge--${variant}`, variant === 'in-negotiation' && ring ? 'image-badge--in-negotiation-ring' : '']"
+    :class="[
+      `image-badge--${variant}`,
+      variant === 'in-negotiation' && ring ? 'image-badge--in-negotiation-ring' : '',
+      variant === 'make-offer' && strokeMakeOffer ? 'image-badge--make-offer-stroke' : ''
+    ]"
   >{{ label }}<slot /></span>
 </template>
 
@@ -38,7 +42,14 @@ defineProps({
   // 只在 variant='in-negotiation' 时生效——PM 反馈默认样式不够明显,
   // 定下来的第二种画法(深色底不变,加一圈白色描边+投影),细节见
   // fragments/OfferCard/notes.md
-  ring: { type: Boolean, default: false }
+  ring: { type: Boolean, default: false },
+  // 2026-09-09 新增,只在 variant='make-offer' 时生效——这个组件同时被
+  // OfferCard(卡片图片上的徽标)和 InformationDialog(弹层顶部主徽标)
+  // 共用同一份 CSS,但你要求两处的 Make Offer 徽标要不一样:卡片不要
+  // 边框,InformationDialog 要保留原来的边框。default false 保持卡片
+  // 现在的样子不变(不传就没有边框),InformationDialog 那边显式传
+  // true。细节见 fragments/ImageBadge/notes.md。
+  strokeMakeOffer: { type: Boolean, default: false }
 })
 </script>
 
@@ -87,6 +98,16 @@ defineProps({
   background: #FFFFFF;
   color: #0E0E0F;
   padding: 3px 6px;
+}
+
+/* 2026-09-09 新增,只给 InformationDialog 用——边框数值(#8D9199)是
+   之前删掉的那个既有值,不是新核实的。border 是盒子自身的一部分会往内
+   挤占空间,padding 从 3px 6px 减到 2px 6px 补偿(总高度还是24px,跟
+   base 的 .image-badge--make-offer 一致),细节见
+   fragments/ImageBadge/notes.md。 */
+.image-badge--make-offer-stroke {
+  border: 1px solid #8D9199;
+  padding: 2px 6px;
 }
 
 .image-badge--dealer {

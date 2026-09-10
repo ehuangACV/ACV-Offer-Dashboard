@@ -97,6 +97,6 @@ defineProps({
 .offer-type-badge--make-offer {
   background: #FFFFFF;
   color: #0E0E0F;
-  padding: 5px 6px;
+  border: 1px solid #8D9199;
 }
 </style>

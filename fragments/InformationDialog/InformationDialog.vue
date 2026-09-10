@@ -241,6 +241,7 @@
               v-if="offerType !== 'none'"
               :variant="offerType"
               :label="offerTypeLabel"
+              stroke-make-offer
               class="info-dialog__type-badge-v2"
             >
               <button

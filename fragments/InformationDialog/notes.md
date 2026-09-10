@@ -415,5 +415,21 @@ Card 卡片上发现 In Negotiation 不该说"offer"该说"counter"之后，我�
 declined..."，点 Accept 后复选框显示"Accept Counter"；Make Offer 的
 对应文案一个字没变，无 console 报错。
 
+## 2026-09-09 顶部主徽标恢复 Make Offer 边框
+
+你反馈"去掉Make Offer badge的stroke"这个要求原本只针对Card，弹层顶部
+的主徽标（车辆信息行那个"Make Offer ⓘ"，[InformationDialog.vue:240](../InformationDialog/InformationDialog.vue:240)）应该保留边框，跟以前一样。这个主徽标用的是
+`ImageBadge`（跟卡片图片上的徽标同一个组件），给它加了新增的
+`stroke-make-offer` 这个 prop（细节见
+[ImageBadge/notes.md](../ImageBadge/notes.md)），让这个用法恢复
+`#8D9199` 边框，卡片那边继续保持无边框。
+
+点 info 图标弹出的"Type"说明弹层里的示例徽标（[InformationDialog.vue:268-274](../InformationDialog/InformationDialog.vue:268)）用的是另一个组件
+`OfferTypeBadge`（跟表格同一个），边框跟着表格那边一起恢复，这个文件
+没有单独改。
+
+浏览器实测：顶部主徽标边框 `#8D9199`、padding `2px 6px`，无 console
+报错。
+
 **这次特意没改的（你说先不动）：** 输入面板标题"Counter offer"（固定
 搭配词组）、历史记录区兜底标题"Pending Offer"（泛指名词）。

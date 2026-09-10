@@ -69,3 +69,21 @@ In Negotiation 的白色边框没有动,你只提到 Make Offer。
 一致",见 `OfferCard.vue` 的 source_of_truth),细节见
 [ImageBadge/notes.md](../ImageBadge/notes.md)。
 
+## 2026-09-09（第二次）改动范围搞错了，边框加回来
+
+你反馈上一条理解错了——你原来只是想去掉**Card**上 Make Offer 徽标的
+边框，表格（这个组件）应该保留原来核实过的边框，跟之前一样。
+
+`.offer-type-badge--make-offer` 的 `border: 1px solid #8D9199` 加回来
+了，`padding` 改回共用基础样式的 `4px 6px`（不再需要单独覆盖成
+`5px 6px` 补偿边框，因为边框本身就补回来了）。
+
+Card 那边（`ImageBadge.vue`）这次没有跟着改回去——两个组件不再假设
+"数值特意保持一致"，卡片继续保持无边框，是你明确要的两种不同效果，
+细节和为什么两处现在可以不一样（`ImageBadge` 新增了
+`strokeMakeOffer` prop 来区分)见
+[ImageBadge/notes.md](../ImageBadge/notes.md)。
+
+浏览器实测：表格 Dealer 列的 Make Offer 徽标边框 `#8D9199`、
+padding `4px 6px`，无 console 报错。
+

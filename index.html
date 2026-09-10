@@ -369,7 +369,7 @@
   /* -- OfferTypeBadge -- */
   .offer-type-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 6px; border-radius: 4px; font-size: 12px; line-height: 12px; letter-spacing: 0.4px; white-space: nowrap; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   .offer-type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border: 1px solid #FFFFFF; }
-  .offer-type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; padding: 5px 6px; }
+  .offer-type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; }
 
   /* -- Pagination -- */
   /* 2026-08 重做:ACV Pagination(Claude Design 项目 09c-pagination.card.html） */
@@ -480,6 +480,7 @@
   .image-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; padding: 3px 6px; }
   .image-badge--in-negotiation-ring { padding: 3px 6px; outline: 1px solid #FFFFFF; outline-offset: 0; }
   .image-badge--make-offer { background: #FFFFFF; color: #0E0E0F; padding: 3px 6px; }
+  .image-badge--make-offer-stroke { border: 1px solid #8D9199; padding: 2px 6px; }
   .image-badge--dealer { backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; text-align: right; padding: 3px 10px; }
 
   /* -- OfferCard -- */
@@ -1271,10 +1272,11 @@
     props: {
       variant: { type: String, default: 'in-negotiation' },
       label: { type: String, required: true },
-      ring: { type: Boolean, default: false }
+      ring: { type: Boolean, default: false },
+      strokeMakeOffer: { type: Boolean, default: false }
     },
     template:
-      '<span class="image-badge" :class="[`image-badge--${variant}`, variant === \'in-negotiation\' && ring ? \'image-badge--in-negotiation-ring\' : \'\']">{{ label }}<slot></slot></span>'
+      '<span class="image-badge" :class="[`image-badge--${variant}`, variant === \'in-negotiation\' && ring ? \'image-badge--in-negotiation-ring\' : \'\', variant === \'make-offer\' && strokeMakeOffer ? \'image-badge--make-offer-stroke\' : \'\']">{{ label }}<slot></slot></span>'
   });
 
   var InformationDialog = defineComponent({
@@ -1349,7 +1351,7 @@
       '</div>' +
       '<div class="info-dialog__status-row">' +
       '<span class="info-dialog__chips">' +
-      '<ImageBadge v-if="offerType !== \'none\'" :variant="offerType" :label="offerTypeLabel" class="info-dialog__type-badge-v2">' +
+      '<ImageBadge v-if="offerType !== \'none\'" :variant="offerType" :label="offerTypeLabel" stroke-make-offer class="info-dialog__type-badge-v2">' +
       '<button ref="typeInfoBtnRef" type="button" class="info-dialog__type-info-btn" aria-label="What does this mean?" @click.stop="showTypeGuide = !showTypeGuide">' +
       '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.25" stroke="currentColor" stroke-width="1.1"/><circle cx="7" cy="4.5" r="0.9" fill="currentColor"/><rect x="6.25" y="6.2" width="1.5" height="4.3" rx="0.5" fill="currentColor"/></svg>' +
       '</button>' +

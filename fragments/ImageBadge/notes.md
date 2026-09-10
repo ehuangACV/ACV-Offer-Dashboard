@@ -80,3 +80,29 @@ stroke,要求去掉。之前这条 `border: 1px solid #8D9199` 是对照真实 F
 [OfferTypeBadge/notes.md](../OfferTypeBadge/notes.md)——你说"去掉stroke
 for make offer badge"没有限定只改卡片,两处数值本来就是特意保持一致的,
 只改一处会造成新的不一致。
+
+## 2026-09-09（第二次）修正范围：只有 Card 不要边框，其它地方边框加回来
+
+你反馈上一条改的范围错了——你原来的意思是**只有 Card 上**的 Make
+Offer 徽标不要边框，表格和 Information Dialog 里应该保留原来的边框，
+"两处数值特意保持一致"这个判断是错的。
+
+发现一个结构上的复杂点：Information Dialog 弹层顶部主徽标（截图里
+"Make Offer ⓘ"那个）用的**就是这个组件**（`ImageBadge`），跟卡片图片
+上的徽标共用同一份 CSS——不是像我以为的那样只有卡片在用。这意味着
+"卡片不要边框"和"Information Dialog 主徽标要边框"这两个要求，用同一个
+`variant='make-offer'` 的 CSS 类没法同时满足。
+
+改法：新增 `strokeMakeOffer` prop（默认 `false`），只在
+`variant='make-offer'` 时生效，加一个 `.image-badge--make-offer-stroke`
+class（`border:1px solid #8D9199` + `padding:2px 6px` 补偿边框占用的
+空间，总高度还是24px）。`OfferCard.vue` 不传这个 prop，保持无边框；
+`InformationDialog.vue` 的主徽标显式传 `stroke-make-offer`，恢复边框。
+
+表格版本 `OfferTypeBadge` 的 Make Offer 边框也在同一批改动里加回来了
+（不是这个组件的一部分，是独立组件，细节见
+[OfferTypeBadge/notes.md](../OfferTypeBadge/notes.md)）。
+
+浏览器实测三处：Card 图片上的 Make Offer 徽标——无边框；表格 Dealer
+列的 Make Offer 徽标——边框 `#8D9199`；Information Dialog 顶部主
+徽标——边框 `#8D9199`。三处都符合预期，无 console 报错。
