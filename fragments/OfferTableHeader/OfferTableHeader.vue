@@ -53,6 +53,26 @@
       只有一个"Got it"按钮(靠右对齐),点它和点右上角 × 一样会关闭弹层。
       按钮的具体padding/圆角在 Figma 里通过 Code Connect 换成了项目
       自己的按钮组件,没有给出像素级样式,是按项目里其它按钮常见的圆角
+
+    【2026-09-10 新增买家版本文案,对照 Figma 节点 7668:19879 核实】
+    你指出之前这段文案其实是**卖家**视角的版本(只在 Selling tab 的
+    table view 里点 Type 信息图标该显示),你另外给的这个新节点是
+    **买家**视角的版本(Buying tab 该显示),两段文案不一样,不是同一句
+    话换个称呼:
+    - In Negotiation:卖家"(6h limit) High bidder from the auction." +
+      "Accept, Decline, or Counter.";买家"(6h limit) You were the high
+      bidder in the auction." + "Accept or counter."(买家这边少了
+      Decline 这个动作)。
+    - Make Offer:卖家"(24h limit) Post-auction offer from any buyer."
+      + "Accept or Decline only.";买家"(24h limit) You placed an offer
+      on a vehicle that went unsold in it's previous run." + "Chat with
+      dealmakers at 1800-553-4070 Opt. 2"(买家这边不是Accept/Decline,
+      是打电话找 dealmaker,"it's"这个语法上不太对的写法是 Figma 节点
+      里的原文,照抄没有改)。
+    新增 `viewerRole` prop('buyer'/'seller',默认'seller'保持原来
+    唯一版本不变),`OfferDashboard.vue` 传的是已有的
+    `viewerRoleValue`(selling tab→'seller',buying tab→'buyer',跟
+    OfferCard/OfferTableRow 用的是同一个值,不是新算的)。
       药丸形状合理还原的,不是从这个节点直接量出来的,待确认。
     点击外部/按 Escape 会关闭,照抄项目里其它弹层
     (DealershipFilterDropdown/Pagination下拉)的既有惯例。
@@ -119,13 +139,25 @@
           </div>
           <div class="offer-table-header__guide-section">
             <OfferTypeBadge type="in-negotiation" label="In Negotiation" />
-            <p class="offer-table-header__guide-desc">(6h limit) High bidder from the auction.</p>
-            <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
+            <template v-if="viewerRole === 'buyer'">
+              <p class="offer-table-header__guide-desc">(6h limit) You were the high bidder in the auction.</p>
+              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or counter.</p>
+            </template>
+            <template v-else>
+              <p class="offer-table-header__guide-desc">(6h limit) High bidder from the auction.</p>
+              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
+            </template>
           </div>
           <div class="offer-table-header__guide-section">
             <OfferTypeBadge type="make-offer" label="Make Offer" />
-            <p class="offer-table-header__guide-desc">(24h limit) Post-auction offer from any buyer.</p>
-            <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
+            <template v-if="viewerRole === 'buyer'">
+              <p class="offer-table-header__guide-desc">(24h limit) You placed an offer on a vehicle that went unsold in it's previous run.</p>
+              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Chat with dealmakers at 1800-553-4070 Opt. 2</p>
+            </template>
+            <template v-else>
+              <p class="offer-table-header__guide-desc">(24h limit) Post-auction offer from any buyer.</p>
+              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
+            </template>
           </div>
           <div class="offer-table-header__guide-footer">
             <button type="button" class="offer-table-header__guide-btn offer-table-header__guide-btn--primary" @click="showTypeGuide = false">Got it</button>
@@ -201,6 +233,13 @@ defineProps({
   gridLayout: {
     type: Boolean,
     default: false
+  },
+  // 2026-09-10 新增:'buyer' | 'seller'——"Type" 信息弹层的文案分买家/
+  // 卖家两个版本,不是同一段文字。默认 'seller' 保持这个组件之前的
+  // 唯一版本不变,细节见下面 METADATA。
+  viewerRole: {
+    type: String,
+    default: 'seller'
   }
 })
 defineEmits(['sort'])

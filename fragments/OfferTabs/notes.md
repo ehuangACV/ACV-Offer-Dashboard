@@ -36,6 +36,21 @@ OfferDashboard notes.md。
 OfferDashboard 里已经核实过的间距)。视觉效果不变,只是换了个更稳妥的
 实现方式。
 
+## 2026-09-11 按你的要求:文字/数字和下面分隔线的间距加4px
+
+你要求"Buying/Selling 和数字距离下面的横线增加4px"。文字/数字徽标和
+下面那条分隔线(`.offer-tabs` 的 `border-bottom`)、以及选中态橙色
+指示条(`.offer-tabs__indicator`,`position:absolute;bottom:0`)都是
+贴着 `.offer-tabs__tab` 这个盒子的底边算位置的,`.offer-tabs` 又是
+`align-items:stretch`——只需要把 `.offer-tabs__tab` 自己的下 padding
+从1px改成5px,按钮整体变高4px,分隔线/指示条的位置跟着(它们是相对这个
+变高的盒子算的)一起往下移4px,文字本身位置不变,间距就精确多了4px,
+不用分别改分隔线和指示条各自的坐标。
+
+浏览器实测:`.offer-tabs__tab` 的 `padding-bottom` computed style 精确
+等于 `5px`,截图对比确认文字/数字和下面横线的间距明显变大,无 console
+报错。
+
 ## 待你确认
 1. 发现两个 `hidden=true` 的备用 tab 变体(6903:23035 带 "sell" 图标 /
    6903:23041 带 "shopping_cart" 图标),看起来是带图标的旧设计,当前

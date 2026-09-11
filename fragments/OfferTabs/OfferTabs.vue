@@ -119,6 +119,13 @@ defineEmits(['select'])
    Tabs 底边往下移1px,后面的 padding 距离量出来还是精确 24px,只是整
    页高度多了可以忽略的1px,不是回归。 */
 
+/* 2026-09-11 按你的要求:文字/数字徽标和下面那条分隔线(container 的
+   border-bottom)、以及选中态的橙色指示条(.offer-tabs__indicator,
+   position:absolute;bottom:0)之间的间距增加4px——两者都贴在
+   .offer-tabs__tab 这个盒子的底边,`.offer-tabs` 又是 align-items:
+   stretch,所以只需要把这个按钮自己的下 padding 从1px改成5px,按钮
+   整体变高4px,分隔线/指示条跟着(它们的位置是相对这个变高的盒子算的)
+   一起往下移4px,文字位置不变,两者之间的间距就精确多了4px。 */
 .offer-tabs__tab {
   position: relative;
   display: flex;
@@ -128,7 +135,7 @@ defineEmits(['select'])
   border: none;
   background: none;
   cursor: pointer;
-  padding: 10px 16px 1px;
+  padding: 10px 16px 5px;
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;

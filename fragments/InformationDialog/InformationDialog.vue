@@ -257,6 +257,15 @@
                   <rect x="6.25" y="6.2" width="1.5" height="4.3" rx="0.5" fill="currentColor"/>
                 </svg>
               </button>
+              <!-- 2026-09-10 按你的要求核对 Figma 节点 7668:19879:这段
+                   文案原来是卖家视角的版本(只在 viewerRole==='seller'
+                   时该显示),你给的这个新节点是买家版本——两段文案不
+                   一样,不是同一句话换称呼(In Negotiation 买家这边少了
+                   Decline 这个动作;Make Offer 买家这边不是Accept/
+                   Decline,是打电话找 dealmaker)。跟
+                   fragments/OfferTableHeader/notes.md 同一批改的,那边
+                   的表格版本文案完全一样,这里复用已有的 isBuyer
+                   computed 分支,不用新增 prop。 -->
               <div v-if="showTypeGuide" ref="typeGuideRef" class="info-dialog__type-guide">
                 <div class="info-dialog__type-guide-arrow" />
                 <div class="info-dialog__type-guide-head">
@@ -267,13 +276,25 @@
                 </div>
                 <div class="info-dialog__type-guide-section">
                   <OfferTypeBadge type="in-negotiation" label="In Negotiation" />
-                  <p class="info-dialog__type-guide-desc">(6h limit) High bidder from the auction.</p>
-                  <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
+                  <template v-if="isBuyer">
+                    <p class="info-dialog__type-guide-desc">(6h limit) You were the high bidder in the auction.</p>
+                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or counter.</p>
+                  </template>
+                  <template v-else>
+                    <p class="info-dialog__type-guide-desc">(6h limit) High bidder from the auction.</p>
+                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
+                  </template>
                 </div>
                 <div class="info-dialog__type-guide-section">
                   <OfferTypeBadge type="make-offer" label="Make Offer" />
-                  <p class="info-dialog__type-guide-desc">(24h limit) Post-auction offer from any buyer.</p>
-                  <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
+                  <template v-if="isBuyer">
+                    <p class="info-dialog__type-guide-desc">(24h limit) You placed an offer on a vehicle that went unsold in it's previous run.</p>
+                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Chat with dealmakers at 1800-553-4070 Opt. 2</p>
+                  </template>
+                  <template v-else>
+                    <p class="info-dialog__type-guide-desc">(24h limit) Post-auction offer from any buyer.</p>
+                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
+                  </template>
                 </div>
                 <div class="info-dialog__type-guide-footer">
                   <button type="button" class="info-dialog__type-guide-btn" @click.stop="showTypeGuide = false">Got it</button>

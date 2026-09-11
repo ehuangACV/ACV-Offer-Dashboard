@@ -208,7 +208,7 @@
      div 实际渲染基本看不见(抗锯齿掉了),改成 border-bottom(标准稳妥
      做法)+ box-sizing:border-box(不多占1px,不影响已核实的间距) */
   .offer-tabs { position: relative; display: flex; align-items: stretch; font-family: 'Roboto', sans-serif; border-bottom: 1px solid #DCDFE8; box-sizing: border-box; }
-  .offer-tabs__tab { position: relative; display: flex; align-items: center; justify-content: center; gap: 12px; border: none; background: none; cursor: pointer; padding: 10px 16px 1px; font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.15px; color: #757575; }
+  .offer-tabs__tab { position: relative; display: flex; align-items: center; justify-content: center; gap: 12px; border: none; background: none; cursor: pointer; padding: 10px 16px 5px; font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: 0.15px; color: #757575; }
   .offer-tabs__tab--selected { background: #FEF9F6; border-radius: 8px; color: #F26522; font-weight: 500; }
   .offer-tabs__count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: #D1D3D6; color: #55575C; font-family: 'Inter', 'Roboto', sans-serif; font-weight: 700; font-size: 12px; line-height: 18px; }
   .offer-tabs__tab--selected .offer-tabs__count { background: #F26522; color: #FFFFFF; }
@@ -450,7 +450,8 @@
   /* 2026-09-08:table view 每一列不再靠 flex-shrink 挤宽度(见
      OfferTableHeader/OfferTableRow 的 CSS),窄屏下改成这个容器自己横向
      滚动,细节见 fragments/OfferDashboard/notes.md 同名条目 */
-  .offer-dashboard__table-scroll { display: grid; overflow-x: auto; }
+  .offer-dashboard__table-scroll { display: grid; overflow-x: auto; scrollbar-width: none; }
+  .offer-dashboard__table-scroll::-webkit-scrollbar { display: none; }
   .offer-dashboard__table-bottom { position: sticky; bottom: 0; z-index: 1; border-top: 1px solid #DCDFE8; }
   .offer-dashboard__table-hscroll-shadow { position: sticky; z-index: 1; overflow-x: auto; overflow-y: hidden; height: 17px; }
   .offer-dashboard__table-hscroll-spacer { height: 1px; }
@@ -1134,7 +1135,7 @@
   var OfferTableHeader = defineComponent({
     name: 'OfferTableHeader',
     components: { OfferTypeBadge: OfferTypeBadge },
-    props: { sortColumn: { type: String, default: null }, isMultiDealer: { type: Boolean, default: true }, gridLayout: { type: Boolean, default: false } },
+    props: { sortColumn: { type: String, default: null }, isMultiDealer: { type: Boolean, default: true }, gridLayout: { type: Boolean, default: false }, viewerRole: { type: String, default: 'seller' } },
     emits: ['sort'],
     template:
       '<div class="offer-table-header" :class="{ \'offer-table-header--grid\': gridLayout }">' +
@@ -1149,11 +1150,23 @@
       '<div class="offer-table-header__guide-head"><span class="offer-table-header__guide-title">Type</span>' +
       '<button type="button" class="offer-table-header__guide-close" @click="showTypeGuide = false" v-html="CLOSE_ICON"></button></div>' +
       '<div class="offer-table-header__guide-section"><OfferTypeBadge type="in-negotiation" label="In Negotiation" />' +
+      '<template v-if="viewerRole === \'buyer\'">' +
+      '<p class="offer-table-header__guide-desc">(6h limit) You were the high bidder in the auction.</p>' +
+      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or counter.</p>' +
+      '</template>' +
+      '<template v-else>' +
       '<p class="offer-table-header__guide-desc">(6h limit) High bidder from the auction.</p>' +
-      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p></div>' +
+      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>' +
+      '</template></div>' +
       '<div class="offer-table-header__guide-section"><OfferTypeBadge type="make-offer" label="Make Offer" />' +
+      '<template v-if="viewerRole === \'buyer\'">' +
+      '<p class="offer-table-header__guide-desc">(24h limit) You placed an offer on a vehicle that went unsold in it\'s previous run.</p>' +
+      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Chat with dealmakers at 1800-553-4070 Opt. 2</p>' +
+      '</template>' +
+      '<template v-else>' +
       '<p class="offer-table-header__guide-desc">(24h limit) Post-auction offer from any buyer.</p>' +
-      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or Decline only.</p></div>' +
+      '<p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>' +
+      '</template></div>' +
       '<div class="offer-table-header__guide-footer">' +
       '<button type="button" class="offer-table-header__guide-btn offer-table-header__guide-btn--primary" @click="showTypeGuide = false">Got it</button></div>' +
       '</div></div></div>' +
@@ -1364,11 +1377,23 @@
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#545454" stroke-width="1.7" stroke-linecap="round"/></svg>' +
       '</button></div>' +
       '<div class="info-dialog__type-guide-section"><OfferTypeBadge type="in-negotiation" label="In Negotiation" />' +
+      '<template v-if="isBuyer">' +
+      '<p class="info-dialog__type-guide-desc">(6h limit) You were the high bidder in the auction.</p>' +
+      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or counter.</p>' +
+      '</template>' +
+      '<template v-else>' +
       '<p class="info-dialog__type-guide-desc">(6h limit) High bidder from the auction.</p>' +
-      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p></div>' +
+      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>' +
+      '</template></div>' +
       '<div class="info-dialog__type-guide-section"><OfferTypeBadge type="make-offer" label="Make Offer" />' +
+      '<template v-if="isBuyer">' +
+      '<p class="info-dialog__type-guide-desc">(24h limit) You placed an offer on a vehicle that went unsold in it\'s previous run.</p>' +
+      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Chat with dealmakers at 1800-553-4070 Opt. 2</p>' +
+      '</template>' +
+      '<template v-else>' +
       '<p class="info-dialog__type-guide-desc">(24h limit) Post-auction offer from any buyer.</p>' +
-      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p></div>' +
+      '<p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>' +
+      '</template></div>' +
       '<div class="info-dialog__type-guide-footer"><button type="button" class="info-dialog__type-guide-btn" @click.stop="showTypeGuide = false">Got it</button></div>' +
       '</div>' +
       '</ImageBadge>' +
@@ -2400,7 +2425,7 @@
       '<ResultsToolbar :view-mode="viewMode" @update:view-mode="viewMode = $event" :results-count="visibleRows.length" />' +
       '<template v-if="viewMode === \'table\'">' +
       '<div ref="tableScrollRef" class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }" @scroll="handleTableScroll">' +
-      '<OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />' +
+      '<OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" :viewer-role="viewerRoleValue" @sort="sortColumn = $event" />' +
       '<OfferTableRow v-for="(row, i) in rowsWithDealerMode" v-show="isRowOnCurrentTablePage(i)" grid-layout :key="i" v-bind="row" :ref="function (el) { setTableRowRef(el, i); }" ' +
       ':has-prev-deal="i > 0" :has-next-deal="i < rowsWithDealerMode.length - 1" @prev-deal="handleTablePrev(i)" @next-deal="handleTableNext(i)" @remove-from-list="handleRemoveFromList(row.auctionId)" @viewed="markSeen(row.auctionId)" />' +
       '</div>' +
@@ -2846,6 +2871,7 @@
         tableScrollRef: tableScrollRef, hScrollShadowRef: hScrollShadowRef, tableBottomRef: tableBottomRef,
         tableScrollWidth: tableScrollWidth, showHScrollShadow: showHScrollShadow, paginationHeight: paginationHeight,
         handleTableScroll: handleTableScroll, handleShadowScroll: handleShadowScroll,
+        viewerRoleValue: viewerRoleValue,
         handleTablePrev: handleTablePrev, handleTableNext: handleTableNext,
         handleCardPrev: handleCardPrev, handleCardNext: handleCardNext,
         handleRemoveFromList: handleRemoveFromList, markSeen: markSeen, effectiveMultiDealer: effectiveMultiDealer,

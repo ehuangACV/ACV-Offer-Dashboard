@@ -306,7 +306,7 @@
                  每一列按 grid-template-columns 里的 fr 比例一起变宽,不
                  影响上面的 ResultsToolbar/下面的底部 Pagination。 -->
             <div ref="tableScrollRef" class="offer-dashboard__table-scroll" :style="{ gridTemplateColumns: tableGridColumns }" @scroll="handleTableScroll">
-              <OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" @sort="sortColumn = $event" />
+              <OfferTableHeader grid-layout :is-multi-dealer="effectiveMultiDealer" :sort-column="sortColumn" :viewer-role="viewerRoleValue" @sort="sortColumn = $event" />
 
               <OfferTableRow
                 v-for="(row, i) in rowsWithDealerMode"
@@ -1332,9 +1332,20 @@ const cardGridStyle = computed(() =>
    露出缝,这是不对的——不应该在背景/边框上开缝,只是想要"列内容之间
    看起来更松一点"。改法待重新确认,细节见 fragments/OfferDashboard/
    notes.md 同名条目。 */
+/* 2026-09-10 按你的要求:有了下面那条 sticky 的"影子"横向滚动条之后,
+   这个容器自己原生的横向滚动条就是多余的了(滚到刚好能同时露出两条的
+   位置时,两条会叠在一起显得重复)。只隐藏原生滚动条的外观
+   (scrollbar-width:none 给 Firefox,::-webkit-scrollbar{display:none}
+   给 Chrome/Safari/Edge),横向滚动本身的功能(scrollLeft/wheel)不受
+   影响——影子滚动条本来就是靠同步 scrollLeft 实现的,不依赖这条原生
+   滚动条的视觉表现。 */
 .offer-dashboard__table-scroll {
   display: grid;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+.offer-dashboard__table-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* 2026-09-09 按你的要求:去掉顶部 Pagination 之后,翻页只能靠这条底部
