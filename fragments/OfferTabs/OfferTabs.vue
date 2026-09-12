@@ -52,7 +52,7 @@
   ═══════════════════════════════════════════════════════════
 -->
 <template>
-  <div class="offer-tabs">
+  <div class="offer-tabs" :class="{ 'offer-tabs--mobile': mobile }">
     <button
       type="button"
       class="offer-tabs__tab"
@@ -60,7 +60,7 @@
       @click="$emit('select', 'buying')"
     >
       <span class="offer-tabs__label">Buying</span>
-      <span class="offer-tabs__count">{{ buyingCount }}</span>
+      <span v-if="!mobile" class="offer-tabs__count">{{ buyingCount }}</span>
       <span v-if="activeTab === 'buying'" class="offer-tabs__indicator" />
     </button>
     <button
@@ -70,7 +70,7 @@
       @click="$emit('select', 'selling')"
     >
       <span class="offer-tabs__label">Selling</span>
-      <span class="offer-tabs__count">{{ sellingCount }}</span>
+      <span v-if="!mobile" class="offer-tabs__count">{{ sellingCount }}</span>
       <span v-if="activeTab === 'selling'" class="offer-tabs__indicator" />
     </button>
   </div>
@@ -90,7 +90,12 @@ defineProps({
   sellingCount: {
     type: [String, Number],
     default: 2
-  }
+  },
+  // 2026-09-11 新增,配合 mobile 版设计(Figma node 7765:16901,"size:
+  // Small" 变体)——数量徽标不显示、选中态不再是橙色描边pill背景+橙色
+  // 字,改成蓝色(#004E7D)文字+蓝色底部指示条、字号从16px改成14px、
+  // 两个 tab 各占50%宽度。细节见 notes.md。
+  mobile: { type: Boolean, default: false }
 })
 defineEmits(['select'])
 </script>
@@ -181,4 +186,28 @@ defineEmits(['select'])
   background: #F26522;
 }
 
+/* 2026-09-11 mobile 变体(Figma node 7765:16901,"size: Small")——两个
+   tab 各占50%宽度(桌面版是按内容自适应宽度、贴左排列),字号16→14px,
+   选中态不再是橙色 pill 背景(#FEF9F6 + border-radius:8px)+橙色字,
+   改成纯色蓝(#004E7D)文字 + 蓝色底部指示条,没有背景色块;数量徽标
+   完全不显示(上面 template 已经用 v-if="!mobile" 整个不渲染,不是靠
+   CSS 隐藏)。padding 数值是按 Figma 这个 Code Connect 组件($size:Small)
+   没有暴露具体像素、按 tabs 容器 39px 整体高度 + 14px/20行高文字反推的
+   近似值,不是逐像素核实的 Figma 数值。 */
+.offer-tabs--mobile .offer-tabs__tab {
+  flex: 1;
+  padding: 9px 16px 8px;
+  font-size: 14px;
+  letter-spacing: 0.1px;
+}
+
+.offer-tabs--mobile .offer-tabs__tab--selected {
+  background: none;
+  border-radius: 0;
+  color: #004E7D;
+}
+
+.offer-tabs--mobile .offer-tabs__indicator {
+  background: #004E7D;
+}
 </style>

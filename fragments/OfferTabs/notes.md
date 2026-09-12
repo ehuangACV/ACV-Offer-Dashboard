@@ -55,3 +55,21 @@ OfferDashboard 里已经核实过的间距)。视觉效果不变,只是换了个
 1. 发现两个 `hidden=true` 的备用 tab 变体(6903:23035 带 "sell" 图标 /
    6903:23041 带 "shopping_cart" 图标),看起来是带图标的旧设计,当前
    组件没有采用,如果这其实才是"当前设计"请告知。
+
+## 2026-09-11 新增 mobile prop,配合 Offer Dashboard 的 mobile 版设计
+
+看了你给的 Figma mobile 页面(node 7765:16893)里的 tabs(7765:16901,
+Code Connect 组件 `Default Tabs`,`size: Small` 变体),核实到跟桌面版
+真实的差异(不是同一套数值缩小,是这个尺寸变体本身就长得不一样):
+- 不显示数量徽标(`buyingCount`/`sellingCount` 完全不渲染,不是隐藏)。
+- 字号 16px→14px,letter-spacing 0.15px→0.1px。
+- 选中态不再是橙色描边的 pill 背景(`#FEF9F6` + `border-radius:8px`)+
+  橙色字,改成纯色蓝(`#004E7D`,ACV/Secondary/base)文字 + 蓝色底部
+  指示条,没有背景色块。
+- 两个 tab 各占 50% 宽度(`flex:1`),不是桌面版按内容自适应宽度贴左
+  排列。
+
+新增 `mobile` prop(默认 false,不影响任何已有用法)。padding 数值是
+这个 Code Connect 组件没有暴露具体像素、按 tabs 容器整体高度 39px +
+14px/20 行高文字反推的近似值,不是逐像素核实的 Figma 数值,如果实际
+渲染出来间距不对,需要你发截图核对。

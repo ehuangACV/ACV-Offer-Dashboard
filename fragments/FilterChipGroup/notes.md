@@ -78,3 +78,120 @@ activeMainTab !== 'selling' 算这个值传进来，细节见
 watch：showDeclined 变 false 时如果 Declined 当时还是选中态（比如在
 Buying tab 选了 Declined 再切到 Selling），一起清掉选中态，跟已有的
 declinedCount===0 那条 watch 是同一个防御逻辑。
+
+## 2026-09-11 新增 mobile prop,配合 Offer Dashboard 的 mobile 版设计
+
+看了你给的 Figma mobile 页面(node 7765:16893)里的 Filters 区
+(7765:16923),这个节点自己带了设计标注:"Hide the 'In Negotiation'
+and 'Make Offer' filters on mobile view"——跟你之前直接告诉我的要求
+一致,不是我自己推断的。
+
+新增 `mobile` prop(默认 false,不影响任何已有用法),为真时:
+1. In negotiation / Make Offer 两个 chip 整个不渲染(`v-if="!mobile"`
+   包一层,不是禁用/隐藏——按钮之间原来那条竖分隔线位置不变,还是紧跟
+   在 Dealership 后面,Figma 里 mobile 版本也是这个顺序:Dealership →
+   分隔线 → New → Received → Sent → Declined)。
+2. chip 自己的横向 padding 从 16px 压缩成 8px、内部 icon/文字的 gap
+   从 8px 压缩成 4px——这两个是核实过的 Figma 数值(mobile 节点用的是
+   `px-[8px]`/`gap-[4px]`,桌面版是 `padding:6px 16px`/`gap:8px`),
+   不是随手估的。
+3. 整行允许横向滚动(`overflow-x:auto`)——mobile 节点的 Filters 容器
+   实测宽度 479px,在 375px 视口里放不下,Figma 本身就是横向溢出、靠
+   滑动查看剩下的 chip,不是换行或者把 chip 缩得更小硬塞进一行。
+
+`.filter-chip:disabled`(数量为0变灰)、选中态配色、Dealership 下拉
+交互逻辑等完全没有改动,mobile 只是外观上更紧凑 + 少两个 chip,业务
+逻辑和桌面版是同一份代码。
+
+## 2026-09-12 两处修复(按你给的新 Figma 节点 7773:45581)
+
+**1. 隐藏横向滚动条的外观**
+
+你反馈 mobile 上不应该看到那种带左右箭头+灰色滚动条的横向滚动条——
+那是桌面浏览器渲染 `overflow-x:auto` 时的默认外观,真实手机上原生
+触屏滚动("手动拖拽 filter group")根本不会长这样。给
+`.filter-chip-group--mobile` 加了 `scrollbar-width:none` +
+`::-webkit-scrollbar{display:none}`,只隐藏滚动条的外观,横向滚动本身
+(拖拽/触屏滑动)不受影响——跟之前桌面版表格"影子滚动条"那次同一个
+处理思路(只藏外观,不砍功能)。
+
+**2. "Clear" 只在真的选了筛选项时才显示**
+
+Figma 这个新节点显示:选中 "New (1)" 之后,"Clear" 才出现在筛选行
+最右边;没有选任何筛选项时,不显示 "Clear"。桌面版一直是"Clear 永远
+显示",这次只改 mobile——新增 `hasAnyFilterSelected` 计算属性(检查
+negotiation/makeOffer/单选状态,以及 `dealerChipLabel` 是否非空——
+Dealership 已应用筛选也算"有筛选项"),`mobile` 为真时 "Clear" 按钮
+用 `v-if="!mobile || hasAnyFilterSelected"` 控制显示,桌面版
+(`mobile` 为 false)这条判断永远走 `!mobile` 那半边,行为完全不变。
+
+浏览器实测:mobile 布局下,不选任何筛选项时看不到 "Clear",也没有
+可见的横向滚动条,但滑动筛选行仍然能看到被裁切的 "Sent"/"Declined"；
+点一个 chip(比如 New)后 "Clear" 立刻出现,再点一次取消选中后
+"Clear" 又消失；桌面版 "Clear" 始终可见,不受影响；无 console 报错。
+
+## 2026-09-12（第二次）两处遗漏:鼠标拖拽 + "Clear" 应该盖住右侧 chip
+
+你反馈两点:1)mobile 上这一行没法用鼠标左右拖拽;2)选中筛选项之后
+"Clear" 只是老老实实排在最后面,没有像你截图那样贴着右边缘、盖住当时
+在那个位置的 chip。
+
+**1. 鼠标拖拽滚动**:上一版只隐藏了原生滚动条的外观,但没意识到"隐藏
+滚动条"和"能不能滚动"是两件事——真机上触屏划动本来就能让
+`overflow-x:auto` 滚动,不需要可见的滚动条;但桌面浏览器里鼠标在这行
+上点住拖拽并不会触发滚动(这是浏览器原生行为,不是因为隐藏了滚动条
+才失效的)。补了一个简单的鼠标拖拽实现(`handleChipsMouseDown`/
+`handleChipsMouseMove`/`handleChipsMouseUp`,只在 `mobile=true` 时
+生效):按下时记录起点和当前 `scrollLeft`,拖动时用鼠标位移直接改
+`scrollLeft`,松开时清掉状态。加了一个 3px 的容错阈值——正常点击一个
+chip 手指/鼠标不可能完全不抖动,没有这个阈值会把"点击"误判成"拖拽"。
+真的发生拖拽后,用 `click.capture` 把紧跟着这次拖拽产生的 click 事件
+吞掉(`e.stopPropagation()`),不然拖一下经常会同时触发一次
+click,导致 chip 被意外选中/取消选中。
+
+**2. "Clear" 贴右边缘 + 盖住底下的 chip**:你截图里 "Clear" 盖住了
+"Received" 的一部分,说明它不是跟着别的 chip 一起被滚动区带走的普通
+flex 项,是贴在可视区域右边缘的。mobile 变体给 `.filter-chip-group__
+clear` 加了 `position:sticky;right:0`——没滚到底时,它会被"钉"在可视
+区域右边缘,视觉上盖住当时刚好在那个位置的 chip(所以补了不透明白色
+背景 + `z-index:2`,不然会透出底下 chip 的文字,叠在一起看不清);
+一旦滚动到底,它自己在文档流里的位置正好也到了右边缘,自然就不再盖
+住任何东西,这不是额外写的特例,是 `position:sticky` 本来的行为。
+
+浏览器实测:mobile 布局下,鼠标在筛选行上点住左右拖动,内容跟着移动
+(能看到被裁切的 Sent/Declined 逐渐露出来);选中 "New" 后 "Clear"
+贴着右边缘出现,盖住了当时在那个位置的 "Received" 一部分文字,和你
+截图的效果一致；拖拽之后松手,松手前经过的 chip 没有被意外选中/取消
+选中；桌面版(`mobile=false`)完全不受影响,鼠标拖拽/sticky 这些改动
+都只在 mobile 分支生效；无 console 报错。
+
+## 2026-09-12（第三次）两处细节修复
+
+**1. Buying tab(没有 Dealership chip)时,不该显示那条竖分隔线**
+
+你截图指出:Buying tab 下 "New" 前面还有一条竖线,但这个 tab 根本没有
+Dealership chip(业务规则:Dealership 只在 Selling+多经销商时出现,
+细节见 OfferDashboard/notes.md 的 `effectiveMultiDealer`)——竖线前面
+什么都没有,不该画。
+
+这条竖线本来的用途是分隔"多选组"(Dealership/In negotiation/Make
+Offer)和"单选组"(New/Received/Sent/Declined),不是专门为 Dealership
+一个 chip 画的。桌面版 In negotiation/Make Offer 永远会渲染,多选组
+不会是空的,所以桌面版这条线应该恒定显示,不能简单改成
+`v-if="isMultiDealer"`(那样会连桌面版单经销商账号时也一起错误隐藏)。
+改成 `v-if="isMultiDealer || !mobile"`——桌面版这个条件永远为真(不受
+影响),mobile 版只有 Dealership chip 真的显示时才为真。
+
+**2. "Clear" 盖住底下 chip 时,chip 的圆角边框会从上下露出一点**
+
+你要求"clear 底部可以有个白色过渡遮盖,这样就看不到 clear 底下 chip
+filter 的上下线条"。排查发现:被盖住的 chip 是 32px 高,但 `Clear`
+自己的高度只是靠 `padding:6px` + 行高撑出来的 26px,矮了6px,所以
+chip 圆角边框的上下边缘各露出一点(截图里 "Clear" 左边那个 "[" 形状
+的缺口)。改成显式 `height:32px` + `display:inline-flex;align-items:
+center`,让 `Clear` 的白色背景刚好盖满整个 chip 的高度,不多不少。
+
+浏览器实测:Buying tab 下 "New" 前面不再有多余的竖线,Selling tab
+下(有 Dealership chip)这条线正常显示;桌面版(不管 Buying/Selling)
+竖线一直都在,不受影响;选中筛选项后 "Clear" 完整盖住底下 chip,再也
+看不到圆角边框上下露出的痕迹;无 console 报错。

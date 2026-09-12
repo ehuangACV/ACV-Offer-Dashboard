@@ -306,7 +306,7 @@
        "有 hover 按钮才模糊",细节见下面 CSS 注释)。 -->
   <div
     class="offer-card"
-    :class="{ 'offer-card--v1': hoverButtons.length > 0 }"
+    :class="{ 'offer-card--v1': hoverButtons.length > 0, 'offer-card--mobile-actions': mobileActions }"
   >
     <!-- 2026-08 按你的要求:点卡片图片也进 VDP,和表格视图
          (OfferTableRow)点缩略图的行为保持一致,同样是先用占位截图页
@@ -380,7 +380,16 @@
          dealState 从 hoverButtons computed 查出来的按钮组渲染,细节和
          "这是唯一动到 hover 机制数值的地方"那条说明见上面 METADATA。
          hover 时信息区变模糊、按钮块浮出这套底层机制本身没有变。 -->
-    <div v-if="hoverButtons.length" class="offer-card__hover-buttons">
+    <!-- 2026-09-11 按你的要求:mobileActions 为真时,按钮块上方加一条
+         分隔线(照抄 .offer-card__divider,和上面 flex-section 内部消息
+         气泡前的分隔线是同一条规则),把"内容"和"按钮"分开——桌面版
+         hover 浮层直接盖在内容上,不需要这条线,只在 mobile 布局下加。 -->
+    <div v-if="hoverButtons.length && mobileActions" class="offer-card__divider offer-card__divider--mobile-actions" />
+    <div
+      v-if="hoverButtons.length"
+      class="offer-card__hover-buttons"
+      :class="{ 'offer-card__hover-buttons--mobile': mobileActions }"
+    >
       <button
         v-for="(btn, i) in hoverButtons"
         :key="i"
@@ -534,7 +543,16 @@ const props = defineProps({
   // 传进来。默认都是 false,不传就是"没有其他 deal 可以切",两个按钮都
   // 不显示,不影响任何已有用法。
   hasPrevDeal: { type: Boolean, default: false },
-  hasNextDeal: { type: Boolean, default: false }
+  hasNextDeal: { type: Boolean, default: false },
+  // 2026-09-11 新增,配合 mobile 版设计:mobile 上没有真正的 hover(触屏
+  // 点一下会短暂触发 :hover,容易闪烁/行为不一致,不能依赖),所以这批按钮
+  // 不再是"hover 才浮出的绝对定位浮层",改成正常排在卡片最下面、一直
+  // 可见的一块,上面加一条分隔线跟内容区分开;同时不再触发"hover 时
+  // info 模糊"这个效果(反正内容没有被浮层盖住,不需要模糊)。按钮本身
+  // 的文案/个数/顺序(hoverButtons 这个 computed)完全不变,只是这个 prop
+  // 为真时把它的呈现方式换掉,内容/业务逻辑还是同一份代码,细节见
+  // fragments/OfferCard/notes.md。默认 false,不传不影响任何已有用法。
+  mobileActions: { type: Boolean, default: false }
 })
 // 2026-09-02 新增,配合上面两个 prop——点了 InformationDialog 的
 // Previous/Next 之后,OfferCard 自己不知道"上一张/下一张是哪张卡",只是
@@ -809,7 +827,11 @@ function copyVin() {
    是同一个容器,不需要像之前那样按 `.offer-card--v1-btn-1/2/3` 分别
    写规则,`.offer-card--v1`(hoverButtons.length>0,现在恒为真)这一个
    选择器就够了。 */
-.offer-card--v1:hover .offer-card__flex-section {
+/* 2026-09-11 加了 :not(.offer-card--mobile-actions)——mobile 布局下按钮
+   不是 hover 浮层,不需要也不应该触发这个模糊(触屏点一下会短暂触发
+   :hover,不加这条会在 mobile 下闪一下模糊,内容其实没被任何东西盖住,
+   模糊没有意义),细节见 mobileActions prop 旁边的注释。 */
+.offer-card--v1:hover:not(.offer-card--mobile-actions) .offer-card__flex-section {
   filter: blur(2px);
 }
 
@@ -878,6 +900,30 @@ function copyVin() {
 .offer-card:hover .offer-card__hover-buttons {
   opacity: 1;
   visibility: visible;
+}
+
+/* 2026-09-11 mobile 布局:不再是绝对定位的 hover 浮层,变成正常排在卡片
+   最下面、一直可见的一块——position 改回 static 就足够让它跟着
+   `.offer-card__info` 之后自然排列(它在 DOM 里本来就是紧跟在
+   `.offer-card__info` 后面的兄弟节点,只是桌面版靠绝对定位盖上去),
+   opacity/visibility 也不再依赖 hover。上下 padding 去掉(改成0),
+   垂直间距交给 `.offer-card` 根节点本来就有的 `gap:12px`(flex column)
+   和 `padding-bottom:12px` 处理,不然会跟这两个已有间距叠加变成过大的
+   空白;水平 padding 保留 16px,跟其它内容区左右对齐。 */
+.offer-card__hover-buttons--mobile {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  padding: 0 16px;
+}
+
+/* 分隔线复用 .offer-card__divider(和消息气泡前的那条是同一条规则),
+   但那条线原本是在 `.offer-card__info` 的 16px 左右 padding 里用的,
+   这里是直接挂在 `.offer-card` 根节点下(根节点自己没有左右 padding),
+   补一条左右 16px 的 margin 让线的宽度跟内容区对齐,不会通到卡片两侧
+   边缘。 */
+.offer-card__divider--mobile-actions {
+  margin: 0 16px;
 }
 
 .offer-card__hover-btn {

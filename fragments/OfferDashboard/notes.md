@@ -1353,3 +1353,109 @@ emit,只在按 Enter 或点清空按钮时触发,细节见
 浏览器实测:输入文字但不按 Enter,表格/卡片都不受影响;按 Enter 后立刻
 按新文字过滤;点清空按钮文字消失且立即恢复显示全部行;无 console
 报错。
+
+## 2026-09-11（第四次）新增 mobile 版布局
+
+看了你给的 Figma mobile "Offers" 页面(node 7765:16893)后，按之前
+分别讨论过的几块拼起来：
+
+**新增 `deviceView` prop**(默认 `'auto'`)：
+- `'auto'`：按这个组件自己实际渲染宽度(用 `ResizeObserver` 测量根
+  节点 `clientWidth`,不是读 Harness "Screen width" 那个滑块的数字——
+  那个滑块只是改预览舞台容器的 CSS 宽度,这个组件一直是被动响应,不
+  知道那个数字本身)是否小于 768px,自动决定显示 web 版还是 mobile
+  版。
+- `'mobile'` / `'web'`：手动强制覆盖,不管实际渲染宽度多少都显示对应
+  版本——方便在宽屏下也能检查 mobile 设计细节,不用真的把窗口缩到
+  很窄。
+- `'table'`(mobile 自己的表格视图,你说"先不考虑")这次没有做。
+
+**mobile 版结构**(跟桌面版是完全独立的两套 DOM,`effectiveDeviceView`
+整个分叉,不是同一套结构靠 CSS 挤出来的)：
+`MobileTopBar`("← Offers")→ `OfferTabs`(`mobile` prop)→
+`SearchInput`(原样复用,不需要 mobile 变体,见该组件 notes.md)+
+`FilterChipGroup`(`mobile` prop,隐藏 In Negotiation/Make Offer)→
+单列 `OfferCard`(`mobile-actions` prop,按钮排在卡片最下面一直可见)
+列表 → `MobileBottomNav`。Dealership 下拉浮层复用同一套定位逻辑
+(`filterChipGroupRef`/`dealerPopoverWrapRef`),两个版本各自有一份
+`<FilterChipGroup>`/浮层实例,但因为 `v-if`/`v-else` 互斥,同一时间只有
+一个会挂载,共用同一个 ref 变量不会冲突。
+
+卡片列表直接复用桌面 tile 视图已经在用的 `rowsAsCards`(过滤后的行
+数据映射成卡片 props),**没有分页**——这跟桌面 tile 视图本来就没有
+分页是同一个做法(tile 视图这个 Figma 帧本身没有分页区域),mobile
+Figma 页面截图里也没有看到任何分页控件,不是我漏做。
+
+垂直间距(8px)/水平内边距(16px)是按 Figma 几个主要区块之间实测的
+间距反推的近似值,Figma 本身没有给出统一命名的"间距 token",不是逐
+字段核实的数值。
+
+`MobileTopBar`/`MobileBottomNav` 都用了 `position:sticky`(跟桌面版
+`AppHeader` 同一个模式),贴着视口上/下边缘,内容不够一屏时也不会被
+推走。
+
+浏览器实测:Screen width 拖到 768px 以下自动切换成 mobile 布局；宽屏
+下手动把 `deviceView` 设成 `'mobile'` 也能强制显示；mobile 布局下
+点击 Filter chip/Dealership/搜索/卡片按钮都正常工作,In Negotiation/
+Make Offer 两个 chip 不显示；切回 web 后一切照旧；无 console 报错。
+
+## 2026-09-12 两处修复
+
+**1. 点 "Mobile view" 按钮时舞台宽度没有跟着变**
+
+你反馈点了 Controls 里的 "Mobile view" 之后,组件确实切成了 mobile
+布局,但 Harness 的 "Screen width" 滑块还停在原来很宽的数值,变成"很
+宽的容器里挤了一条窄内容,两边一大片空白"的怪样子。这个是 Harness
+(`index.html` 里的 `Harness` 组件,不是 `OfferDashboard.vue` 自己)的
+问题——`deviceView` 这个 segmented 控件和 `screenWidth` 这个滑块是两个
+互相独立的控件,点一个不会联动另一个。新增了 `handleSegmentedClick`
+函数,点 "Mobile view" 时连带把 `screenWidth` 也设成 375(常见手机
+视口宽度参考值)、点 "Web view" 设成 1422(滑块原来的桌面默认值)、点
+"Auto" 不动这个滑块(Auto 本身就是"跟着滑块当前宽度判断",两者不应该
+互相打架)。`screenWidth` 滑块本身的范围也从 768–2560 改成 320–2560
+(细节见滑块定义旁边的注释),不然之前范围本身就卡在 breakpoint 上,
+永远拖不到 mobile 那一侧。
+
+**2. Dealership 下拉在 mobile 上应该是 bottom sheet,不是悬浮浮层**
+
+你给了 Figma mobile 版这个下拉的设计(node 4039:9325),并说"interaction
+什么都一样,只要在当前 dealer ship filter dropdown 里增加 mobile 版本
+就可以"。`updateDealerPopoverPosition()` 新增了 mobile 分支:不再按
+触发按钮的 `getBoundingClientRect()` 算 top/left,直接给
+`position:fixed;left:0;right:0;bottom:56px`(56px = MobileBottomNav
+高度,不会盖住底部导航条)。`<DealershipFilterDropdown>` 加了 `mobile`
+这个新 prop(细节见该组件自己的 notes.md——外层容器变成贴视口底边的
+bottom sheet,内部搜索/勾选/Reset/Apply 这些交互完全没有改动,只有
+形状/定位变了)。
+
+浏览器实测:点 "Mobile view" 后舞台宽度自动变成 375px,不再有两边空白;
+mobile 布局下点 "Dealership" chip,面板从底部贴着 MobileBottomNav 上边
+缘展开,宽度铺满、只有左右上角圆角、无阴影,点击外部/Escape 关闭、
+勾选/搜索/Reset/Apply 都正常;无 console 报错。
+
+【2026-09-13 按你的要求:mobile 单列卡片列表加 760px 断点,改成2列并排】
+你要求 mobile 版的卡片列表(.offer-dashboard__mobile-list)容器宽度
+>=760px 时2个卡片并排,<760px 时卡片左右撑满(不留空白)。新增
+mobileListTwoColumn 这个 computed(复用已有的 measuredWidth,不用再起
+一个新的 ResizeObserver),>=760 时给列表加
+--two-col 修饰类(display:grid + repeat(2,1fr)),否则保持原来的
+display:flex 单列。
+
+新增的这个断点主要覆盖"仍处在 Mobile view 布局(<768px)、但接近上限"
+的窄区间(760~768px,比如横屏手机/小平板),不是覆盖大范围场景——一旦
+容器达到768就整体切换成 effectiveDeviceView==='web' 的桌面布局了,这
+760px 断点是特意卡在 768 这个大breakpoint 之前的一个小breakpoint。
+
+同时发现并修复:OfferCard 组件本身为了桌面卡片网格居中而加的
+max-width:420px(见 OfferCard.vue 自己的注释),会让 mobile 单列列表
+在容器宽度介于420~760之间时卡片"贴左、右边空白",不是你要的"左右
+fill"——加了 `.offer-dashboard__mobile-list .offer-card { max-width:
+none; }` 覆盖掉这个桌面专用的上限,mobile 列表(1列和2列两种状态)都
+不再受这个限制。
+
+浏览器实测(用 Harness 的 Screen width 滑块模拟,已经被限制在
+320~768 范围内):拖到760px,卡片列表变成2列并排,每张卡片约356px宽;
+拖到750px,变回单列,卡片宽度718px(=750-16×2 padding,左右完全
+撑满,不再卡在420px);跨过760反复切换多次,DOM class
+(offer-dashboard__mobile-list--two-col)和实际渲染宽度都用 JS 直接
+读取核对过,和预期一致;无 console 报错。

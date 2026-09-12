@@ -95,7 +95,7 @@
   ═══════════════════════════════════════════════════════════
 -->
 <template>
-  <div v-if="isMultiDealer" class="dealer-dropdown">
+  <div v-if="isMultiDealer" class="dealer-dropdown" :class="{ 'dealer-dropdown--mobile': mobile }">
     <div class="dealer-dropdown__header">
       <div class="dealer-dropdown__title-row">
         <p class="dealer-dropdown__title">Select Dealerships</p>
@@ -155,6 +155,16 @@ const props = defineProps({
   preSelected: {
     type: String,
     default: ''
+  },
+  // 2026-09-12 新增,配合 Offer Dashboard 的 mobile 版设计(Figma node
+  // 4039:9325)——内容/交互(搜索/勾选/Select all/Reset/Apply)完全不变,
+  // 只是外层容器从"悬浮在触发按钮下方的浮层"变成贴着视口底部的
+  // bottom sheet:宽度改成 100%、圆角只留左右上角、去掉阴影。定位本身
+  // (悬浮在哪个位置)不在这个组件里算,由 OfferDashboard 的包裹容器决定,
+  // 细节见 notes.md。
+  mobile: {
+    type: Boolean,
+    default: false
   }
 })
 const emit = defineEmits(['apply'])
@@ -439,5 +449,17 @@ function reset() {
 
 .dealer-dropdown__apply:hover {
   opacity: 0.9;
+}
+
+/* 2026-09-12 mobile 变体(Figma node 4039:9325)——桌面版是悬浮在触发
+   按钮下方、四角都圆的浮层("弹出"感);mobile 版是贴着视口底边的
+   bottom sheet("滑上来"感),宽度铺满、只有左右上角圆、去掉阴影。头部/
+   列表/底部内部结构和交互完全不变,细节见 notes.md。 */
+.dealer-dropdown--mobile {
+  width: 100%;
+  height: 510px;
+  max-height: calc(100vh - 56px - 24px);
+  border-radius: 12px 12px 0 0;
+  box-shadow: none;
 }
 </style>

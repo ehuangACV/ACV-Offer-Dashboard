@@ -44,3 +44,37 @@ Dealerships" Roboto Medium 16px/24 色 #0E0E0F、搜索框圆角8、列表行高
    预期。
 3. 原型本身的其余部分(V2/V3/mobile/搜索 chip lane 等)按你的要求完全
    没有参照,如果之后需要用到那些,需要你再单独指出来。
+
+## 2026-09-12 新增 mobile 变体(Figma node 4039:9325)
+
+你给了 Figma mobile 版这个下拉的设计,并明确说"interaction 什么都
+一样,只要在当前 dealer ship filter dropdown 里增加 mobile 版本就
+可以"——所以内部结构(标题/已选数/Select all/搜索/勾选列表/Reset/
+Apply Filter,以及所有 JS 交互逻辑)完全没有改动,只新增了 `mobile`
+prop 控制外层容器的形状:
+
+- 宽度从固定 374px 改成 100%(铺满视口)。
+- 圆角从四角都是 12px 改成只有左右上角(`12px 12px 0 0`)——桌面版是
+  "浮出来"的悬浮面板,mobile 版是贴着视口底边"滑上来"的 bottom
+  sheet,这是这类底部面板的标准做法,不是随手改的。
+- 去掉阴影(`box-shadow: none`)——bottom sheet 贴着视口边缘,不需要
+  桌面版那种"悬浮在内容上方"的投影感;Figma 这个节点本身也没有给出
+  阴影数值。
+- 高度沿用桌面版同一个 510px,`max-height` 从桌面版的
+  `calc(100vh - 120px)` 改成 `calc(100vh - 56px - 24px)`——56px 是
+  `MobileBottomNav` 的高度(bottom sheet 不能盖住底部导航条),24px 是
+  给它和导航条之间留一点呼吸空间,不是 Figma 核实数值。
+
+**真正的定位**(悬浮在哪、怎么出现/收起)不在这个组件里,由
+[OfferDashboard](../OfferDashboard/notes.md)的包裹容器决定——mobile
+模式下改成 `position:fixed;left:0;right:0;bottom:56px`(贴着
+MobileBottomNav 上边缘,不再是"跟着触发按钮的位置算 top/left"那套
+桌面版逻辑),点击外部关闭/Escape 关闭这些交互完全复用同一套代码,
+没有另外写一份。
+
+**一个小的内容差异,没有改**:Figma 这个 mobile 节点的搜索框占位文案
+是 "Search dealer name",跟桌面版已经核实过的 "Search by dealer name
+or ID..."(来自真实原型)不一样——这次没有跟着改成两个不同的占位文案,
+保持两个版本文案一致,判断这大概率是 mobile 这张 Figma 稿没跟着更新到
+最新文案,不是有意要让两个版本文案不同。如果其实需要两个版本各自不同
+的占位文案,请告诉我。

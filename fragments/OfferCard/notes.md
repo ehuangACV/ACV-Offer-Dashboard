@@ -884,3 +884,39 @@ Figma 核实记录,是之前随手加的防御性上限",删了让卡片始终10
 格子里居中，多出来的空间变成卡片两侧对称的留白，不会整块堆在一边。
 浏览器实测过（细节见OfferDashboard/notes.md）：列宽正常时卡片≈363px
 不受影响，列宽超过420px时卡片精确封顶420px并居中，无 console 报错。
+
+## 2026-09-11 新增 mobileActions prop，配合 Mobile 版设计复用同一个组件
+
+你要做 Offer Dashboard 的 mobile 版本，看了你给的 Figma mobile 页面
+（node 7765:16893）之后，你决定 mobile 卡片**不单独做新组件**，直接
+复用现在这个 `OfferCard.vue`——内容/价格文案/dealState 判断逻辑完全
+不变，唯一的区别是：桌面版按钮是 hover 才浮出的绝对定位浮层，mobile
+版按钮正常排在卡片最下面、一直可见（因为触屏没有真正的 hover）。
+
+新增 `mobileActions` prop（Boolean，默认 false，不传不影响任何已有
+用法）。为真时：
+1. `.offer-card__hover-buttons` 加 `--mobile` 修饰类：`position` 从
+   `absolute` 改成 `static`，让它跟着 `.offer-card__info` 之后自然排列
+   （它在 DOM 里本来就是紧跟在 `.offer-card__info` 后面的兄弟节点，
+   桌面版只是靠绝对定位+`opacity/visibility`盖上去，这次改动没有动
+   DOM 结构）；`opacity`/`visibility` 不再依赖 `:hover`，直接常显。
+   垂直间距交给 `.offer-card` 根节点本来就有的 `gap:12px`（flex
+   column）和 `padding-bottom:12px`，`--mobile` 修饰类自己不加额外的
+   上下 padding，避免叠加出过大空白。
+2. 按钮块上方新增一条分隔线（复用 `.offer-card__divider`，跟消息气泡
+   前用的是同一条规则，加了 `--mobile-actions` 修饰类补一个左右16px
+   的 margin，因为这次是直接挂在没有左右 padding 的 `.offer-card`
+   根节点下，不是挂在有16px padding 的 `.offer-card__info` 里）——
+   桌面版 hover 浮层直接盖在内容上不需要这条线，只在 mobileActions
+   时渲染。
+3. `.offer-card--v1:hover .offer-card__flex-section` 这条"hover 时
+   info 模糊"的规则加了 `:not(.offer-card--mobile-actions)`——mobile
+   下按钮不是浮层，内容没有被盖住，不需要也不应该模糊（触屏点一下会
+   短暂触发 `:hover`，不加这条会在 mobile 下无意义地闪一下模糊）。
+
+按钮本身的文案/个数/顺序（`hoverButtons` 这个 computed，按
+viewerRole+offerType+dealState 查表）完全没有改动，mobile 和桌面版
+永远显示同一组按钮、同一份业务逻辑，不会出现两个版本内容不一致的
+风险。真正的"什么时候用 mobileActions=true"由外层
+[OfferDashboard](../OfferDashboard/notes.md) 按 Screen width/mobile
+view 开关决定，这个组件自己不判断当前是不是 mobile。

@@ -74,7 +74,12 @@
   ═══════════════════════════════════════════════════════════
 -->
 <template>
-  <div class="filter-chip-group">
+  <div
+    class="filter-chip-group"
+    :class="{ 'filter-chip-group--mobile': mobile }"
+    @mousedown="handleChipsMouseDown"
+    @click.capture="handleChipsClickCapture"
+  >
     <!-- 单经销商账号时不显示这颗 chip,见 METADATA 里 6837:16538 的核实。
          2026-08 按你的要求:应用了经销商筛选之后,摘要 chip 要顶替这颗
          按钮本来的位置,不是在筛选行下面另起一行显示。参照真实原型
@@ -104,14 +109,28 @@
       </template>
     </button>
 
-    <button type="button" class="filter-chip" :disabled="negotiationCount === 0" :class="{ 'filter-chip--selected': negotiationSelectedLocal }" @click="negotiationSelectedLocal = !negotiationSelectedLocal">
-      In negotiation{{ negotiationCount ? ` (${negotiationCount})` : '' }}
-    </button>
-    <button type="button" class="filter-chip" :disabled="makeOfferCount === 0" :class="{ 'filter-chip--selected': makeOfferSelectedLocal }" @click="makeOfferSelectedLocal = !makeOfferSelectedLocal">
-      Make Offer{{ makeOfferCount ? ` (${makeOfferCount})` : '' }}
-    </button>
+    <!-- 2026-09-11 按 Figma mobile 页面(node 7765:16893)自带的设计标注
+         "Hide the 'In Negotiation' and 'Make Offer' filters on mobile
+         view"——mobile 下这两个 chip 完全不渲染,不是禁用/隐藏,细节见
+         notes.md。 -->
+    <template v-if="!mobile">
+      <button type="button" class="filter-chip" :disabled="negotiationCount === 0" :class="{ 'filter-chip--selected': negotiationSelectedLocal }" @click="negotiationSelectedLocal = !negotiationSelectedLocal">
+        In negotiation{{ negotiationCount ? ` (${negotiationCount})` : '' }}
+      </button>
+      <button type="button" class="filter-chip" :disabled="makeOfferCount === 0" :class="{ 'filter-chip--selected': makeOfferSelectedLocal }" @click="makeOfferSelectedLocal = !makeOfferSelectedLocal">
+        Make Offer{{ makeOfferCount ? ` (${makeOfferCount})` : '' }}
+      </button>
+    </template>
 
-    <span class="filter-chip-group__divider" aria-hidden="true" />
+    <!-- 2026-09-12 按你的要求:这条竖线是用来分隔"多选组"(Dealership/
+         In negotiation/Make Offer)和"单选组"(New/Received/Sent/
+         Declined)的,不是专门为 Dealership 一个 chip 画的。桌面版
+         In negotiation/Make Offer 永远会渲染,多选组不会是空的,divider
+         恒定显示,不受影响;mobile 版这两个 chip 永远隐藏,多选组里
+         唯一可能出现的就是 Dealership 一个 chip——如果它也因为
+         isMultiDealer=false 不显示(比如 Buying tab),多选组就完全是
+         空的,前面没有任何东西,不该再画这条线。 -->
+    <span v-if="isMultiDealer || !mobile" class="filter-chip-group__divider" aria-hidden="true" />
 
     <!-- New/Received/Sent/Declined 互斥单选,来自 Figma 节点自带的设计标注 -->
     <button type="button" class="filter-chip" :disabled="newCount === 0" :class="{ 'filter-chip--selected': singleSelected === 'new' }" @click="toggleSingleSelect('new')">
@@ -127,12 +146,15 @@
       Declined{{ declinedCount ? ` (${declinedCount})` : '' }}
     </button>
 
-    <button type="button" class="filter-chip-group__clear" @click="handleClear">Clear</button>
+    <!-- 2026-09-12 按你给的 Figma mobile 节点(7773:45581)——mobile 上
+         "Clear" 不是一直显示,只有真的选了至少一个筛选项(chip 或
+         Dealership)才出现;桌面版还是保持一直显示,不受这条影响。 -->
+    <button v-if="!mobile || hasAnyFilterSelected" type="button" class="filter-chip-group__clear" @click="handleClear">Clear</button>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 // 暴露 Dealership 触发按钮的 DOM 节点,给 OfferDashboard 用来把浮层
 // popover 定位在按钮下方(见 DealershipFilterDropdown 2026-08 的改动)
@@ -163,7 +185,15 @@ const props = defineProps({
   // (Buying 保持不变),默认 true 不影响任何已有用法——OfferDashboard 按
   // 当前 tab 传 false 进来才会隐藏,不是靠 declinedCount===0 的 disabled
   // 态(disabled 态还是灰着显示在那里,这次是要求整个隐藏,不是禁用)。
-  showDeclined: { type: Boolean, default: true }
+  showDeclined: { type: Boolean, default: true },
+  // 2026-09-11 新增,配合 Offer Dashboard 的 mobile 版设计(Figma node
+  // 7765:16893)——按 Figma 节点自带的设计标注隐藏 In negotiation/Make
+  // Offer 两个 chip(不是禁用,完全不渲染),chip 本身的横向 padding从
+  // 16px压缩成8px、chip内部icon/文字的gap从8px压缩成4px(核实自 Figma
+  // node 7765:16923),整行允许横向滚动(479px内容在375px视口里放不下,
+  // Figma 本身就是横向溢出的布局,不是换行)。默认 false,不影响任何
+  // 已有用法。
+  mobile: { type: Boolean, default: false }
 })
 const emit = defineEmits(['toggle-dealership', 'clear', 'filter-change', 'clear-dealer'])
 
@@ -182,6 +212,56 @@ const singleSelected = ref(
 
 function toggleSingleSelect(key) {
   singleSelected.value = singleSelected.value === key ? null : key
+}
+
+// 2026-09-12 新增,配合上面的 "Clear 只在选了筛选项时才显示"(mobile
+// 专属)——只要 negotiation/makeOffer/单选状态任一个选中,或者
+// Dealership 已经应用了筛选(dealerChipLabel 非空),就算"有筛选项"。
+// dealerChipLabel 是 prop 不是这个组件自己的状态,但逻辑上 Dealership
+// 也是一种筛选,选了之后同样应该能用 Clear 清掉,所以一起算进来。
+const hasAnyFilterSelected = computed(() =>
+  negotiationSelectedLocal.value ||
+  makeOfferSelectedLocal.value ||
+  !!singleSelected.value ||
+  !!props.dealerChipLabel
+)
+
+// 2026-09-12 新增,配合 mobile 版设计:隐藏原生滚动条外观之后,真机上
+// 触屏划动本来就能滚动,但桌面浏览器用鼠标没有"划"这个手势,鼠标在这行
+// 上点击拖拽并不会滚动——补一个鼠标拖拽滚动的实现,只在 mobile=true 时
+// 启用,不碰桌面版本来的表现。拖拽状态放在普通对象里,不需要响应式。
+const chipsDrag = { active: false, startX: 0, startScrollLeft: 0, moved: false, el: null }
+function handleChipsMouseDown(e) {
+  if (!props.mobile) return
+  chipsDrag.active = true
+  chipsDrag.moved = false
+  chipsDrag.startX = e.clientX
+  chipsDrag.el = e.currentTarget
+  chipsDrag.startScrollLeft = chipsDrag.el.scrollLeft
+  window.addEventListener('mousemove', handleChipsMouseMove)
+  window.addEventListener('mouseup', handleChipsMouseUp)
+}
+function handleChipsMouseMove(e) {
+  if (!chipsDrag.active) return
+  const dx = e.clientX - chipsDrag.startX
+  // 3px 的容错阈值——鼠标点击时手指/鼠标不可能完全不抖动,不设阈值的话
+  // 正常点击一个 chip 也会被误判成"发生了拖拽",导致下面 click.capture
+  // 把这次真正的点击吞掉,chip 选不中
+  if (Math.abs(dx) > 3) chipsDrag.moved = true
+  chipsDrag.el.scrollLeft = chipsDrag.startScrollLeft - dx
+}
+function handleChipsMouseUp() {
+  chipsDrag.active = false
+  window.removeEventListener('mousemove', handleChipsMouseMove)
+  window.removeEventListener('mouseup', handleChipsMouseUp)
+}
+// 刚发生过拖拽的那次 click 不应该真的触发 chip 的选中/取消选中——不然
+// "拖了一下"经常会被浏览器同时当成一次 click,选中态被意外切换
+function handleChipsClickCapture(e) {
+  if (chipsDrag.moved) {
+    e.stopPropagation()
+    chipsDrag.moved = false
+  }
 }
 
 // 2026-08 按你的要求:所有数量为 0 的 chip 都要 disable(In negotiation/
@@ -315,5 +395,66 @@ watch([negotiationSelectedLocal, makeOfferSelectedLocal, singleSelected], () => 
   line-height: 14px;
   letter-spacing: 0.1px;
   margin-left: 4px;
+}
+
+/* 2026-09-11 mobile 变体(Figma node 7765:16923)——479px 的内容在375px
+   视口里放不下,Figma 本身就是横向溢出、靠滚动查看剩下的 chip,不是换行
+   或者缩得更小硬塞进去,所以允许横向滚动;chip 自己的横向 padding 从
+   16px 压缩成8px、内部 icon/文字的 gap 从8px压缩成4px,这两个是核实过
+   的 Figma 数值,不是随手估的。 */
+/* 2026-09-12 按你的要求:mobile 上不应该有可见的横向滚动条 UI(截图里
+   那种带左右箭头+灰色滚动条的样子是桌面浏览器渲染 overflow:auto 的
+   默认外观,真实手机上原生触屏滚动不会长这样,只隐藏滚动条的外观,
+   横向滚动本身的功能不受影响,和桌面版表格的影子滚动条那次同一个
+   处理思路(只藏外观,不藏功能)。 */
+.filter-chip-group--mobile {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  cursor: grab;
+}
+
+.filter-chip-group--mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* 2026-09-12 按你给的截图:"Clear" 应该贴着可视区域右边缘,滚动到还没
+   到底时会盖在当时刚好在那个位置的 chip 上面(比如截图里盖住了
+   "Received"的一部分),不是跟着别的 chip 一起被滚走。position:sticky
+   + right:0 正好是这个效果——没滚到底时,它会被"钉"在可视区域右边缘,
+   视觉上盖住底下的 chip(所以需要一个不透明的白色背景 + 比 chip 高的
+   z-index);一旦滚到底,它自己在文档流里的位置正好也到了右边缘,不再
+   需要覆盖任何东西,行为和普通"贴底"的 sticky 元素完全一样,不是额外
+   加的特例。 */
+/* 2026-09-12 按你的要求:Clear 底下盖住的那个 chip 是 32px 高的圆角
+   边框盒子,但 Clear 自己原来的高度是靠 padding(6px)+行高(14px)撑出
+   来的 26px,比 32px 矮了6px,导致被盖住的 chip 的圆角边框上下各露出
+   一点(截图里 "Clear" 左边那个 "[" 形状的缺口)。改成显式
+   height:32px + inline-flex 垂直居中文字,让 Clear 的白色背景刚好
+   盖满整个 chip 的高度,不多不少,边框就完全看不到了。 */
+.filter-chip-group--mobile .filter-chip-group__clear {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  background: #FFFFFF;
+  padding: 0 12px;
+}
+
+.filter-chip-group--mobile .filter-chip {
+  padding: 6px 8px;
+  gap: 4px;
+}
+
+.filter-chip-group--mobile .filter-chip--dealership {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.filter-chip-group--mobile .filter-chip--dealer-active {
+  padding-left: 8px;
+  padding-right: 8px;
 }
 </style>

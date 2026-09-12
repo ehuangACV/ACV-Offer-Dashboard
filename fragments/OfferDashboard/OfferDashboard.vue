@@ -238,7 +238,72 @@
   ═══════════════════════════════════════════════════════════
 -->
 <template>
-  <div class="offer-dashboard">
+  <div ref="rootRef" class="offer-dashboard" :class="{ 'offer-dashboard--mobile': effectiveDeviceView === 'mobile' }">
+  <!-- 2026-09-11 新增 mobile 版布局:桌面版(AppHeader+Breadcrumb+
+       SidebarNav+表格/卡片网格)和 mobile 版(MobileTopBar+单列卡片
+       列表+MobileBottomNav)是两套完全不同的页面结构,不是靠 CSS
+       响应式挤压同一套 DOM——用 effectiveDeviceView 整个分叉,细节见
+       notes.md。 -->
+  <template v-if="effectiveDeviceView === 'mobile'">
+    <MobileTopBar />
+
+    <div class="offer-dashboard__mobile-body">
+      <OfferTabs v-bind="tabs" mobile @select="handleTabSelect" />
+
+      <div class="offer-dashboard__toolbar offer-dashboard__toolbar--mobile">
+        <SearchInput v-model="searchInputValue" @search="searchValue = $event" />
+        <FilterChipGroup
+          ref="filterChipGroupRef"
+          v-bind="filters"
+          mobile
+          :is-multi-dealer="effectiveMultiDealer"
+          :dealership-open="dealershipDropdownOpen"
+          :dealer-chip-label="dealerFilter.length ? dealerChipText : ''"
+          :show-declined="activeMainTab !== 'selling'"
+          @toggle-dealership="toggleDealershipDropdown"
+          @clear="handleClearFilters"
+          @filter-change="chipFilter = $event; currentTablePage = 1"
+          @clear-dealer="dealerFilter = []; currentTablePage = 1"
+        />
+      </div>
+
+      <div
+        v-if="dealershipDropdownOpen"
+        ref="dealerPopoverWrapRef"
+        class="offer-dashboard__dealer-popover-anchor"
+        :style="dealerPopoverStyle"
+      >
+        <DealershipFilterDropdown
+          mobile
+          :is-multi-dealer="effectiveMultiDealer"
+          :pre-selected="dealerFilter.join(',')"
+          @apply="handleApplyDealerFilter"
+        />
+      </div>
+
+      <div class="offer-dashboard__mobile-list" :class="{ 'offer-dashboard__mobile-list--two-col': mobileListTwoColumn }">
+        <OfferCard
+          v-for="(card, i) in rowsAsCards"
+          :key="i"
+          v-bind="card"
+          mobile-actions
+          :has-prev-deal="i > 0"
+          :has-next-deal="i < rowsAsCards.length - 1"
+          @prev-deal="handleCardPrev(i)"
+          @next-deal="handleCardNext(i)"
+          @remove-from-list="handleRemoveFromList(card.auctionId)"
+          @viewed="markSeen(card.auctionId)"
+        />
+        <p v-if="visibleRows.length === 0" class="offer-dashboard__empty">
+          No vehicles match the current filters.
+        </p>
+      </div>
+    </div>
+
+    <MobileBottomNav />
+  </template>
+
+  <template v-else>
     <AppHeader v-bind="header" :has-new-offers="hasAnyNewDeal" />
 
     <div class="offer-dashboard__breadcrumb-row">
@@ -386,6 +451,7 @@
         </div>
       </main>
     </div>
+  </template>
   </div>
 </template>
 
@@ -417,11 +483,43 @@ const props = defineProps({
   // 2026-09-03 按你的要求默认值从 5 改成 15,配合下面 rows 扩到 30 条
   // (15 Buying + 15 Selling)
   buyingVehicleCount: { type: Number, default: 15 },
-  sellingVehicleCount: { type: Number, default: 15 }
+  sellingVehicleCount: { type: Number, default: 15 },
+  // 2026-09-11 新增,配合 mobile 版设计:auto(默认)按这个组件自己实际
+  // 渲染宽度是否小于768px 自动判断显示 web 版还是 mobile 版;'mobile'/
+  // 'web' 是手动强制覆盖,不管实际渲染宽度多少都显示对应版本(方便在
+  // 宽屏下也能检查 mobile 设计细节,不用真的把窗口缩到很窄)。'table'
+  // (mobile 自己的表格视图)你说了先不用管,这次没有做,细节见
+  // notes.md。
+  deviceView: { type: String, default: 'auto' }
 })
 
 const dealershipDropdownOpen = ref(false)
 const viewMode = ref('table')
+
+// 2026-09-11 新增,配合 mobile 版设计:实际测量这个组件自己的渲染宽度
+// (不是读 Harness 的 "Screen width" 那个滑块数值——那个只是控制预览
+// 舞台容器的 CSS 宽度,这个组件自己并不知道那个数字,一直是靠
+// container query 被动响应),小于768px 就判定为 mobile。默认先假设
+// 1200(web),避免首次渲染前测量结果还没出来时闪一下 mobile 布局。
+const MOBILE_BREAKPOINT = 768
+const rootRef = ref(null)
+const measuredWidth = ref(1200)
+let deviceViewResizeObserver = null
+function updateMeasuredWidth() {
+  if (rootRef.value) measuredWidth.value = rootRef.value.clientWidth
+}
+const effectiveDeviceView = computed(() => {
+  if (props.deviceView === 'mobile' || props.deviceView === 'web') return props.deviceView
+  return measuredWidth.value < MOBILE_BREAKPOINT ? 'mobile' : 'web'
+})
+
+// 2026-09-13 按你的要求新增:mobile 版单列卡片列表,容器够宽(>=760px,
+// 比如横屏手机/小平板,同时还没跨过上面 768px 那个"整体换成 Web 版"
+// 的 breakpoint)时改成 2 列并排;不够 760 时还是 1 列、卡片左右撑满
+// 容器,不再受 OfferCard 自己那个给桌面网格用的 max-width:420px 限制
+// (见下面 CSS .offer-dashboard__mobile-list .offer-card 那条覆盖)。
+// 复用上面已经在测的 measuredWidth,不需要再单独起一个 ResizeObserver。
+const mobileListTwoColumn = computed(() => measuredWidth.value >= 760)
 
 // 2026-08 按你的要求,参照真实原型(My-ACV--Dealer-filter-main)把
 // DealershipFilterDropdown 改成真正悬浮在 "Dealership" 按钮下方的
@@ -433,7 +531,21 @@ const filterChipGroupRef = ref(null)
 const dealerPopoverWrapRef = ref(null)
 const dealerPopoverStyle = ref({})
 
+// 2026-09-12 新增 mobile 分支:mobile 版这个浮层不再是"跟着触发按钮的
+// 位置算 top/left"的悬浮弹窗,是贴着视口底边(MobileBottomNav 上边缘)
+// 的 bottom sheet,不需要知道按钮在哪,细节见
+// DealershipFilterDropdown/notes.md。
 function updateDealerPopoverPosition() {
+  if (effectiveDeviceView.value === 'mobile') {
+    dealerPopoverStyle.value = {
+      position: 'fixed',
+      left: '0',
+      right: '0',
+      bottom: '56px',
+      zIndex: 10000
+    }
+    return
+  }
   const btn = filterChipGroupRef.value?.dealershipBtnRef
   if (!btn) return
   const rect = btn.getBoundingClientRect()
@@ -493,6 +605,12 @@ onMounted(() => {
   if (tableScrollRef.value) hScrollResizeObserver.observe(tableScrollRef.value)
   if (tableBottomRef.value) hScrollResizeObserver.observe(tableBottomRef.value)
   nextTick(updateHScrollMeasurements)
+
+  // 2026-09-11 新增:测量自己的渲染宽度来判断 web/mobile,细节见
+  // effectiveDeviceView 旁边的注释
+  updateMeasuredWidth()
+  deviceViewResizeObserver = new ResizeObserver(updateMeasuredWidth)
+  if (rootRef.value) deviceViewResizeObserver.observe(rootRef.value)
 })
 
 onBeforeUnmount(() => {
@@ -502,6 +620,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleRepositionOnScroll)
   window.removeEventListener('resize', updateHScrollMeasurements)
   if (hScrollResizeObserver) hScrollResizeObserver.disconnect()
+  if (deviceViewResizeObserver) deviceViewResizeObserver.disconnect()
 })
 
 const header = {
@@ -1453,5 +1572,47 @@ const cardGridStyle = computed(() =>
   text-align: center;
   color: #757575;
   font-size: 14px;
+}
+
+/* 2026-09-11 新增 mobile 版布局。垂直间距(8px)/水平内边距(16px)是按
+   Figma mobile 页面(node 7765:16893)几段主要区块之间实测的间距反推的
+   近似值——TopBar 结束(y=56)到 tabs 开始(y=64)是8px,tabs 结束
+   (y=103)到搜索框开始(y=111)也是8px,搜索/筛选区结束(y=231的
+   Frame215333)到卡片列表开始也是紧贴(8px),Figma 本身没有给出统一
+   命名的"间距 token",不是逐字段核实的数值,如果实际渲染出来间距不对
+   需要你发截图核对。 */
+.offer-dashboard__mobile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  padding: 0 16px 16px;
+  box-sizing: border-box;
+}
+
+.offer-dashboard__toolbar--mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0 0;
+}
+
+.offer-dashboard__mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 2026-09-13 按你的要求新增:容器 >=760px 时 2 列并排(见上面
+   mobileListTwoColumn),<760px 时保持上面的单列 flex,同时去掉
+   OfferCard 自己给桌面网格用的 max-width:420px——mobile 列表这里两种
+   状态都要"卡片撑满自己所在的列",不应该被那个桌面专用的上限卡住。 */
+.offer-dashboard__mobile-list .offer-card {
+  max-width: none;
+}
+.offer-dashboard__mobile-list--two-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 </style>

@@ -35,7 +35,13 @@
   .pg-mock-btn:hover { background: #F0F8FF; }
 
   .pg-workspace { display: flex; align-items: flex-start; }
-  .pg-stage { flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; }
+  /* 2026-09-12 按你的要求:背景从纯白改成浅灰(#F0F1F3)——之前预览
+     舞台和里面渲染出来的组件(比如 Offer Dashboard 自己就是白底)颜色
+     完全一样,窄屏(比如 mobile 375px)时完全看不出组件的边界在哪,
+     "白白的一片"。改成浅灰画布之后,不管组件自己是不是白底,都能看清
+     它的实际渲染范围,参照你截图里那个同事做的 VDP 预览工具的做法
+     (灰色画布 + 组件本身在中间,像一张卡片浮在上面)。 */
+  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; }
 
   /* 2026-08 按你的要求新增:整页组件(比如 Offer Dashboard)右上角
      "Expand to full page" 按钮,方便你做 presentation 时全屏看效果。这
@@ -63,7 +69,51 @@
      之后,把"全屏时铺满可用宽度"和"用滑块模拟任意屏幕宽度"统一成同一套
      机制,细节(container-type、cqw 换算公式)见下面 .offer-dashboard
      相关规则旁边的注释,这里不重复。 */
+  /* 2026-09-13(第二次,撤销)按你的要求给这个框加过 width:fit-content
+     +居中+白底+阴影("卡片浮在灰色画布上"的效果),想解决"贴边的方框"
+     的问题,但你反馈这样看着反而更乱——已经撤销,恢复成改动前只有
+     container-type、不管外观的样子,细节和撤销原因见 notes.md。 */
   .pg-stage__resize-frame { container-type: inline-size; }
+  /* 2026-09-13(第三次)你反馈 Mobile view 的高度"没有手机的感觉"——
+     实测过 stageFrameHeight/stageFrameStyle 本身没有 bug,真实渲染出来
+     的 .pg-stage__resize-frame 高度确实精确是 844px(内部 overflow-y:
+     auto 也确实生效,超出 844 的内容会被裁切、靠内部滚动查看),问题是
+     纯视觉上的:这个框贴着舞台左上角,没有居中、没有描边/圆角,也没有
+     隐藏原生滚动条,看起来就是一块普通的裁切区域,不像一个悬浮在灰色
+     画布上的手机屏幕。新增 --device 这个修饰类,只在 Mobile view
+     (stageFrameHeight 有值)时生效,不影响 Web view/Auto 模式,也不会
+     碰到别的组件(Filter Chip Group 等)——上面(第二次)被你说"更乱"的
+     白底+阴影是加在所有组件通用的 .pg-stage__card 上,这次改动范围
+     收紧到只有 Mobile view 这一个场景,两者不是同一件事。 */
+  .pg-stage__resize-frame--device {
+    margin: 0 auto;
+    background: #FFFFFF;
+    border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12), 0 16px 40px rgba(0,0,0,.14);
+    scrollbar-width: none;
+    /* 2026-09-13(第四次)你反馈 mobile 版 Dealership 下拉("Select
+       Dealerships" bottom sheet)在这个 Playground 里 fit 不对,整个铺满
+       了桌面浏览器窗口,不是贴着手机屏幕底部的 bottom sheet——排查确认
+       这不是 DealershipFilterDropdown/OfferDashboard 组件本身的 bug:
+       它的 mobile 弹层用 position:fixed + left:0/right:0/bottom:56px
+       (细节见 OfferDashboard.vue updateDealerPopoverPosition 的 mobile
+       分支),这个写法在真实手机浏览器里是对的(fixed 天然相对整个屏幕,
+       屏幕本身就是"viewport"),但在这个 Playground 里,"手机屏幕"只是
+       桌面浏览器窗口里的一个 390×844 小方框,不是真的 viewport——
+       position:fixed 天生只认真实浏览器 viewport,会直接穿透这个小方框,
+       铺满整个桌面窗口,实测确认了这一点(fixed 元素 left:0/width 等于
+       整个 944px 视口宽度,不是 390px 的手机框宽度)。
+       修法:给这个手机屏幕外框加 contain:layout——按 CSS Containment
+       规范,声明了 layout containment 的元素会变成它内部所有
+       position:fixed/absolute 后代的 containing block,这样 fixed 定位
+       就会相对这个 390×844 的框计算,不再相对整个浏览器窗口,等效于
+       "把这个框模拟成一个真的手机屏幕"。这个类本来就只在 Mobile view
+       (stageFrameHeight 有值)时生效,不影响 Web view/桌面场景下同样用
+       position:fixed 定位的经销商浮层(那边的 fixed 本来就应该相对真实
+       浏览器视口算,不能加这个 containment)。 */
+    contain: layout;
+  }
+  .pg-stage__resize-frame--device::-webkit-scrollbar { display: none; }
   /* 2026-09-11 Spec Mode 相关样式,细节见 Harness setup() 里那段注释。
      鼠标悬浮预览框用蓝色描边(跟截图参考的那个工具同一个思路,不是抄
      它的具体像素值),点击后的详细面板走这个项目自己已有的色板
@@ -226,6 +276,17 @@
   .sidebar-nav__divider { height: 39px; margin: 0 16px; position: relative; }
   .sidebar-nav__divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #DCDFE8; }
 
+  /* -- MobileTopBar (2026-09-11 新增) -- */
+  .mobile-top-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; height: 56px; background: #FAFAFA; border-bottom: 1px solid #DCDFE8; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+  .mobile-top-bar__back { position: absolute; left: 16px; top: 16px; display: inline-flex; width: 24px; height: 24px; padding: 0; border: none; background: none; cursor: pointer; }
+  .mobile-top-bar__title { flex: 1; text-align: center; font-size: 20px; font-weight: 500; line-height: 30px; letter-spacing: 0.15px; color: #545454; }
+
+  /* -- MobileBottomNav (2026-09-11 新增) -- */
+  .mobile-bottom-nav { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; height: 56px; background: #FAFAFA; border-top: 1px solid #DCDFE8; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+  .mobile-bottom-nav__logo, .mobile-bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 100%; border: none; background: none; padding: 0; cursor: pointer; }
+  .mobile-bottom-nav__logo { cursor: default; }
+  .mobile-bottom-nav__label { font-size: 12px; line-height: 16px; letter-spacing: 0.4px; background-image: linear-gradient(93.3675deg, #F26522 0.15497%, #FC4243 87.519%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
   /* -- OfferTabs -- */
   /* 2026-08 修复:底部分割线用 position:absolute+z-index:-1+1px高度的
      div 实际渲染基本看不见(抗锯齿掉了),改成 border-bottom(标准稳妥
@@ -236,6 +297,10 @@
   .offer-tabs__count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: #D1D3D6; color: #55575C; font-family: 'Inter', 'Roboto', sans-serif; font-weight: 700; font-size: 12px; line-height: 18px; }
   .offer-tabs__tab--selected .offer-tabs__count { background: #F26522; color: #FFFFFF; }
   .offer-tabs__indicator { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 4px 4px 0 0; background: #F26522; }
+  /* -- OfferTabs mobile variant (2026-09-11) -- */
+  .offer-tabs--mobile .offer-tabs__tab { flex: 1; padding: 9px 16px 8px; font-size: 14px; letter-spacing: 0.1px; }
+  .offer-tabs--mobile .offer-tabs__tab--selected { background: none; border-radius: 0; color: #004E7D; }
+  .offer-tabs--mobile .offer-tabs__indicator { background: #004E7D; }
 
   /* -- SearchInput -- */
   .search-input { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: #F7F7F8; border-radius: 4px 4px 0 0; box-sizing: border-box; }
@@ -258,6 +323,13 @@
   .filter-chip__dealer-close:hover { opacity: 1; background: rgba(0, 85, 140, 0.1); }
   .filter-chip-group__divider { width: 1px; height: 28px; background: #0E0E0F; flex-shrink: 0; }
   .filter-chip-group__clear { border: none; background: none; cursor: pointer; color: #004E7D; font-size: 14px; font-weight: 500; line-height: 14px; letter-spacing: 0.1px; margin-left: 4px; }
+  /* -- FilterChipGroup mobile variant (2026-09-11) -- */
+  .filter-chip-group--mobile { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; cursor: grab; }
+  .filter-chip-group--mobile::-webkit-scrollbar { display: none; }
+  .filter-chip-group--mobile .filter-chip-group__clear { position: sticky; right: 0; z-index: 2; display: inline-flex; align-items: center; height: 32px; background: #FFFFFF; padding: 0 12px; }
+  .filter-chip-group--mobile .filter-chip { padding: 6px 8px; gap: 4px; }
+  .filter-chip-group--mobile .filter-chip--dealership,
+  .filter-chip-group--mobile .filter-chip--dealer-active { padding-left: 8px; padding-right: 8px; }
 
   /* -- DealershipFilterDropdown -- */
   /* 2026-08 重做:参照真实原型 My-ACV--Dealer-filter-main 的 V1 web
@@ -288,6 +360,8 @@
   .dealer-dropdown__reset:hover { background: rgba(0, 78, 125, 0.06); }
   .dealer-dropdown__apply { border: none; border-radius: 100px; background: linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%); color: #FFFFFF; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; padding: 10px 24px; cursor: pointer; }
   .dealer-dropdown__apply:hover { opacity: 0.9; }
+  /* -- DealershipFilterDropdown mobile variant (2026-09-12) -- */
+  .dealer-dropdown--mobile { width: 100%; height: 510px; max-height: calc(100vh - 56px - 24px); border-radius: 12px 12px 0 0; box-shadow: none; }
 
   /* 2026-08:经销商筛选摘要现在顶替 FilterChipGroup 里 Dealership 按钮
      本来的位置(见 .filter-chip--dealer-active),不再是这里单独的 chip */
@@ -440,7 +514,31 @@
      (默认 1422px 宽,和之前写死在这里的值一样,所以默认预览不受影响);
      frame 宽度现在由 Controls 面板里的 screenWidth 滑块控制,细节见
      Harness 的 setup() 里 screenWidth/stageFrameStyle 那部分 */
-  .offer-dashboard { display: flex; flex-direction: column; background: #FFFFFF; font-family: 'Roboto', sans-serif; width: 100%; }
+  /* 2026-09-13(第五次)按你反馈修正:这条规则漏镜像了 OfferDashboard.vue
+     源文件里本来就有的 min-height:100vh(2026-08 改成 width:100% 的时候
+     不小心把这条也删掉了,属于镜像遗漏,不是有意的改动)。这条丢失直接
+     导致 mobile 版内容很短(比如筛选完只剩1条)时,MobileBottomNav 不会
+     贴在屏幕最底部——没有 min-height 撑住,.offer-dashboard 的 flex 容器
+     只会按内容自然高度收缩,MobileBottomNav(没有设 flex-grow)就贴在
+     内容后面,下面留一截空白,不是贴底。补回 min-height:100vh 之后,
+     .offer-dashboard__mobile-body 已有的 flex:1 会正确吃掉容器里多出来
+     的空间,把 MobileBottomNav 顶到底部,细节和 Playground 里额外需要的
+     处理(vh 在这个舞台的模拟手机框里不等于真的 844px)见下面
+     .pg-stage__resize-frame--device .offer-dashboard 那条只在 Playground
+     里生效的覆盖规则。 */
+  .offer-dashboard { display: flex; flex-direction: column; background: #FFFFFF; min-height: 100vh; font-family: 'Roboto', sans-serif; width: 100%; }
+  /* 上面这条 min-height:100vh 是照抄 OfferDashboard.vue 源文件的真实
+     生产行为(真机上 100vh 就是真实屏幕高度,没有问题)。但在这个
+     Playground 里,"手机屏幕"是 .pg-stage__resize-frame--device 这个
+     844px 高的模拟框,不是真的浏览器 viewport——vh 只认真实浏览器窗口
+     高度,跟这个模拟框的844px完全是两回事(真实浏览器窗口通常比844高,
+     会导致 mobile 页面在 Playground 里比模拟屏幕还高,要多余地内部滚动
+     才能看到 MobileBottomNav)。这条规则只在 Playground 的 Harness 里
+     加(不属于 OfferDashboard.vue 本身,不会镜像回 fragment 源文件),
+     把 min-height 从"真实vh" 覆盖成"父元素(模拟手机框)高度的100%"——
+     由于模拟手机框自己有明确的 844px 行内高度,百分比能正确解析成
+     844px,和真实手机上 100vh=真实屏幕高度 的效果对齐。 */
+  .pg-stage__resize-frame--device .offer-dashboard { min-height: 100%; }
   /* 2026-08 核实自节点 7448:9826:App Bar→breadcrumb 原为24px(2026-08
      按你的要求改成32px,截图上直接标出来的,不是重新核实的 Figma 数值),
      breadcrumb→Tabs 14px。左边距(292px = sidebar宽260 + 新增左边距16
@@ -499,6 +597,15 @@
      offer-dashboard__* 改成 results-toolbar__*),这里不再重复定义 */
   .offer-dashboard__card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; padding-bottom: 16px; }
   .offer-dashboard__empty { padding: 40px 16px; text-align: center; color: #757575; font-size: 14px; }
+  /* -- OfferDashboard mobile layout (2026-09-11) -- */
+  .offer-dashboard__mobile-body { display: flex; flex-direction: column; gap: 8px; flex: 1; padding: 0 16px 16px; box-sizing: border-box; }
+  .offer-dashboard__toolbar--mobile { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 0; }
+  .offer-dashboard__mobile-list { display: flex; flex-direction: column; gap: 16px; }
+  /* 2026-09-13 按你的要求新增:容器 >=760px 时 2 列并排,<760px 时保持
+     单列、且去掉 OfferCard 自己给桌面网格用的 max-width:420px,细节见
+     OfferDashboard.vue 同名注释。 */
+  .offer-dashboard__mobile-list .offer-card { max-width: none; }
+  .offer-dashboard__mobile-list--two-col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 
   /* -- ResultsToolbar -- */
   .results-toolbar { display: flex; align-items: center; justify-content: flex-end; padding: 16px 0; }
@@ -537,11 +644,14 @@
      1按钮和2按钮的模糊覆盖范围应该一样("identity + status dimmed,
      message stays readable"),之前1按钮只模糊车辆信息,现在也扩大到
      车辆信息+倒计时/状态chip行,和2按钮一致。3按钮(整个info区)不变 */
-  .offer-card--v1:hover .offer-card__flex-section { filter: blur(2px); }
+  .offer-card--v1:hover:not(.offer-card--mobile-actions) .offer-card__flex-section { filter: blur(2px); }
   /* 2026-08 按截图调整位置:不再拉伸铺满+居中,按 Figma 三个按钮数量
      各自核实到的数值定位(top~220px,水平边距~11px),高度由内容撑开 */
   .offer-card__hover-buttons { position: absolute; left: 11px; right: 11px; top: 267px; display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 8px; box-sizing: border-box; opacity: 0; visibility: hidden; transition: opacity 0.15s ease; }
   .offer-card:hover .offer-card__hover-buttons { opacity: 1; visibility: visible; }
+  /* -- OfferCard mobileActions (2026-09-11,mobile 布局) -- */
+  .offer-card__hover-buttons--mobile { position: static; opacity: 1; visibility: visible; padding: 0 16px; }
+  .offer-card__divider--mobile-actions { margin: 0 16px; }
   .offer-card__hover-btn { width: 100%; padding: 10px 16px; border-radius: 100px; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; box-sizing: border-box; }
   /* 2026-08 按新规范重命名 primary/secondary/tertiary → filled/outlined,
      视觉数值没变;grey-outline 是新增的("Remove From List"用,颜色不是
@@ -1016,22 +1126,76 @@
     }
   });
 
+  // ---------- MobileTopBar (order 13,页面外壳,2026-09-11 新增) ----------
+  // 细节见 fragments/MobileTopBar/notes.md,这里只做逐字镜像。
+  var MobileTopBar = defineComponent({
+    name: 'MobileTopBar',
+    props: {
+      title: { type: String, default: 'Offers' }
+    },
+    emits: ['back'],
+    template:
+      '<div class="mobile-top-bar">' +
+      '<button type="button" class="mobile-top-bar__back" aria-label="Back" @click="$emit(\'back\')">' +
+      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19.0005 11H7.83047L12.7105 6.11997C13.1005 5.72997 13.1005 5.08997 12.7105 4.69997C12.3205 4.30997 11.6905 4.30997 11.3005 4.69997L4.71047 11.29C4.32047 11.68 4.32047 12.31 4.71047 12.7L11.3005 19.29C11.6905 19.68 12.3205 19.68 12.7105 19.29C13.1005 18.9 13.1005 18.27 12.7105 17.88L7.83047 13H19.0005C19.5505 13 20.0005 12.55 20.0005 12C20.0005 11.45 19.5505 11 19.0005 11Z" fill="#212121"/></svg>' +
+      '</button>' +
+      '<span class="mobile-top-bar__title">{{ title }}</span>' +
+      '</div>',
+    setup: function (props) { return toRefs(props); }
+  });
+
+  // ---------- MobileBottomNav (order 14,页面外壳,2026-09-11 新增) ----------
+  // 细节见 fragments/MobileBottomNav/notes.md,这里只做逐字镜像。
+  var MobileBottomNav = defineComponent({
+    name: 'MobileBottomNav',
+    props: {
+      activeItem: { type: String, default: 'my-acv' }
+    },
+    emits: ['select'],
+    template:
+      '<nav class="mobile-bottom-nav">' +
+      '<div class="mobile-bottom-nav__logo" aria-hidden="true">' +
+      '<svg width="22" height="10" viewBox="0 0 43.4737 19.2093" fill="none">' +
+      '<path d="M22.7837 12.6651C21.1517 12.6651 19.9945 11.317 20.199 9.65392C20.4035 7.99086 21.8928 6.64273 23.5249 6.64273C24.4648 6.64273 25.2467 7.09005 25.7022 7.78652L28.6849 4.72435C27.5923 3.39308 25.9282 2.56422 23.9722 2.56422C20.1578 2.56422 16.6785 5.71479 16.2003 9.60171C15.7221 13.4882 18.4266 16.6392 22.2405 16.6392C24.2047 16.6392 26.0792 15.8029 27.5018 14.4614L24.859 11.8876C24.2751 12.3699 23.5455 12.6651 22.7837 12.6651Z" fill="#212121"/>' +
+      '<path d="M38.1136 0H43.4737L33.5034 16.0221H28.1438L38.1136 0Z" fill="#212121"/>' +
+      '<path d="M15.692 10.5417C15.69 10.216 15.7089 9.88547 15.7501 9.55121C15.8032 9.11869 15.8916 8.69234 16.0139 8.27503L15.4159 3.84418L12.0032 9.33002L12.2781 11.3557H10.7357L8.97071 14.1996H12.6608L12.9061 16.0226L17.0587 16.0222L16.8377 14.3879C16.0789 13.2827 15.6842 11.958 15.692 10.5417Z" fill="#212121"/>' +
+      '<path d="M9.96987 3.18676H15.3299L5.36003 19.2093H0L9.96987 3.18676Z" fill="#212121"/>' +
+      '<path d="M30.5384 3.18676H27.4899C28.1466 3.56871 28.7368 4.09538 29.2841 4.72401L26.9146 7.15179L28.0318 15.4285L31.4441 9.94549L30.5384 3.18676Z" fill="#212121"/>' +
+      '</svg></div>' +
+      '<button type="button" class="mobile-bottom-nav__item" aria-label="Pricing" @click="$emit(\'select\', \'pricing\')">' +
+      '<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M13.7912 10.2231L10.0787 9.13688C9.64906 9.01313 9.35 8.61094 9.35 8.16406C9.35 7.60375 9.80375 7.15 10.3641 7.15H12.6431C13.0625 7.15 13.475 7.27719 13.8187 7.51094C14.0284 7.65188 14.3103 7.6175 14.4891 7.44219L15.6853 6.27344C15.9294 6.03625 15.895 5.64094 15.6234 5.43125C14.7812 4.77125 13.7294 4.40344 12.65 4.4V2.75C12.65 2.4475 12.4025 2.2 12.1 2.2H11C10.6975 2.2 10.45 2.4475 10.45 2.75V4.4H10.3641C8.17437 4.4 6.41437 6.28031 6.61719 8.51125C6.76156 10.0959 7.97156 11.385 9.49781 11.8319L13.0212 12.8631C13.4509 12.9903 13.75 13.3891 13.75 13.8359C13.75 14.3963 13.2962 14.85 12.7359 14.85H10.4569C10.0375 14.85 9.625 14.7228 9.28125 14.4891C9.07156 14.3481 8.78969 14.3825 8.61094 14.5578L7.41469 15.7266C7.17062 15.9638 7.205 16.3591 7.47656 16.5688C8.31875 17.2288 9.37062 17.5966 10.45 17.6V19.25C10.45 19.5525 10.6975 19.8 11 19.8H12.1C12.4025 19.8 12.65 19.5525 12.65 19.25V17.5931C14.2519 17.5622 15.7541 16.61 16.2834 15.0941C17.0225 12.9766 15.7816 10.8041 13.7912 10.2231V10.2231Z" fill="#212121"/></svg>' +
+      '</button>' +
+      '<button type="button" class="mobile-bottom-nav__item" aria-label="Auctions" @click="$emit(\'select\', \'auctions\')">' +
+      '<svg width="24.2" height="22" viewBox="0 0 24.2 22" fill="none"><path d="M2.44136 9.05227L3.21916 8.27447C3.54136 7.95227 4.06372 7.95227 4.38588 8.27447L4.58034 8.46892L8.46946 4.57984L8.275 4.38538C7.9528 4.06318 7.9528 3.54082 8.275 3.21866L9.0528 2.44082C9.375 2.11863 9.89736 2.11863 10.2195 2.44082L14.4975 6.71882C14.8197 7.04102 14.8197 7.56338 14.4975 7.88555L13.7197 8.66335C13.3975 8.98555 12.8752 8.98555 12.553 8.66335L12.3585 8.46889L10.9974 9.83007L13.7831 12.6158L13.9776 12.4214C14.4072 11.9918 15.1036 11.9918 15.5332 12.4214L19.4775 16.3658C19.9071 16.7953 19.9071 17.4918 19.4775 17.9214L17.9219 19.477C17.4923 19.9066 16.7958 19.9066 16.3663 19.477L12.4219 15.5327C11.9923 15.1031 11.9923 14.4066 12.4219 13.977L12.6164 13.7826L9.83061 10.9968L8.46942 12.358L8.66388 12.5525C8.98608 12.8747 8.98608 13.397 8.66388 13.7192L7.88608 14.497C7.56388 14.8192 7.04152 14.8192 6.71936 14.497L2.44136 10.219C2.11919 9.89683 2.11919 9.37447 2.44136 9.05227Z" fill="#212121"/><path d="M23.8792 3.20833H20.9917V0.320833C20.9917 0.143573 20.8481 0 20.6708 0H20.0292C19.8519 0 19.7083 0.143573 19.7083 0.320833V3.20833H16.8208C16.6436 3.20833 16.5 3.35191 16.5 3.52917V4.17083C16.5 4.34809 16.6436 4.49167 16.8208 4.49167H19.7083V7.37917C19.7083 7.55643 19.8519 7.7 20.0292 7.7H20.6708C20.8481 7.7 20.9917 7.55643 20.9917 7.37917V4.49167H23.8792C24.0564 4.49167 24.2 4.34809 24.2 4.17083V3.52917C24.2 3.35191 24.0564 3.20833 23.8792 3.20833Z" fill="#212121"/></svg>' +
+      '</button>' +
+      '<button type="button" class="mobile-bottom-nav__item" aria-label="Marketplace" @click="$emit(\'select\', \'marketplace\')">' +
+      '<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2.2C6.13977 2.2 2.2 6.13977 2.2 11C2.2 15.8602 6.13977 19.8 11 19.8C15.8602 19.8 19.8 15.8602 19.8 11C19.8 6.13977 15.8602 2.2 11 2.2ZM13.92 14.889C13.7816 15.0267 13.6365 15.1711 13.5186 15.2893C13.4125 15.3957 13.3377 15.527 13.2997 15.6693C13.2461 15.8702 13.2028 16.0731 13.1305 16.2679L12.5134 17.9304C12.0251 18.0368 11.5198 18.0968 11 18.0968V17.1252C11.06 16.6774 10.7289 15.8386 10.197 15.3067C9.9841 15.0938 9.86452 14.8049 9.86452 14.5037V13.3678C9.86452 12.9548 9.64203 12.5751 9.28045 12.3754C8.77055 12.0933 8.04526 11.699 7.54848 11.4489C7.14113 11.2438 6.76429 10.9826 6.42542 10.6771L6.39703 10.6515C6.1547 10.4328 5.93954 10.1857 5.75619 9.91561C5.42335 9.427 4.88116 8.62329 4.52881 8.10097C5.25516 6.48645 6.56416 5.18987 8.19074 4.48552L9.04271 4.91168C9.42026 5.10045 9.86452 4.82616 9.86452 4.4039V4.00294C10.148 3.95716 10.4365 3.92806 10.73 3.91706L11.7342 4.92126C11.9559 5.14303 11.9559 5.50248 11.7342 5.72426L11.5677 5.89032L11.2008 6.25723C11.0901 6.36794 11.0901 6.54784 11.2008 6.65855L11.3673 6.82497C11.478 6.93568 11.478 7.11558 11.3673 7.22629L11.0834 7.51016C11.0301 7.56336 10.9579 7.59322 10.8825 7.59319H10.5635C10.4897 7.59319 10.4188 7.62194 10.3655 7.67374L10.0135 8.01616C9.9704 8.05818 9.94172 8.11282 9.93164 8.1722C9.92156 8.23157 9.93061 8.29262 9.95748 8.34652L10.5107 9.45326C10.6051 9.64203 10.4677 9.86416 10.257 9.86416H10.0568C9.98835 9.86416 9.92235 9.83932 9.8709 9.79461L9.54161 9.50861C9.4671 9.44397 9.37704 9.39983 9.28029 9.38055C9.18355 9.36126 9.08345 9.36748 8.98984 9.39861L7.88381 9.76729C7.79936 9.79545 7.72593 9.84946 7.67389 9.92168C7.62186 9.9939 7.59388 10.0807 7.5939 10.1697C7.5939 10.3304 7.68474 10.477 7.82845 10.549L8.22161 10.7456C8.55552 10.9127 8.92384 10.9996 9.29713 10.9996C9.67042 10.9996 10.0987 11.968 10.4326 12.1351H12.8012C13.1024 12.1351 13.3909 12.2547 13.6042 12.4676L14.0899 12.9534C14.2929 13.1564 14.4069 13.4317 14.4068 13.7188C14.4067 13.9363 14.3637 14.1516 14.2801 14.3525C14.1966 14.5533 14.0742 14.7356 13.92 14.889V14.889ZM16.9968 11.6476C16.7913 11.5961 16.6121 11.4702 16.4947 11.2938L15.8567 10.3368C15.7633 10.197 15.7135 10.0326 15.7135 9.86452C15.7135 9.6964 15.7633 9.53205 15.8567 9.39223L16.5518 8.34971C16.6341 8.22658 16.747 8.12652 16.8797 8.06052L17.3403 7.83023C17.82 8.78545 18.0968 9.8599 18.0968 11C18.0968 11.3076 18.0705 11.6089 18.0322 11.9063L16.9968 11.6476Z" fill="#212121"/></svg>' +
+      '</button>' +
+      '<button type="button" class="mobile-bottom-nav__item mobile-bottom-nav__item--active" aria-label="My ACV" aria-current="page" @click="$emit(\'select\', \'my-acv\')">' +
+      '<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M19.3871 8.25001H17.329L16.757 6.82C16.1692 5.34978 14.7664 4.4 13.1827 4.4H8.81707C7.23376 4.4 5.83057 5.34978 5.24241 6.82L4.67041 8.25001H2.61272C2.34425 8.25001 2.14728 8.50232 2.21259 8.76254L2.41884 9.58754C2.46456 9.7711 2.62956 9.90001 2.81897 9.90001H3.50888C3.04722 10.3032 2.74988 10.8893 2.74988 11.55V13.2C2.74988 13.7541 2.96163 14.2543 3.29988 14.6414V16.5C3.29988 17.1074 3.79247 17.6 4.39988 17.6H5.49988C6.10729 17.6 6.59988 17.1074 6.59988 16.5V15.4H15.3999V16.5C15.3999 17.1074 15.8925 17.6 16.4999 17.6H17.5999C18.2073 17.6 18.6999 17.1074 18.6999 16.5V14.6414C19.0381 14.2546 19.2499 13.7545 19.2499 13.2V11.55C19.2499 10.8893 18.9526 10.3032 18.4912 9.90001H19.1811C19.3706 9.90001 19.5356 9.7711 19.5813 9.58754L19.7875 8.76254C19.8525 8.50232 19.6555 8.25001 19.3871 8.25001ZM7.28498 7.6371C7.53557 7.01078 8.14229 6.6 8.81707 6.6H13.1827C13.8575 6.6 14.4642 7.01078 14.7148 7.6371L15.3999 9.35001H6.59988L7.28498 7.6371ZM5.49988 13.1931C4.83988 13.1931 4.39988 12.7545 4.39988 12.0966C4.39988 11.4386 4.83988 11 5.49988 11C6.15988 11 7.14988 11.9869 7.14988 12.6449C7.14988 13.3028 6.15988 13.1931 5.49988 13.1931ZM16.4999 13.1931C15.8399 13.1931 14.8499 13.3028 14.8499 12.6449C14.8499 11.9869 15.8399 11 16.4999 11C17.1599 11 17.5999 11.4386 17.5999 12.0966C17.5999 12.7545 17.1599 13.1931 16.4999 13.1931V13.1931Z" fill="#F26522"/></svg>' +
+      '<span class="mobile-bottom-nav__label">My ACV</span>' +
+      '</button>' +
+      '</nav>',
+    setup: function (props) { return toRefs(props); }
+  });
+
   // ---------- OfferTabs (order 20) ----------
   var OfferTabs = defineComponent({
     name: 'OfferTabs',
     props: {
       activeTab: { type: String, default: 'buying' },
       buyingCount: { type: [String, Number], default: 3 },
-      sellingCount: { type: [String, Number], default: 2 }
+      sellingCount: { type: [String, Number], default: 2 },
+      mobile: { type: Boolean, default: false }
     },
     emits: ['select'],
     template:
-      '<div class="offer-tabs">' +
+      '<div class="offer-tabs" :class="{ \'offer-tabs--mobile\': mobile }">' +
       '<button type="button" class="offer-tabs__tab" :class="{ \'offer-tabs__tab--selected\': activeTab === \'buying\' }" @click="$emit(\'select\', \'buying\')">' +
-      '<span>Buying</span><span class="offer-tabs__count">{{ buyingCount }}</span>' +
+      '<span>Buying</span><span v-if="!mobile" class="offer-tabs__count">{{ buyingCount }}</span>' +
       '<span v-if="activeTab === \'buying\'" class="offer-tabs__indicator"></span></button>' +
       '<button type="button" class="offer-tabs__tab" :class="{ \'offer-tabs__tab--selected\': activeTab === \'selling\' }" @click="$emit(\'select\', \'selling\')">' +
-      '<span>Selling</span><span class="offer-tabs__count">{{ sellingCount }}</span>' +
+      '<span>Selling</span><span v-if="!mobile" class="offer-tabs__count">{{ sellingCount }}</span>' +
       '<span v-if="activeTab === \'selling\'" class="offer-tabs__indicator"></span></button>' +
       '</div>',
     setup: function (props) { return toRefs(props); }
@@ -1073,11 +1237,12 @@
       sentSelected: { type: Boolean, default: false },
       declinedCount: { type: [String, Number], default: 0 },
       declinedSelected: { type: Boolean, default: false },
-      showDeclined: { type: Boolean, default: true }
+      showDeclined: { type: Boolean, default: true },
+      mobile: { type: Boolean, default: false }
     },
     emits: ['toggle-dealership', 'clear', 'filter-change', 'clear-dealer'],
     template:
-      '<div class="filter-chip-group">' +
+      '<div class="filter-chip-group" :class="{ \'filter-chip-group--mobile\': mobile }" @mousedown="handleChipsMouseDown" @click.capture="handleChipsClickCapture">' +
       '<button v-if="isMultiDealer" ref="dealershipBtnRef" type="button" class="filter-chip filter-chip--dealership" :class="{ \'filter-chip--selected\': dealershipOpen, \'filter-chip--dealer-active\': dealerChipLabel }" @click="$emit(\'toggle-dealership\')">' +
       '<template v-if="dealerChipLabel"><span class="filter-chip__dealer-label">{{ dealerChipLabel }}</span>' +
       '<span class="filter-chip__dealer-close" role="button" aria-label="Clear dealer filter" @click.stop="$emit(\'clear-dealer\')">' +
@@ -1086,14 +1251,16 @@
       '<template v-else>Dealership ' +
       '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12.4425 6.22125L9 9.65625L5.5575 6.22125L4.5 7.27875L9 11.7787L13.5 7.27875L12.4425 6.22125Z" fill="#0E0E0F"/></svg></template>' +
       '</button>' +
+      '<template v-if="!mobile">' +
       '<button type="button" class="filter-chip" :disabled="negotiationCount === 0 || negotiationCount === \'0\'" :class="{ \'filter-chip--selected\': negotiationSelectedLocal }" @click="negotiationSelectedLocal = !negotiationSelectedLocal">In negotiation{{ (negotiationCount && negotiationCount !== \'0\') ? \' (\' + negotiationCount + \')\' : \'\' }}</button>' +
       '<button type="button" class="filter-chip" :disabled="makeOfferCount === 0 || makeOfferCount === \'0\'" :class="{ \'filter-chip--selected\': makeOfferSelectedLocal }" @click="makeOfferSelectedLocal = !makeOfferSelectedLocal">Make Offer{{ (makeOfferCount && makeOfferCount !== \'0\') ? \' (\' + makeOfferCount + \')\' : \'\' }}</button>' +
-      '<span class="filter-chip-group__divider" aria-hidden="true"></span>' +
+      '</template>' +
+      '<span v-if="isMultiDealer || !mobile" class="filter-chip-group__divider" aria-hidden="true"></span>' +
       '<button type="button" class="filter-chip" :disabled="newCount === 0 || newCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'new\' }" @click="toggleSingleSelect(\'new\')">New{{ (newCount && newCount !== \'0\') ? \' (\' + newCount + \')\' : \'\' }}</button>' +
       '<button type="button" class="filter-chip" :disabled="receivedCount === 0 || receivedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'received\' }" @click="toggleSingleSelect(\'received\')">Received{{ (receivedCount && receivedCount !== \'0\') ? \' (\' + receivedCount + \')\' : \'\' }}</button>' +
       '<button type="button" class="filter-chip" :disabled="sentCount === 0 || sentCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'sent\' }" @click="toggleSingleSelect(\'sent\')">Sent{{ (sentCount && sentCount !== \'0\') ? \' (\' + sentCount + \')\' : \'\' }}</button>' +
       '<button v-if="showDeclined" type="button" class="filter-chip" :disabled="declinedCount === 0 || declinedCount === \'0\'" :class="{ \'filter-chip--selected\': singleSelected === \'declined\' }" @click="toggleSingleSelect(\'declined\')">Declined{{ (declinedCount && declinedCount !== \'0\') ? \' (\' + declinedCount + \')\' : \'\' }}</button>' +
-      '<button type="button" class="filter-chip-group__clear" @click="handleClear">Clear</button>' +
+      '<button v-if="!mobile || hasAnyFilterSelected" type="button" class="filter-chip-group__clear" @click="handleClear">Clear</button>' +
       '</div>',
     setup: function (props, { emit, expose }) {
       // 暴露 Dealership 按钮的 DOM 节点,给 OfferDashboard 用来把浮层
@@ -1110,6 +1277,40 @@
       );
       function toggleSingleSelect(key) {
         singleSelected.value = singleSelected.value === key ? null : key;
+      }
+      // 2026-09-12 新增,配合 mobile 上 "Clear 只在选了筛选项时才显示"
+      var hasAnyFilterSelected = computed(function () {
+        return negotiationSelectedLocal.value || makeOfferSelectedLocal.value || !!singleSelected.value || !!props.dealerChipLabel;
+      });
+      // 2026-09-12 新增:mobile 上鼠标拖拽滚动(隐藏原生滚动条外观之后,
+      // 桌面浏览器鼠标点住拖拽本来不会触发滚动,只在 mobile=true 时启用)
+      var chipsDrag = { active: false, startX: 0, startScrollLeft: 0, moved: false, el: null };
+      function handleChipsMouseDown(e) {
+        if (!props.mobile) return;
+        chipsDrag.active = true;
+        chipsDrag.moved = false;
+        chipsDrag.startX = e.clientX;
+        chipsDrag.el = e.currentTarget;
+        chipsDrag.startScrollLeft = chipsDrag.el.scrollLeft;
+        window.addEventListener('mousemove', handleChipsMouseMove);
+        window.addEventListener('mouseup', handleChipsMouseUp);
+      }
+      function handleChipsMouseMove(e) {
+        if (!chipsDrag.active) return;
+        var dx = e.clientX - chipsDrag.startX;
+        if (Math.abs(dx) > 3) chipsDrag.moved = true;
+        chipsDrag.el.scrollLeft = chipsDrag.startScrollLeft - dx;
+      }
+      function handleChipsMouseUp() {
+        chipsDrag.active = false;
+        window.removeEventListener('mousemove', handleChipsMouseMove);
+        window.removeEventListener('mouseup', handleChipsMouseUp);
+      }
+      function handleChipsClickCapture(e) {
+        if (chipsDrag.moved) {
+          e.stopPropagation();
+          chipsDrag.moved = false;
+        }
       }
       function handleClear() {
         negotiationSelectedLocal.value = false;
@@ -1143,6 +1344,9 @@
         makeOfferSelectedLocal: makeOfferSelectedLocal,
         singleSelected: singleSelected,
         toggleSingleSelect: toggleSingleSelect,
+        hasAnyFilterSelected: hasAnyFilterSelected,
+        handleChipsMouseDown: handleChipsMouseDown,
+        handleChipsClickCapture: handleChipsClickCapture,
         handleClear: handleClear
       });
     }
@@ -1155,11 +1359,12 @@
     name: 'DealershipFilterDropdown',
     props: {
       isMultiDealer: { type: Boolean, default: true },
-      preSelected: { type: String, default: '' }
+      preSelected: { type: String, default: '' },
+      mobile: { type: Boolean, default: false }
     },
     emits: ['apply'],
     template:
-      '<div v-if="isMultiDealer" class="dealer-dropdown">' +
+      '<div v-if="isMultiDealer" class="dealer-dropdown" :class="{ \'dealer-dropdown--mobile\': mobile }">' +
       '<div class="dealer-dropdown__header">' +
       '<div class="dealer-dropdown__title-row"><p class="dealer-dropdown__title">Select Dealerships</p>' +
       '<div class="dealer-dropdown__title-actions"><span class="dealer-dropdown__selected-count">{{ selected.length }} selected</span>' +
@@ -1930,11 +2135,12 @@
       // 是否显示由 Dashboard 那一层根据列表位置传入,细节见
       // fragments/OfferCard/notes.md 与 InformationDialog/notes.md。
       hasPrevDeal: { type: Boolean, default: false },
-      hasNextDeal: { type: Boolean, default: false }
+      hasNextDeal: { type: Boolean, default: false },
+      mobileActions: { type: Boolean, default: false }
     },
     emits: ['prev-deal', 'next-deal', 'remove-from-list', 'viewed'],
     template:
-      '<div class="offer-card" :class="{ \'offer-card--v1\': hoverButtons.length > 0 }">' +
+      '<div class="offer-card" :class="{ \'offer-card--v1\': hoverButtons.length > 0, \'offer-card--mobile-actions\': mobileActions }">' +
       '<a href="/assets/vdp/vdp-page.html" target="_blank" rel="noopener" class="offer-card__image" @click="$emit(\'viewed\')"><img v-if="photoUrl" :src="photoUrl" alt="" class="offer-card__photo">' +
       '<div class="offer-card__image-badges">' +
       '<ImageBadge v-if="offerType !== \'none\'" :variant="offerType" :label="offerTypeLabel" />' +
@@ -1970,7 +2176,8 @@
       '</div></template>' +
       '</div>' +
       '</div>' +
-      '<div v-if="hoverButtons.length" class="offer-card__hover-buttons">' +
+      '<div v-if="hoverButtons.length && mobileActions" class="offer-card__divider offer-card__divider--mobile-actions"></div>' +
+      '<div v-if="hoverButtons.length" class="offer-card__hover-buttons" :class="{ \'offer-card__hover-buttons--mobile\': mobileActions }">' +
       '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="handleHoverButtonClick(btn.label)">{{ btn.label }}</button>' +
       '</div>' +
       '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
@@ -2518,15 +2725,38 @@
       AppHeader: AppHeader, Breadcrumb: Breadcrumb, SidebarNav: SidebarNav, OfferTabs: OfferTabs,
       SearchInput: SearchInput, FilterChipGroup: FilterChipGroup, OfferTableHeader: OfferTableHeader,
       OfferTableRow: OfferTableRow, Pagination: Pagination, DealershipFilterDropdown: DealershipFilterDropdown,
-      OfferCard: OfferCard, ResultsToolbar: ResultsToolbar
+      OfferCard: OfferCard, ResultsToolbar: ResultsToolbar, MobileTopBar: MobileTopBar, MobileBottomNav: MobileBottomNav
     },
     props: {
       isMultiDealer: { type: Boolean, default: true },
       buyingVehicleCount: { type: Number, default: 15 },
-      sellingVehicleCount: { type: Number, default: 15 }
+      sellingVehicleCount: { type: Number, default: 15 },
+      deviceView: { type: String, default: 'auto' }
     },
     template:
-      '<div class="offer-dashboard">' +
+      '<div ref="rootRef" class="offer-dashboard" :class="{ \'offer-dashboard--mobile\': effectiveDeviceView === \'mobile\' }">' +
+      '<template v-if="effectiveDeviceView === \'mobile\'">' +
+      '<MobileTopBar />' +
+      '<div class="offer-dashboard__mobile-body">' +
+      '<OfferTabs v-bind="tabs" mobile @select="handleTabSelect" />' +
+      '<div class="offer-dashboard__toolbar offer-dashboard__toolbar--mobile">' +
+      '<SearchInput v-model="searchInputValue" @search="searchValue = $event" />' +
+      '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" mobile :is-multi-dealer="effectiveMultiDealer" ' +
+      ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" :show-declined="activeMainTab !== \'selling\'" ' +
+      '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event; currentTablePage = 1" @clear-dealer="dealerFilter = []; currentTablePage = 1" />' +
+      '</div>' +
+      '<div v-if="dealershipDropdownOpen" ref="dealerPopoverWrapRef" class="offer-dashboard__dealer-popover-anchor" :style="dealerPopoverStyle">' +
+      '<DealershipFilterDropdown mobile :is-multi-dealer="effectiveMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
+      '</div>' +
+      '<div class="offer-dashboard__mobile-list" :class="{ \'offer-dashboard__mobile-list--two-col\': mobileListTwoColumn }">' +
+      '<OfferCard v-for="(card, i) in rowsAsCards" :key="i" v-bind="card" mobile-actions ' +
+      ':has-prev-deal="i > 0" :has-next-deal="i < rowsAsCards.length - 1" @prev-deal="handleCardPrev(i)" @next-deal="handleCardNext(i)" @remove-from-list="handleRemoveFromList(card.auctionId)" @viewed="markSeen(card.auctionId)" />' +
+      '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
+      '</div>' +
+      '</div>' +
+      '<MobileBottomNav />' +
+      '</template>' +
+      '<template v-else>' +
       '<AppHeader v-bind="header" :has-new-offers="hasAnyNewDeal" />' +
       '<div class="offer-dashboard__breadcrumb-row"><Breadcrumb crumbs="My ACV,Offers" /></div>' +
       '<div class="offer-dashboard__body">' +
@@ -2563,7 +2793,9 @@
       '</div>' +
       '<p v-if="visibleRows.length === 0" class="offer-dashboard__empty">No vehicles match the current filters.</p>' +
       '</template>' +
-      '</div></main></div></div>',
+      '</div></main></div>' +
+      '</template>' +
+      '</div>',
     setup: function (props) {
       var header = { initialSelectedIndex: 1, companyName: 'Magnacar Auto Corp', userName: 'Emily Huang', avatarLetter: 'A' };
       var searchInputValue = ref('');
@@ -2571,6 +2803,24 @@
       var sortColumn = ref(null);
       var dealershipDropdownOpen = ref(false);
       var viewMode = ref('table');
+
+      // 2026-09-11 新增:实际测量这个组件自己的渲染宽度来判断 web/mobile,
+      // 细节见 fragments/OfferDashboard/OfferDashboard.vue 同名注释。
+      var MOBILE_BREAKPOINT = 768;
+      var rootRef = ref(null);
+      var measuredWidth = ref(1200);
+      var deviceViewResizeObserver = null;
+      function updateMeasuredWidth() {
+        if (rootRef.value) measuredWidth.value = rootRef.value.clientWidth;
+      }
+      var effectiveDeviceView = computed(function () {
+        if (props.deviceView === 'mobile' || props.deviceView === 'web') return props.deviceView;
+        return measuredWidth.value < MOBILE_BREAKPOINT ? 'mobile' : 'web';
+      });
+
+      // 2026-09-13 新增,细节见 OfferDashboard.vue 同名注释:mobile 单列
+      // 卡片列表容器 >=760px 时改成 2 列并排。
+      var mobileListTwoColumn = computed(function () { return measuredWidth.value >= 760; });
 
       // 2026-08 按你的要求,参照真实原型(My-ACV--Dealer-filter-main)
       // 把 DealershipFilterDropdown 改成真正悬浮在 "Dealership" 按钮
@@ -2580,6 +2830,10 @@
       var dealerPopoverStyle = ref({});
 
       function updateDealerPopoverPosition() {
+        if (effectiveDeviceView.value === 'mobile') {
+          dealerPopoverStyle.value = { position: 'fixed', left: '0', right: '0', bottom: '56px', zIndex: 10000 };
+          return;
+        }
         var inst = filterChipGroupRef.value;
         var btn = inst && inst.dealershipBtnRef;
         if (!btn) return;
@@ -2664,6 +2918,10 @@
         if (tableScrollRef.value) hScrollResizeObserver.observe(tableScrollRef.value);
         if (tableBottomRef.value) hScrollResizeObserver.observe(tableBottomRef.value);
         nextTick(updateHScrollMeasurements);
+
+        updateMeasuredWidth();
+        deviceViewResizeObserver = new ResizeObserver(updateMeasuredWidth);
+        if (rootRef.value) deviceViewResizeObserver.observe(rootRef.value);
       });
       onBeforeUnmount(function () {
         document.removeEventListener('mousedown', handleOutsideClick);
@@ -2672,6 +2930,7 @@
         window.removeEventListener('resize', handleRepositionOnScroll);
         window.removeEventListener('resize', updateHScrollMeasurements);
         if (hScrollResizeObserver) hScrollResizeObserver.disconnect();
+        if (deviceViewResizeObserver) deviceViewResizeObserver.disconnect();
       });
       // 2026-09-03:Buying/Selling 各扩到15行,前10行(5+5)原样不动,
       // 后面各自新增10行,细节见 fragments/OfferTableRow/mock.js 文件头
@@ -2979,6 +3238,7 @@
       });
       return {
         isMultiDealer: toRefs(props).isMultiDealer,
+        rootRef: rootRef, effectiveDeviceView: effectiveDeviceView, mobileListTwoColumn: mobileListTwoColumn,
         header: header, sidebar: sidebar, tabs: tabs, filters: filters, searchInputValue: searchInputValue, searchValue: searchValue,
         sortColumn: sortColumn, dealershipDropdownOpen: dealershipDropdownOpen, viewMode: viewMode,
         rows: rows, visibleRows: visibleRows, rowsWithDealerMode: rowsWithDealerMode,
@@ -3017,7 +3277,9 @@
     { title: 'Page Shell', items: [
       { key: 'AppHeader', order: 10, name: 'App Header' },
       { key: 'Breadcrumb', order: 11, name: 'Breadcrumb' },
-      { key: 'SidebarNav', order: 12, name: 'Sidebar Nav' }
+      { key: 'SidebarNav', order: 12, name: 'Sidebar Nav' },
+      { key: 'MobileTopBar', order: 13, name: 'Mobile Top Bar' },
+      { key: 'MobileBottomNav', order: 14, name: 'Mobile Bottom Nav' }
     ]},
     { title: 'Nav & Filters', items: [
       { key: 'OfferTabs', order: 20, name: 'Offer Tabs' },
@@ -3085,15 +3347,35 @@
       mocks: { defaultExample: { activeItem: 'offers', offersCount: 5 } },
       notes: '2026-08 update: removed the expand/collapse interaction. The previous version gave Active / Negotiation / Billing a click-to-expand/collapse behavior, with the expanded content coming from 4 hidden=true Figma "Sub menu" nodes whose content didn\'t line up with each other and whose ownership was unclear. You explicitly said "don\'t worry about this, the sidebar nav doesn\'t need interaction," so this feature has now been removed outright — the arrow icon itself (verified, hidden=false) is still shown, but it is now purely decorative, does not respond to clicks, and the component no longer exposes any expanded-state props/controls.\n\nVerified (hidden=false): container background #FFFFFF, flex-col, gap 4px, width 260px; regular item text is Roboto Regular 16px/24, letter-spacing 0.15px, color #545454; the selected item (Offers) has background #EBF6FF, text Roboto Medium, color #004E7D; the count badge has background #FF5449, text #F7F7F8; the expand-arrow icon itself (display only) is 24x24, filled #545454; the divider is 39px tall with an internal line color of #DCDFE8.\n\nThe previously found mapping of the 4 hidden nodes\' contents is no longer relevant and does not need confirming.'
     },
+    MobileTopBar: {
+      name: 'Mobile Top Bar', group: 'Page Shell', order: 13, def: MobileTopBar,
+      controls: {
+        title: { type: 'text', label: 'Title', default: 'Offers' }
+      },
+      mocks: {},
+      notes: '2026-09-11 addition: the mobile version of Offer Dashboard\'s top chrome — a back arrow plus a centered page title. On desktop this space is covered by two separate components stacked together, AppHeader (logo + nav links) and Breadcrumb ("My ACV > Offers"); looking at the mobile Figma page you provided (node 7765:16893), neither of those exists in the mobile layout — the top is just "← Offers," and the logo/nav links moved down into the new MobileBottomNav instead. This isn\'t a responsive variant of AppHeader — it\'s a different component with a different job, so it\'s a new standalone component rather than a mobile prop bolted onto AppHeader.\n\nVerified (Figma node 7765:16897, "Top Bar"): background #FAFAFA, height 56px, 1px #DCDFE8 bottom border; title text is centered, Roboto Medium 20px/30, letter-spacing 0.15px, color #545454; the back arrow icon is 24x24 at left 16px/top 16px, fill #212121 (real SVG downloaded). title is a prop (default "Offers") rather than hardcoded, so this component can be reused by other mobile pages later; the back button only emits \'back\' — it doesn\'t know what "going back" should actually do, that\'s left to whoever uses it.'
+    },
+    MobileBottomNav: {
+      name: 'Mobile Bottom Nav', group: 'Page Shell', order: 14, def: MobileBottomNav,
+      controls: {
+        activeItem: { type: 'select', label: 'Active item', options: [
+          { value: 'pricing', label: 'Pricing' }, { value: 'auctions', label: 'Auctions' },
+          { value: 'marketplace', label: 'Marketplace' }, { value: 'my-acv', label: 'My ACV' }
+        ], default: 'my-acv' }
+      },
+      mocks: {},
+      notes: '2026-09-11 addition: the mobile version\'s global bottom navigation bar, 5 equal-width slots. On desktop, global navigation is split across AppHeader\'s top links (Marketplace/My ACV/Market Report/More) and SidebarNav\'s left column (My Inventory/Saved Auctions/Request Inspection/Active/Pending Proxy/Negotiation/…); in the mobile Figma page (node 7765:16893) none of that exists — it\'s all been consolidated into this one bottom bar. Not a responsive variant of any existing component — the page-level navigation structure itself is reorganized on mobile, hence a new standalone component.\n\nVerified (Figma node 7765:16989, "bottom nav"): height 56px, background #FAFAFA, 1px #DCDFE8 top border, 5 equal 20%-wide slots. The first slot has no icon/label content in the component instance itself — the visible "ACV" mark is a separate decorative frame (node 7765:16990, fill #212121) floating on top of it, with no click annotation, so it\'s implemented as a plain non-interactive div, not a button; if it should actually be tappable (e.g. to go home), that needs confirming. Slots 2-4 (Pricing/$, Auctions/gavel, Marketplace/globe) are 22x22 icons, unselected fill #212121, no label — all real downloaded SVGs. Slot 5 (My ACV, the current selected state) has its icon filled #F26522 and the "My ACV" label uses a gradient (linear-gradient(93.3675deg, #F26522 0.15497%, #FC4243 87.519%) via background-clip:text) — this is the first gradient-text usage in the project (every prior gradient was a button background fill, e.g. OfferCard\'s .offer-card__hover-btn--filled), implemented with the standard technique, not guessed. Only "My ACV" has a verified selected-state instance in Figma; the other three slots\' selected-state styling (if any) is unconfirmed, so clicking them only emits \'select\' with no visual state change yet.'
+    },
     OfferTabs: {
       name: 'Offer Tabs', group: 'Nav & Filters', order: 20, def: OfferTabs,
       controls: {
         activeTab: { type: 'select', label: 'Selected tab', options: [{ value: 'buying', label: 'Buying' }, { value: 'selling', label: 'Selling' }], default: 'buying' },
         buyingCount: { type: 'text', label: 'Buying count', default: '3' },
-        sellingCount: { type: 'text', label: 'Selling count', default: '2' }
+        sellingCount: { type: 'text', label: 'Selling count', default: '2' },
+        mobile: { type: 'boolean', label: 'Mobile variant', default: false }
       },
       mocks: { defaultExample: { activeTab: 'buying', buyingCount: 3, sellingCount: 2 }, sellingSelectedExample: { activeTab: 'selling', buyingCount: 3, sellingCount: 2 } },
-      notes: 'Verified (hidden=false, from node 6903:23020): Buying (selected) has background #FEF9F6, text #F26522 Medium; the Buying count badge has background #F26522, white text; the Buying indicator bar is 2px tall, color #F26522; Selling (unselected) has no background, text #757575; the Selling count badge has background #D1D3D6, text #55575C; the shared bottom divider is #DCDFE8.\n\nFor you to confirm: 1. "Selling selected state" — no visible instance of a "Selling selected" state was found in Figma; the component currently just copies the values from the Buying selected state (swapping the background/text/indicator colors), and this has not been independently verified. 2. Two hidden=true fallback tab variants were found (an older design with icons); the current component does not use them.'
+      notes: 'Verified (hidden=false, from node 6903:23020): Buying (selected) has background #FEF9F6, text #F26522 Medium; the Buying count badge has background #F26522, white text; the Buying indicator bar is 2px tall, color #F26522; Selling (unselected) has no background, text #757575; the Selling count badge has background #D1D3D6, text #55575C; the shared bottom divider is #DCDFE8.\n\nFor you to confirm: 1. "Selling selected state" — no visible instance of a "Selling selected" state was found in Figma; the component currently just copies the values from the Buying selected state (swapping the background/text/indicator colors), and this has not been independently verified. 2. Two hidden=true fallback tab variants were found (an older design with icons); the current component does not use them.\n\n2026-09-11: added the mobile prop for Offer Dashboard\'s mobile version. Verified against the mobile Figma page\'s tabs (node 7765:16901, Code Connect component "Default Tabs", size:Small variant) — this isn\'t the same values shrunk down, the Small size variant genuinely looks different: no count badge at all, font-size 16px→14px, and the selected state drops the orange pill background (#FEF9F6 + border-radius:8px) entirely in favor of plain blue (#004E7D, ACV/Secondary/base) text with a blue underline — no background chip. Both tabs are 50/50 width (flex:1) instead of desktop\'s content-hugging, left-aligned width.'
     },
     SearchInput: {
       name: 'Search Input', group: 'Nav & Filters', order: 21, def: SearchInput,
@@ -3114,27 +3396,29 @@
         newCount: { type: 'text', label: 'New count, 0 = disabled gray state', default: '1' },
         receivedCount: { type: 'text', label: 'Received count, 0 = disabled gray state', default: '1' },
         sentCount: { type: 'text', label: 'Sent count, 0 = disabled gray state', default: '0' },
-        declinedCount: { type: 'text', label: 'Declined count, 0 = disabled gray state', default: '0' }
+        declinedCount: { type: 'text', label: 'Declined count, 0 = disabled gray state', default: '0' },
+        mobile: { type: 'boolean', label: 'Mobile variant', default: false }
       },
       mocks: {
         defaultExample: { isMultiDealer: true, dealershipOpen: false, negotiationCount: 2, makeOfferCount: 1, newCount: 1, receivedCount: 1, sentCount: 0, declinedCount: 0 },
         allActiveExample: { isMultiDealer: true, dealershipOpen: false, negotiationCount: 4, makeOfferCount: 2, newCount: 3, receivedCount: 5, sentCount: 2, declinedCount: 1 },
         singleDealerExample: { isMultiDealer: false, dealershipOpen: false, negotiationCount: 2, makeOfferCount: 1, newCount: 1, receivedCount: 1, sentCount: 0, declinedCount: 0 }
       },
-      notes: 'Verified (hidden=false, node 6847:49392): the enabled-state chip has a white background, border/text #212121, 14px/21, letter-spacing .25px, corner radius 8, height 32; the disabled (count 0) state has border/text #8D9199 with the background still white; the Dealership dropdown arrow is 18x18; the vertical divider between chips is 28 tall, color #0E0E0F; the "Clear" button color is #004E7D (the only link-color token the node returns).\n\nNative Figma design annotations (data-interaction-annotations, not made up): Dealership/In Negotiation/Make Offer are multi-select; New/Received/Sent/Declined are single-select (mutually exclusive); the default state with nothing selected shows ALL.\n\n2026-08 additional confirmation (selected state): you gave a new reference node, 6847:49600 (hidden=false, an "In negotiation" selected-state instance): background #F0F8FF, border 1px #0061A5, text #0061A5, corner radius still unchanged at 8px. This instance only verified the one In negotiation chip — the selected states of the other chips are applied uniformly on the inference that "the same component family should share the same colors," not verified one by one. The earlier "bold border" placeholder has been replaced. Chips can now be clicked directly to toggle selection (In Negotiation/Make Offer are independent multi-select, New/Received/Sent/Declined are mutually exclusive single-select, per the Figma annotations).\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account, the filter row has no Dealership chip at all (not hidden — it simply isn\'t in the node tree), so an isMultiDealer prop has been added to control this.\n\nFor you to confirm: 1. The "Clear" button color is inferred, not a directly annotated hex value. 2. An earlier mistake where a hidden=true old-version chip was treated as candidate data has been ruled out.'
+      notes: 'Verified (hidden=false, node 6847:49392): the enabled-state chip has a white background, border/text #212121, 14px/21, letter-spacing .25px, corner radius 8, height 32; the disabled (count 0) state has border/text #8D9199 with the background still white; the Dealership dropdown arrow is 18x18; the vertical divider between chips is 28 tall, color #0E0E0F; the "Clear" button color is #004E7D (the only link-color token the node returns).\n\nNative Figma design annotations (data-interaction-annotations, not made up): Dealership/In Negotiation/Make Offer are multi-select; New/Received/Sent/Declined are single-select (mutually exclusive); the default state with nothing selected shows ALL.\n\n2026-08 additional confirmation (selected state): you gave a new reference node, 6847:49600 (hidden=false, an "In negotiation" selected-state instance): background #F0F8FF, border 1px #0061A5, text #0061A5, corner radius still unchanged at 8px. This instance only verified the one In negotiation chip — the selected states of the other chips are applied uniformly on the inference that "the same component family should share the same colors," not verified one by one. The earlier "bold border" placeholder has been replaced. Chips can now be clicked directly to toggle selection (In Negotiation/Make Offer are independent multi-select, New/Received/Sent/Declined are mutually exclusive single-select, per the Figma annotations).\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account, the filter row has no Dealership chip at all (not hidden — it simply isn\'t in the node tree), so an isMultiDealer prop has been added to control this.\n\nFor you to confirm: 1. The "Clear" button color is inferred, not a directly annotated hex value. 2. An earlier mistake where a hidden=true old-version chip was treated as candidate data has been ruled out.\n\n2026-09-11: added the mobile prop for Offer Dashboard\'s mobile version. The mobile Figma page\'s Filters node (7765:16923) carries a native design annotation: "Hide the \'In Negotiation\' and \'Make Offer\' filters on mobile view" — matching what you told me directly, not an inference. When mobile is true those two chips are not rendered at all (not disabled/hidden via CSS), the divider stays right after Dealership same as before; each chip\'s horizontal padding drops from 16px to 8px and its internal icon/text gap from 8px to 4px (both verified against the mobile node\'s real values); and the whole row becomes horizontally scrollable (overflow-x:auto) since the mobile Filters container measures 479px wide against a 375px viewport — Figma itself overflows here, it isn\'t wrapped or squeezed smaller.'
     },
     DealershipFilterDropdown: {
       name: 'Dealership Filter Dropdown', group: 'Nav & Filters', order: 23, def: DealershipFilterDropdown,
       controls: {
         isMultiDealer: { type: 'boolean', label: 'Only shown when account has multiple dealerships', default: true },
-        preSelected: { type: 'text', label: 'Pre-selected dealerships, comma-separated', default: '' }
+        preSelected: { type: 'text', label: 'Pre-selected dealerships, comma-separated', default: '' },
+        mobile: { type: 'boolean', label: 'Mobile variant (bottom sheet)', default: false }
       },
       mocks: {
         defaultExample: { isMultiDealer: true, preSelected: '' },
         preSelectedExample: { isMultiDealer: true, preSelected: 'Apple Chevrolet,CarMax Boston' },
         singleDealerExample: { isMultiDealer: false, preSelected: '' }
       },
-      notes: '2026-08 major update: rebuilt against the real prototype (no longer treating the Figma static mock as authoritative). You provided the local files My-ACV--Dealer-filter-main/index.html + style.css and explicitly said to reference only its V1 web dealership filter section — most of the rest is outdated/incorrect content. This is a real, runnable prototype (#dealer-popover plus its accompanying JS interaction logic), more authoritative than what could previously only be inferred from the Figma static mock, and the whole component has been rebuilt against this prototype.\n\nValue corrections: 1. The "{n} selected" text color changed to #757575 (previously inferred from Figma as #0E0E0F). 2. The search box placeholder text changed to "Search by dealer name or ID..." (previously "Search dealer name"). 3. The checkbox changed to an 18x18 CSS box with corner radius 3 + a checkmark drawn with ::after (selected-state background/border #004E7D, matching the color verified in Figma — only the drawing method changed from an SVG asset to pure CSS). 4. The dealership list changed to the prototype\'s 10 real names with no duplicates: Asbury Automotive Group / Apple Chevrolet / Baxter Auto Mall / CarMax Boston / Classic Honda / DriveTime A / DriveTime Mall / DriveTime Denver / Enterprise Car Sales / Hendrick Automotive — previously "Apple Chevrolet" appeared twice and had been flagged as "possibly a design-file error, to confirm"; the prototype now confirms this was indeed a leftover Figma error, so that open item is closed. 5. The Apply Filter gradient changed to the exact value from the prototype\'s CSS, linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%), rather than an approximation I had put together myself. 6. "Select all" now toggles between "Select all" ⇄ "Deselect all", applying only to the dealerships currently visible under the active search (copied directly from the prototype\'s updateCount() logic). 7. The popover behavior changed from "pushes the layout down right under the filter row" to a genuine position:fixed floating overlay modeled on the prototype; the positioning/open-close/click-outside-to-close/Escape-to-close/scroll-follow logic is implemented in OfferDashboard (since it needs the trigger button\'s DOM node) — see that component\'s notes.md for details.\n\nFor you to confirm: 1. The popover alignment changed from the prototype\'s "right-aligned" to "left-aligned" (our button sits at the far left of the filter row, so right-aligning would overflow the viewport) — please confirm this adjustment is as expected. 2. The summary chip\'s close button scope has been narrowed to "clear only the dealership filter"; the prototype\'s own clearFilter() is a combined logic that clears everything — please confirm this narrowing is as expected. 3. Per your instructions, the rest of the prototype (V2/V3/mobile, etc.) was not referenced at all — let me know separately if any of that is needed later.'
+      notes: '2026-08 major update: rebuilt against the real prototype (no longer treating the Figma static mock as authoritative). You provided the local files My-ACV--Dealer-filter-main/index.html + style.css and explicitly said to reference only its V1 web dealership filter section — most of the rest is outdated/incorrect content. This is a real, runnable prototype (#dealer-popover plus its accompanying JS interaction logic), more authoritative than what could previously only be inferred from the Figma static mock, and the whole component has been rebuilt against this prototype.\n\nValue corrections: 1. The "{n} selected" text color changed to #757575 (previously inferred from Figma as #0E0E0F). 2. The search box placeholder text changed to "Search by dealer name or ID..." (previously "Search dealer name"). 3. The checkbox changed to an 18x18 CSS box with corner radius 3 + a checkmark drawn with ::after (selected-state background/border #004E7D, matching the color verified in Figma — only the drawing method changed from an SVG asset to pure CSS). 4. The dealership list changed to the prototype\'s 10 real names with no duplicates: Asbury Automotive Group / Apple Chevrolet / Baxter Auto Mall / CarMax Boston / Classic Honda / DriveTime A / DriveTime Mall / DriveTime Denver / Enterprise Car Sales / Hendrick Automotive — previously "Apple Chevrolet" appeared twice and had been flagged as "possibly a design-file error, to confirm"; the prototype now confirms this was indeed a leftover Figma error, so that open item is closed. 5. The Apply Filter gradient changed to the exact value from the prototype\'s CSS, linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%), rather than an approximation I had put together myself. 6. "Select all" now toggles between "Select all" ⇄ "Deselect all", applying only to the dealerships currently visible under the active search (copied directly from the prototype\'s updateCount() logic). 7. The popover behavior changed from "pushes the layout down right under the filter row" to a genuine position:fixed floating overlay modeled on the prototype; the positioning/open-close/click-outside-to-close/Escape-to-close/scroll-follow logic is implemented in OfferDashboard (since it needs the trigger button\'s DOM node) — see that component\'s notes.md for details.\n\nFor you to confirm: 1. The popover alignment changed from the prototype\'s "right-aligned" to "left-aligned" (our button sits at the far left of the filter row, so right-aligning would overflow the viewport) — please confirm this adjustment is as expected. 2. The summary chip\'s close button scope has been narrowed to "clear only the dealership filter"; the prototype\'s own clearFilter() is a combined logic that clears everything — please confirm this narrowing is as expected. 3. Per your instructions, the rest of the prototype (V2/V3/mobile, etc.) was not referenced at all — let me know separately if any of that is needed later.\n\n2026-09-12: added the mobile prop, matching the mobile Figma page\'s dealer filter (node 4039:9325). Content and interaction (search/select/Select all/Reset/Apply) are completely unchanged — only the outer shell changes shape: width 100% instead of a fixed 374px, corner radius on the top corners only (12px 12px 0 0) instead of all four, no box-shadow. This turns it from a floating popover anchored below the trigger button into a bottom sheet flush with the viewport edges — the actual positioning (fixed to the bottom, above MobileBottomNav) lives in OfferDashboard, not in this component.'
     },
     OfferTableHeader: {
       name: 'Offer Table Header', group: 'Offers Table', order: 30, def: OfferTableHeader,
@@ -3250,7 +3534,8 @@
         reservePrice: { type: 'text', label: 'Reserve price, for the dialog', default: '$4,800' },
         acvEstimate: { type: 'text', label: 'ACV estimate, for the dialog', default: '$4,600' },
         reportUrl: { type: 'text', label: '"View Report" link, for the dialog', default: '#' },
-        counterpartyTimestamp: { type: 'text', label: "Counterparty's latest move timestamp", default: '' }
+        counterpartyTimestamp: { type: 'text', label: "Counterparty's latest move timestamp", default: '' },
+        mobileActions: { type: 'boolean', label: 'Mobile actions (always visible, at the bottom)', default: false }
       },
       mocks: {
         // 2026-09-01:按 "Offer States Logic for CC.md" 的 Number rules
@@ -3302,7 +3587,7 @@
           { speaker: 'buyer', kind: 'offer', amount: '$25,800', timestamp: 'Mon, Aug 17, 10:05 AM' }
         ] }
       },
-      notes: 'This is the card from the tile version (Figma node 7432:68669), matching the general ACV Auction Card structure (the acv-auction-cards skill): an image area (with dealer/lane badge + status badge overlaid) + a Vehicle Detail area (title / mileage・VIN / Auction ID, with field order kept per the skill\'s requirements) + a Flexible area (countdown + New/Received StatusChip + divider + a one-line message). This component will later be reused with different data across different scenarios, so every field besides title/mileage/VIN/Auction ID has been made optional (not rendered if omitted or passed as an empty string).\n\nVerified (node 7432:69394, hidden=false): the card container has a white background, border #E8E9EB, corner radius 12px; the image area is 210px tall; the status badge in the image\'s bottom-left corner — In Negotiation has background #1C1D1F, white text, corner radius 8px, no border (note this differs from the table version\'s OfferTypeBadge, which is corner radius 3px with a white border — these are two independently verified sets of values that have not been forced to merge); Make Offer (verified from 7441:5248/5254) has an outer 1px border #8D9199, corner radius 3px, white inner background, exactly matching the table version; the dealer/lane badge has background rgba(0,0,0,.4) + blur(.75px), white text, corner radius 8px.\n\nVehicle Detail area: the title is 16px/24 Medium, color #0E0E0F; mileage・VIN plus a copy icon (a genuinely downloaded SVG that copies the VIN to the clipboard on click) at 14px/21, color #55575C; Auction ID uses the same color. Flexible area: a Clock icon (genuinely downloaded) plus countdown text at 14px/20 Medium, color #CC433A; New/Received directly reuse the already-verified StatusChip colors; the divider is #EBEBEB; the message block\'s primary/secondary text is 14px.\n\nTo confirm: 1. The vehicleTitle example text is literally "Year Make Model," which looks like a placeholder the designer never replaced — this is not fabricated fake data, it has been kept as-is. 2. The row of action icons in the image area\'s top-right corner (watchlist/hide/note/more, 4 total, node 7432:69398) is hidden=true and has not been implemented. 3. Whether the countdown/status chip/message block appear on every scenario\'s card is unknown, since only this one example has been seen — they have been made optional pending confirmation from later scenario data.\n\n2026-08 rewrite per the "Offer card — content & interaction spec": the original free-text primaryMessage/secondaryMessage, the 4 separate booleans statusNew/statusReceived/statusSent/statusDeclined, and buttonVersion/buttonCount have all been removed, replaced with viewerRole (buyer/seller) + dealState (received/sent/declined/expired) + isNew plus a handful of amount/timestamp props; the two lines of text and the hover button group are now both computed internally by the component from a spec table, rather than hand-written free text. An Expired state has been added (StatusChip has correspondingly gained an expired style, gray background with dark gray text — this is not a Figma-verified value).\n\n2026-09-02 correction: the cardVersion prop\'s default changed from v1 to v2. You flagged that the standalone "Offer Card" and "Offer Card — All States" pages weren\'t showing the "latest movement\'s timestamp on line1, right-aligned" rule — that rule was already implemented (v2\'s messageLine1Timestamp), the problem was that cardVersion still defaulted to v1 (the old behavior, where the timestamp is always folded into line2). OfferDashboard passes \'v2\' explicitly so it was already correct; this default-value fix only changes what standalone OfferCard and OfferCardGallery show when nobody passes cardVersion at all.\n\n2026-09-08: confirmed the tile view only ever needs v2, so the cardVersion prop itself has been removed — the component no longer branches on a version at all. The vehicle-detail second line is now always "Auction ID: {auctionId}" (the old v1 mileage line and the dead "not v2" duplicate Auction ID row are both gone), and the v1-only showGap/gapAmount props were removed along with it. mileage itself is still a prop (still passed through to InformationDialog\'s "Odometer:" line), just no longer shown on the card face.'
+      notes: 'This is the card from the tile version (Figma node 7432:68669), matching the general ACV Auction Card structure (the acv-auction-cards skill): an image area (with dealer/lane badge + status badge overlaid) + a Vehicle Detail area (title / mileage・VIN / Auction ID, with field order kept per the skill\'s requirements) + a Flexible area (countdown + New/Received StatusChip + divider + a one-line message). This component will later be reused with different data across different scenarios, so every field besides title/mileage/VIN/Auction ID has been made optional (not rendered if omitted or passed as an empty string).\n\nVerified (node 7432:69394, hidden=false): the card container has a white background, border #E8E9EB, corner radius 12px; the image area is 210px tall; the status badge in the image\'s bottom-left corner — In Negotiation has background #1C1D1F, white text, corner radius 8px, no border (note this differs from the table version\'s OfferTypeBadge, which is corner radius 3px with a white border — these are two independently verified sets of values that have not been forced to merge); Make Offer (verified from 7441:5248/5254) has an outer 1px border #8D9199, corner radius 3px, white inner background, exactly matching the table version; the dealer/lane badge has background rgba(0,0,0,.4) + blur(.75px), white text, corner radius 8px.\n\nVehicle Detail area: the title is 16px/24 Medium, color #0E0E0F; mileage・VIN plus a copy icon (a genuinely downloaded SVG that copies the VIN to the clipboard on click) at 14px/21, color #55575C; Auction ID uses the same color. Flexible area: a Clock icon (genuinely downloaded) plus countdown text at 14px/20 Medium, color #CC433A; New/Received directly reuse the already-verified StatusChip colors; the divider is #EBEBEB; the message block\'s primary/secondary text is 14px.\n\nTo confirm: 1. The vehicleTitle example text is literally "Year Make Model," which looks like a placeholder the designer never replaced — this is not fabricated fake data, it has been kept as-is. 2. The row of action icons in the image area\'s top-right corner (watchlist/hide/note/more, 4 total, node 7432:69398) is hidden=true and has not been implemented. 3. Whether the countdown/status chip/message block appear on every scenario\'s card is unknown, since only this one example has been seen — they have been made optional pending confirmation from later scenario data.\n\n2026-08 rewrite per the "Offer card — content & interaction spec": the original free-text primaryMessage/secondaryMessage, the 4 separate booleans statusNew/statusReceived/statusSent/statusDeclined, and buttonVersion/buttonCount have all been removed, replaced with viewerRole (buyer/seller) + dealState (received/sent/declined/expired) + isNew plus a handful of amount/timestamp props; the two lines of text and the hover button group are now both computed internally by the component from a spec table, rather than hand-written free text. An Expired state has been added (StatusChip has correspondingly gained an expired style, gray background with dark gray text — this is not a Figma-verified value).\n\n2026-09-02 correction: the cardVersion prop\'s default changed from v1 to v2. You flagged that the standalone "Offer Card" and "Offer Card — All States" pages weren\'t showing the "latest movement\'s timestamp on line1, right-aligned" rule — that rule was already implemented (v2\'s messageLine1Timestamp), the problem was that cardVersion still defaulted to v1 (the old behavior, where the timestamp is always folded into line2). OfferDashboard passes \'v2\' explicitly so it was already correct; this default-value fix only changes what standalone OfferCard and OfferCardGallery show when nobody passes cardVersion at all.\n\n2026-09-08: confirmed the tile view only ever needs v2, so the cardVersion prop itself has been removed — the component no longer branches on a version at all. The vehicle-detail second line is now always "Auction ID: {auctionId}" (the old v1 mileage line and the dead "not v2" duplicate Auction ID row are both gone), and the v1-only showGap/gapAmount props were removed along with it. mileage itself is still a prop (still passed through to InformationDialog\'s "Odometer:" line), just no longer shown on the card face.\n\n2026-09-11: added mobileActions (default false) for the mobile version of the dashboard. Rather than building a separate mobile card component, you decided the mobile card reuses this exact component — same content/pricing/dealState logic, no risk of the two versions drifting apart. The only difference: on desktop the action buttons are an absolutely-positioned overlay revealed on :hover; with mobileActions true they render in normal flow at the bottom of the card, always visible (no :hover reliance, since touch doesn\'t have a real hover state and tapping can briefly and inconsistently trigger it), with a divider above them separating them from the content. The "hover blurs the flex-section" effect is also suppressed under mobileActions, since nothing is overlaying the content that would need blurring. hoverButtons itself (the button set/labels per viewerRole+offerType+dealState) is unchanged.'
     },
     OfferCardGallery: {
       name: 'Offer Card — All States', group: 'Card View', order: 41, def: OfferCardGallery,
@@ -3377,11 +3662,32 @@
       name: 'Offer Dashboard', group: 'Page Assembly', order: 1, def: OfferDashboard,
       controls: {
         reset: { type: 'button', label: 'Reset dashboard' },
+        // 2026-09-12 按你的要求挪到 Screen width 上面——先选设备类型,
+        // 再看/调那个类型下的具体宽度,顺序上更符合"先选大类,再调细节"
+        // 的操作习惯。手动强制切换 mobile/web(不管 Screen width 实际是
+        // 多少),方便在宽屏下也能检查 mobile 设计细节,不用真的把滑块
+        // 拖到很窄。Table view(mobile 自己的表格视图)你说了先不考虑,
+        // 这次没加第三个选项,细节见 notes.md。
+        deviceView: { type: 'segmented', label: 'Device view', options: [
+          { value: 'auto', label: 'Auto' }, { value: 'mobile', label: 'Mobile view' }, { value: 'web', label: 'Web view' }
+        ], default: 'auto' },
         // 2026-09-03 按你的要求挪到 reset 按钮正下方——原来排在所有控件
         // 最后面,这次挪到最前面(仅次于 reset 按钮),其它控件顺序不变,
         // 只是这一个往前挪。screenWidth 本身的性质(uiOnly,不是真实
         // prop)没有变,细节见下面它自己的注释。
-        screenWidth: { type: 'range', label: 'Screen width', min: 768, max: 2560, step: 10, default: 1422, uiOnly: true },
+        // 2026-09-11 min 从 768 改成 320——之前这个滑块的范围恰好卡在
+        // mobile breakpoint(768px)本身,永远拖不到 mobile 那一侧,只能
+        // 测桌面版的响应式挤压。现在拖到 768px 以下会真的自动切换成
+        // mobile 布局(见 OfferDashboard.vue 的 effectiveDeviceView),
+        // 320 是常见的移动端最小宽度参考值。
+        // 2026-09-12(第二次)按你的要求:选了 Mobile view/Web view 之后,
+        // 这个滑块自己的可拖动范围也要跟着变——mobile 时最大不能超过
+        // breakpoint(768),web 时最小不能低于 breakpoint,不能拖出一个
+        // "选了 mobile 但宽度比桌面还宽"的矛盾状态。实际的 min/max 由
+        // Harness 模板里 :min/:max 表达式按 deviceView 动态算,这里的
+        // 320/2560 只是 Auto 模式下的默认范围(不受限制,方便你拖过
+        // breakpoint 测试自动切换)。
+        screenWidth: { type: 'range', label: 'Screen width', min: 320, max: 2560, step: 10, default: 1422, uiOnly: true },
         // 2026-09-02 按你的要求挪到 reset 按钮正下方(配合下面 CSS 里
         // 新加的 pg-control-field--switch,switcher 直接贴在 "Multi-dealer"
         // 这行文字右边,一行放完)
@@ -3401,7 +3707,7 @@
         singleDealerExample: { isMultiDealer: false, buyingVehicleCount: 15, sellingVehicleCount: 15 },
         fewVehiclesExample: { isMultiDealer: true, buyingVehicleCount: 3, sellingVehicleCount: 3 }
       },
-      notes: 'This is the full-page assembly, not one of the standalone "mold" components required at order 10-34 in the task list — it\'s these already-verified fragments (AppHeader/Breadcrumb/SidebarNav/OfferTabs/SearchInput/FilterChipGroup/OfferTableHeader/OfferTableRow/StatusChip/OfferTypeBadge/Pagination) put together per the real layout of Figma\'s main "Offers" page, so the overall effect can be seen up front.\n\n2026-08 added vehicleCount (a number input, 1-12): you asked for "a control to show how many vehicles are displayed," so this control was added to control how many of the front rows out of the 12 mock rows are actually shown in table/tile (`rowsLimited = rows.slice(0, vehicleCount)`) — this is not real pagination. SidebarNav\'s "Offers" count, OfferTabs\' Buying count, and each FilterChipGroup chip\'s count all update dynamically along with rowsLimited (unaffected by the filter chip/Dealership filtering below — see the next paragraph). This is purely for UI demo purposes and does not represent any such real computed relationship between "vehicle count" and these fields in the actual business logic.\n\n2026-08 per your request: clicking a filter chip / the Dealership dropdown now actually filters the table/tile content, not just changing its own color. FilterChipGroup gained a filter-change event that emits the selected state, stored into chipFilter; DealershipFilterDropdown\'s Apply/Reset both emit apply (Reset emits an empty array), stored into dealerFilter, and re-opening the dropdown carries the current state back in via pre-selected. The actually-rendered visibleRows applies a further matchesFilters layer on top of rowsLimited: Dealership is AND; In negotiation/Make Offer is OR (both can be selected, and matching either offerType counts — this is the natural result of Figma\'s "multi-select" annotation); New/Received/Sent are mutually exclusive single-select against the corresponding row field; Declined currently has no row data that can match it, so selecting it necessarily yields an empty list (this is a correct result, not something left unimplemented). When the filtered result is empty, a "No vehicles match the current filters." message is shown instead of a blank area. The counts on FilterChipGroup\'s own chips were deliberately left not linked to this filtered result.\n\n2026-08 added two controls at your request: 1. Reset dashboard (a button-type control at the top of the panel) — clicking it remounts this component, returning it to its default state (Dealership dropdown collapsed, sorting cleared, and state maintained by child components themselves, such as the search box text/selected filter chips, is also reset). 2. isMultiDealer (a boolean toggle) — verified against the single-dealer reference frame 6837:16538, and now uniformly passed through to three places: FilterChipGroup (hides the Dealership chip), OfferTableHeader (second column title becomes Auction ID, no sorting), and every OfferTableRow (second column\'s main title shows Auction ID directly, no Dealer Name shown). Clicking the "Dealership" chip still expands DealershipFilterDropdown (order 23), but in single-dealer mode that chip itself is no longer shown. [Resolved as of 2026-08, see the next paragraph] The layout of the expanded DealershipFilterDropdown used to push content down directly below the filter row; it has now been changed to a genuine floating overlay modeled on the real prototype.\n\n2026-08 per your request, rebuilt the Dealership popover + interaction against the real prototype (the local files My-ACV--Dealer-filter-main/index.html — you said to reference only its V1 web dealership filter section, with everything else being outdated content): FilterChipGroup exposes the Dealership button\'s real DOM node via ref="filterChipGroupRef", and getBoundingClientRect() is used here to compute dealerPopoverStyle (position:fixed + top/left) so the overlay genuinely floats below the button (the alignment direction was changed from the prototype\'s right-aligned to left-aligned, because our button sits at the far left of the filter row and right-aligning would overflow the viewport). Clicking outside the overlay (mousedown) or pressing Escape both close it, and if it\'s still open during scroll/resize it repositions itself — these three global listeners are copied directly from the prototype\'s corresponding logic. Once applied, a .offer-dashboard__dealer-chip summary appears below the filter row (light-blue background with a border, copied from the prototype\'s .dfc-chip), with text reading "first name alphabetically + comma + N"; clicking × clears only the dealership filter, without affecting the other filter chips. The DealershipFilterDropdown component itself also changed its dealership list (the prototype\'s 10 real names — the earlier Figma mock\'s duplicate "Apple Chevrolet" has now been confirmed as a leftover design-file error), its checkbox rendering (a CSS box + a checkmark drawn with ::after, no longer an SVG asset), the "Select all" ⇄ "Deselect all" toggle, and the Apply Filter gradient (linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%), the exact value from the prototype\'s CSS) — see that component\'s own notes.md for details.\n\nFor you to confirm about the layout itself: 1. Whether there should be a vertical divider between the Sidebar and the right-hand content area — no corresponding divider node was seen in the Figma metadata, so none was added. 2. The background color of the page\'s empty areas was not independently verified; white was used. 3. Each sub-component\'s own "to confirm" items are not repeated here — please switch to each one\'s own entry to view its Notes.\n\n2026-08 added the tile version (verified against node 7432:68669/7432:69394): a viewMode (\'table\'|\'tile\', purely internal UI state, default table, not an external prop) was added internally. The search/filter row is completely unchanged between the two views (in Figma, the table version\'s 6837:16129 and the card version\'s 7432:68713 share the same search/filter-area node — this is not a guess on my part); only the table/card-grid section below switches. In tile mode, the "Viewing N results" text follows what was verified against node 7432:70555, the card grid is 3 columns with 16px gap (derived by working backward from the 363.33px x-coordinate difference between two cards, divided by 16px), and there is **no** Pagination at the bottom — the tile-version Figma frame simply doesn\'t have that area at all. The two view-toggle icon buttons (genuinely verified from node 7432:70565) were originally only ever seen in the tile-version Figma frame; to let the user switch back and forth between the two views, the same buttons were also placed into the table view\'s top toolbar — this step is a reasonable inference made to close the interaction loop, and it has not been independently verified that the table view\'s top originally had this control — still to confirm. rowsAsCards maps the already-verified table row data directly into OfferCard as-is; since the current mocks have no real data for primaryMessage/secondaryMessage, nothing was fabricated — they are simply left blank.\n\n2026-08 per your request: removed the horizontal line below the filter chips and re-verified the page\'s vertical spacing throughout. Against the new node 7448:9826 (hidden=false, a complete page from the App Bar down to the table), every gap from top to bottom was re-measured for real: App Bar → Breadcrumb 24px, Breadcrumb → Tabs 14px, Tabs → search box 24px, search box → filter chip row 16px, filter chip row → Private Lane/Pagination row 20px of pure whitespace (previously 16px plus a border-top divider line — that line simply doesn\'t exist in Figma, and has been removed in favor of margin-top:20px), Private Lane/Pagination row → table header 16px (implemented via .offer-dashboard__table-top\'s padding-bottom, not an extra empty div). This has all been checked item by item against actual measurements of the rendered browser output using getBoundingClientRect() — all six values match, and the horizontal line is confirmed gone.'
+      notes: 'This is the full-page assembly, not one of the standalone "mold" components required at order 10-34 in the task list — it\'s these already-verified fragments (AppHeader/Breadcrumb/SidebarNav/OfferTabs/SearchInput/FilterChipGroup/OfferTableHeader/OfferTableRow/StatusChip/OfferTypeBadge/Pagination) put together per the real layout of Figma\'s main "Offers" page, so the overall effect can be seen up front.\n\n2026-08 added vehicleCount (a number input, 1-12): you asked for "a control to show how many vehicles are displayed," so this control was added to control how many of the front rows out of the 12 mock rows are actually shown in table/tile (`rowsLimited = rows.slice(0, vehicleCount)`) — this is not real pagination. SidebarNav\'s "Offers" count, OfferTabs\' Buying count, and each FilterChipGroup chip\'s count all update dynamically along with rowsLimited (unaffected by the filter chip/Dealership filtering below — see the next paragraph). This is purely for UI demo purposes and does not represent any such real computed relationship between "vehicle count" and these fields in the actual business logic.\n\n2026-08 per your request: clicking a filter chip / the Dealership dropdown now actually filters the table/tile content, not just changing its own color. FilterChipGroup gained a filter-change event that emits the selected state, stored into chipFilter; DealershipFilterDropdown\'s Apply/Reset both emit apply (Reset emits an empty array), stored into dealerFilter, and re-opening the dropdown carries the current state back in via pre-selected. The actually-rendered visibleRows applies a further matchesFilters layer on top of rowsLimited: Dealership is AND; In negotiation/Make Offer is OR (both can be selected, and matching either offerType counts — this is the natural result of Figma\'s "multi-select" annotation); New/Received/Sent are mutually exclusive single-select against the corresponding row field; Declined currently has no row data that can match it, so selecting it necessarily yields an empty list (this is a correct result, not something left unimplemented). When the filtered result is empty, a "No vehicles match the current filters." message is shown instead of a blank area. The counts on FilterChipGroup\'s own chips were deliberately left not linked to this filtered result.\n\n2026-08 added two controls at your request: 1. Reset dashboard (a button-type control at the top of the panel) — clicking it remounts this component, returning it to its default state (Dealership dropdown collapsed, sorting cleared, and state maintained by child components themselves, such as the search box text/selected filter chips, is also reset). 2. isMultiDealer (a boolean toggle) — verified against the single-dealer reference frame 6837:16538, and now uniformly passed through to three places: FilterChipGroup (hides the Dealership chip), OfferTableHeader (second column title becomes Auction ID, no sorting), and every OfferTableRow (second column\'s main title shows Auction ID directly, no Dealer Name shown). Clicking the "Dealership" chip still expands DealershipFilterDropdown (order 23), but in single-dealer mode that chip itself is no longer shown. [Resolved as of 2026-08, see the next paragraph] The layout of the expanded DealershipFilterDropdown used to push content down directly below the filter row; it has now been changed to a genuine floating overlay modeled on the real prototype.\n\n2026-08 per your request, rebuilt the Dealership popover + interaction against the real prototype (the local files My-ACV--Dealer-filter-main/index.html — you said to reference only its V1 web dealership filter section, with everything else being outdated content): FilterChipGroup exposes the Dealership button\'s real DOM node via ref="filterChipGroupRef", and getBoundingClientRect() is used here to compute dealerPopoverStyle (position:fixed + top/left) so the overlay genuinely floats below the button (the alignment direction was changed from the prototype\'s right-aligned to left-aligned, because our button sits at the far left of the filter row and right-aligning would overflow the viewport). Clicking outside the overlay (mousedown) or pressing Escape both close it, and if it\'s still open during scroll/resize it repositions itself — these three global listeners are copied directly from the prototype\'s corresponding logic. Once applied, a .offer-dashboard__dealer-chip summary appears below the filter row (light-blue background with a border, copied from the prototype\'s .dfc-chip), with text reading "first name alphabetically + comma + N"; clicking × clears only the dealership filter, without affecting the other filter chips. The DealershipFilterDropdown component itself also changed its dealership list (the prototype\'s 10 real names — the earlier Figma mock\'s duplicate "Apple Chevrolet" has now been confirmed as a leftover design-file error), its checkbox rendering (a CSS box + a checkmark drawn with ::after, no longer an SVG asset), the "Select all" ⇄ "Deselect all" toggle, and the Apply Filter gradient (linear-gradient(160deg, #F26522 13.86%, #FC4243 86.14%), the exact value from the prototype\'s CSS) — see that component\'s own notes.md for details.\n\nFor you to confirm about the layout itself: 1. Whether there should be a vertical divider between the Sidebar and the right-hand content area — no corresponding divider node was seen in the Figma metadata, so none was added. 2. The background color of the page\'s empty areas was not independently verified; white was used. 3. Each sub-component\'s own "to confirm" items are not repeated here — please switch to each one\'s own entry to view its Notes.\n\n2026-08 added the tile version (verified against node 7432:68669/7432:69394): a viewMode (\'table\'|\'tile\', purely internal UI state, default table, not an external prop) was added internally. The search/filter row is completely unchanged between the two views (in Figma, the table version\'s 6837:16129 and the card version\'s 7432:68713 share the same search/filter-area node — this is not a guess on my part); only the table/card-grid section below switches. In tile mode, the "Viewing N results" text follows what was verified against node 7432:70555, the card grid is 3 columns with 16px gap (derived by working backward from the 363.33px x-coordinate difference between two cards, divided by 16px), and there is **no** Pagination at the bottom — the tile-version Figma frame simply doesn\'t have that area at all. The two view-toggle icon buttons (genuinely verified from node 7432:70565) were originally only ever seen in the tile-version Figma frame; to let the user switch back and forth between the two views, the same buttons were also placed into the table view\'s top toolbar — this step is a reasonable inference made to close the interaction loop, and it has not been independently verified that the table view\'s top originally had this control — still to confirm. rowsAsCards maps the already-verified table row data directly into OfferCard as-is; since the current mocks have no real data for primaryMessage/secondaryMessage, nothing was fabricated — they are simply left blank.\n\n2026-08 per your request: removed the horizontal line below the filter chips and re-verified the page\'s vertical spacing throughout. Against the new node 7448:9826 (hidden=false, a complete page from the App Bar down to the table), every gap from top to bottom was re-measured for real: App Bar → Breadcrumb 24px, Breadcrumb → Tabs 14px, Tabs → search box 24px, search box → filter chip row 16px, filter chip row → Private Lane/Pagination row 20px of pure whitespace (previously 16px plus a border-top divider line — that line simply doesn\'t exist in Figma, and has been removed in favor of margin-top:20px), Private Lane/Pagination row → table header 16px (implemented via .offer-dashboard__table-top\'s padding-bottom, not an extra empty div). This has all been checked item by item against actual measurements of the rendered browser output using getBoundingClientRect() — all six values match, and the horizontal line is confirmed gone.\n\n2026-09-11/12: added a mobile version, based on the mobile Figma "Offers" page (node 7765:16893). A new deviceView prop (\'auto\'|\'mobile\'|\'web\') decides which of two entirely separate DOM structures renders — mobile isn\'t the desktop structure squeezed by CSS. \'auto\' measures this component\'s own rendered width via ResizeObserver and switches below 768px; \'mobile\'/\'web\' force one or the other regardless of actual width, so you can inspect the mobile design at any Screen width. Mobile layout: MobileTopBar → OfferTabs(mobile) → SearchInput + FilterChipGroup(mobile, hides In Negotiation/Make Offer per the Figma node\'s own annotation) → a single-column list of OfferCard(mobileActions) → MobileBottomNav. It reuses the exact same filtering/search/pricing state as desktop — there is one source of truth, not a parallel mobile data path.\n\n2026-09-12 fix 1: clicking "Mobile view" changed the rendered layout but left the Harness\'s "Screen width" slider at its old (wide) value, so the stage looked like a wide desktop viewport with a squeezed mobile column and empty space on both sides. The Harness\'s segmented-control handler now also sets screenWidth to 375 when you click Mobile view (1422 for Web view; Auto leaves it alone, since Auto is defined as "follow whatever the slider currently says"). The slider\'s own range was also widened from 768–2560 to 320–2560 — its old minimum sat exactly on the mobile breakpoint, so dragging it could never actually cross into mobile territory.\n\n2026-09-12 fix 2: the Dealership dropdown now has a mobile-specific presentation, based on the mobile Figma page\'s dealer filter (node 4039:9325) — a bottom sheet flush with the viewport edges instead of a popover floating below the trigger button. updateDealerPopoverPosition() branches on effectiveDeviceView: mobile skips the button\'s getBoundingClientRect() entirely and just sets position:fixed;left:0;right:0;bottom:56px (56px = MobileBottomNav\'s height, so the sheet never covers it). See DealershipFilterDropdown\'s own notes for the shell-only changes (width 100%, top-corners-only radius, no shadow) — none of its internal search/select/apply logic changed.'
     }
   };
 
@@ -3483,6 +3789,51 @@
       function toggleSidebar() { sidebarOpen.value = !sidebarOpen.value; syncScreenWidthToStage(); }
       function toggleControls() { controlsOpen.value = !controlsOpen.value; syncScreenWidthToStage(); }
       function markScreenWidthManual(key) { if (key === 'screenWidth') screenWidthAuto.value = false; }
+      // 2026-09-12(第二次)按你的要求:选了 Mobile view 时,"Screen
+      // width" 滑块自己的可拖动范围也要跟着收紧到 breakpoint(768,跟
+      // OfferDashboard.vue 里 effectiveDeviceView 判断"是否自动进入
+      // mobile"用的是同一个数字)以内——不能出现"选了 mobile,宽度却拖
+      // 到比桌面还宽"这种自相矛盾的状态。Auto 模式不收紧(保持 def 里
+      // 原来的 320-2560),因为 Auto 的意义就是可以拖过这个断点去看两侧
+      // 自动切换的效果。这个判断直接写在下面模板的 :min/:max 表达式里
+      // (没有拆成 rangeMin/rangeMax 方法——试过拆出去当方法调用,
+      // Vue 在这个属性绑定的位置解析不出来,报 "xxx is not a
+      // function",原因不明,直接写表达式反而没有这个问题,保留这个写法)。
+      // 2026-09-12 按你的要求:点 "Device view" 里的 Mobile view/Web view
+      // 时,连带把 "Screen width" 滑块也拨到对应的典型宽度——不然点了
+      // Mobile view 之后组件确实切成了 mobile 布局,但舞台还是停在很宽
+      // 的桌面尺寸,视觉上是个"很宽的容器里挤了一条窄内容,两边一大片
+      // 空白"的怪样子,不像真的在看手机预览。375 是常见的手机视口宽度
+      // 参考值,1422 是这个滑块原来的桌面默认值。点 Auto 不动这个滑块,
+      // 因为 Auto 就是"跟着滑块当前宽度自己判断",两者不应该互相打架。
+      function handleSegmentedClick(key, value) {
+        controlValues[key] = value;
+        if (key === 'deviceView') {
+          // 2026-09-12 390×844 是你指定的具体尺寸(接近真机 iPhone 的
+          // viewport),不只是宽度——高度也固定,配合 stageFrameStyle 里
+          // 的 overflow-y:auto,内容在这个固定高度的框里自己滚动,更像
+          // "看一个手机屏幕"。Auto/Web view 都不强制高度(stageFrameHeight
+          // 设成 null,交回原来"内容多高、框就多高"的行为)。
+          screenWidthAuto.value = false;
+          if (value === 'mobile') { stageFrameHeight.value = 844; } else if (value === 'web') { stageFrameHeight.value = null; } else { stageFrameHeight.value = null; }
+          // 2026-09-12(第三次)按你的要求发现的真实 bug:deviceView 改变
+          // 时,滑块的 :max/:min 绑定(见上面模板里的表达式)和这里要设的
+          // screenWidth 新值是在同一个 tick 里一起改的,但原生
+          // <input type=range> 元素在浏览器内部会用"当前 DOM 属性上的
+          // min/max"去夹住(clamp)你设的 value——如果 Vue patch 的顺序
+          // 恰好是先套用旧的 max、后套用新 value,值会被夹成旧 max(比如
+          // 从 mobile 切到 web 时被夹成 768,不是想要的 1422),之后即使
+          // max 也更新了,原生 input 也不会自己把 value 拉回来,变成显示
+          // 上的文字(label)是对的、滑块拖动条本身悄悄跟真实状态不一致。
+          // 用 nextTick 把设置 screenWidth 拆到下一轮——先让 min/max 的
+          // patch 完全生效,再设新宽度,新宽度落进的就是已经生效的新区间,
+          // 不会被夹住。
+          nextTick(function () {
+            if (value === 'mobile') controlValues.screenWidth = 390;
+            else if (value === 'web') controlValues.screenWidth = 1422;
+          });
+        }
+      }
       var screenWidthBeforeFullscreen = null;
       function toggleFullscreen() {
         fullscreenOpen.value = !fullscreenOpen.value;
@@ -3501,14 +3852,26 @@
           // 退出全屏时把滑块还原回进全屏前的值,不影响你平时编辑用的宽度。
           if (current.value.controls && current.value.controls.screenWidth) {
             screenWidthBeforeFullscreen = controlValues.screenWidth;
-            // controls 收起用的是 CSS transition(.pg-controls 那条
-            // width .22s ease),不是瞬间完成的——只等 nextTick(DOM class
-            // 应用完)去量宽度,量到的是动画中间某一帧的宽度,不是收起后
-            // 的最终宽度。这里多等一个 setTimeout(跟 CSS 那个 .22s 对上,
-            // 稍微多留一点余量)才量,量到的才是真正收起完成后的可用宽度
-            setTimeout(function () {
-              if (stageRef.value) controlValues.screenWidth = stageRef.value.clientWidth;
-            }, 260);
+            // 2026-09-12 按你的要求补的条件:选了 Mobile view/Web view
+            // (强制指定的设备类型)时,进全屏不应该再把宽度拨去"铺满整块
+            // 屏幕"——那样量出来的真实屏幕宽度(比如 1888px)会直接超出
+            // Mobile view 自己应该锁在 breakpoint 以内这条规则,变成
+            // "选了 mobile,宽度却比桌面还宽"的矛盾状态。只有 deviceView
+            // 是 'auto'(或者这个组件根本没有 deviceView 这个控件)时,
+            // 才继续走原来"进全屏即铺满"的逻辑,这是本来就有、这次没有
+            // 要改的行为。
+            var deviceViewForced = current.value.controls.deviceView &&
+              (controlValues.deviceView === 'mobile' || controlValues.deviceView === 'web');
+            if (!deviceViewForced) {
+              // controls 收起用的是 CSS transition(.pg-controls 那条
+              // width .22s ease),不是瞬间完成的——只等 nextTick(DOM class
+              // 应用完)去量宽度,量到的是动画中间某一帧的宽度,不是收起后
+              // 的最终宽度。这里多等一个 setTimeout(跟 CSS 那个 .22s 对上,
+              // 稍微多留一点余量)才量,量到的才是真正收起完成后的可用宽度
+              setTimeout(function () {
+                if (stageRef.value) controlValues.screenWidth = stageRef.value.clientWidth;
+              }, 260);
+            }
           }
         } else {
           controlsOpen.value = controlsOpenBeforeFullscreen;
@@ -3560,18 +3923,30 @@
       // 填满这个 frame。没有 screenWidth 控件的组件(现在只有 Offer
       // Dashboard 有)这里给 null,frame 就是普通 block,宽度跟 pg-stage
       // 走,不受影响
+      // 2026-09-12 新增:点 "Mobile view" 时不只改宽度,连高度也一起
+      // 固定成 844px(390×844 是你要求的具体尺寸,接近真机 iPhone 的
+      // viewport),配合 overflow-y:auto 让内容在这个固定高度的框里自己
+      // 滚动——更像"看一个手机屏幕",而不是内容一直往下长、靠外层舞台
+      // 滚动条去看。null = 不限制高度(桌面/Auto 模式的原有行为不变)。
+      var stageFrameHeight = ref(null);
       var stageFrameStyle = computed(function () {
         var defs = current.value.controls || {};
+        var style = {};
         if (defs.screenWidth) {
           var w = controlValues.screenWidth || defs.screenWidth.default;
-          return { width: w + 'px' };
+          style.width = w + 'px';
+        } else if (selectedKey.value === 'OfferCard') {
+          // 2026-08 按你的要求:OfferCard 单独在 Playground 里看的时候固定
+          // 360px 宽,方便展示——OfferCard 组件本身没有(也不需要有)固定
+          // 宽度,真实场景里它的宽度是外面 Dashboard 卡片网格分配给它的,
+          // 这里只是 Playground 预览用的显示宽度,不是给组件本身加限制
+          style.width = '360px';
         }
-        // 2026-08 按你的要求:OfferCard 单独在 Playground 里看的时候固定
-        // 360px 宽,方便展示——OfferCard 组件本身没有(也不需要有)固定
-        // 宽度,真实场景里它的宽度是外面 Dashboard 卡片网格分配给它的,
-        // 这里只是 Playground 预览用的显示宽度,不是给组件本身加限制
-        if (selectedKey.value === 'OfferCard') return { width: '360px' };
-        return null;
+        if (stageFrameHeight.value) {
+          style.height = stageFrameHeight.value + 'px';
+          style.overflowY = 'auto';
+        }
+        return Object.keys(style).length ? style : null;
       });
 
       // ============================================================
@@ -3725,8 +4100,8 @@
         sidebarOpen: sidebarOpen, controlsOpen: controlsOpen, fullscreenOpen: fullscreenOpen,
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
-        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageRef: stageRef,
-        markScreenWidthManual: markScreenWidthManual,
+        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef,
+        markScreenWidthManual: markScreenWidthManual, handleSegmentedClick: handleSegmentedClick,
         hasResetControl: hasResetControl, otherControls: otherControls,
         specModeEnabled: specModeEnabled, specHover: specHover, specPanel: specPanel,
         handleSpecMouseMove: handleSpecMouseMove, handleSpecMouseLeaveStage: handleSpecMouseLeaveStage,
@@ -3756,7 +4131,7 @@
       '</div>' +
       '<div class="pg-workspace">' +
       '<div class="pg-stage" ref="stageRef" :class="{ \'pg-stage--spec-mode\': specModeEnabled }">' +
-      '<div class="pg-stage__resize-frame" :style="stageFrameStyle" ' +
+      '<div class="pg-stage__resize-frame" :class="{ \'pg-stage__resize-frame--device\': !!stageFrameHeight }" :style="stageFrameStyle" ' +
       '@click.capture="handleSpecClick" @mousemove="handleSpecMouseMove" @mouseleave="handleSpecMouseLeaveStage">' +
       '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
       '</div></div>' +
@@ -3780,7 +4155,7 @@
       '<label>{{ def.label || key }}</label>' +
       '<div v-if="def.type === \'segmented\'" class="pg-segmented">' +
       '<button v-for="opt in def.options" :key="opt.value" type="button" class="pg-segmented__btn" ' +
-      ':class="{ \'pg-segmented__btn--active\': controlValues[key] === opt.value }" @click="controlValues[key] = opt.value">{{ opt.shortLabel || opt.label }}</button>' +
+      ':class="{ \'pg-segmented__btn--active\': controlValues[key] === opt.value }" @click="handleSegmentedClick(key, opt.value)">{{ opt.shortLabel || opt.label }}</button>' +
       '</div>' +
       '<select v-else-if="def.type === \'select\'" v-model="controlValues[key]">' +
       '<option v-for="opt in def.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>' +
@@ -3788,7 +4163,7 @@
       '<input v-else-if="def.type === \'boolean\'" type="checkbox" v-model="controlValues[key]">' +
       '<input v-else-if="def.type === \'number\'" type="number" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]">' +
       '<div v-else-if="def.type === \'range\'" class="pg-control-range">' +
-      '<input type="range" :min="def.min" :max="def.max" :step="def.step || 1" v-model.number="controlValues[key]" @input="markScreenWidthManual(key)">' +
+      '<input type="range" :min="(key === \'screenWidth\' && controlValues.deviceView === \'web\') ? 768 : def.min" :max="(key === \'screenWidth\' && controlValues.deviceView === \'mobile\') ? 768 : def.max" :step="def.step || 1" v-model.number="controlValues[key]" @input="markScreenWidthManual(key)">' +
       '<span class="pg-control-range__value">{{ controlValues[key] }}px</span>' +
       '</div>' +
       '<input v-else type="text" v-model="controlValues[key]">' +
