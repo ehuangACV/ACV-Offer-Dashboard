@@ -252,7 +252,7 @@
         <OfferTabs v-bind="tabs" @select="handleTabSelect" />
 
         <div class="offer-dashboard__toolbar">
-          <SearchInput v-model="searchValue" />
+          <SearchInput v-model="searchInputValue" @search="searchValue = $event" />
           <!-- 2026-09-02 按你的要求:Selling tab 不应该有 Declined 这个
                筛选项,Buying 保持不变。FilterChipGroup 新增的
                showDeclined prop 按当前 tab 算,不是常量,细节见
@@ -700,6 +700,12 @@ const filters = computed(() => ({
   declinedCount: typeFilteredRows.value.filter((r) => rowToDealState(r) === 'declined').length
 }))
 
+// 2026-09-11(第二次)按你的要求:搜索不再是输入过程中实时触发,只有按
+// Enter/点清空按钮才真的执行。searchInputValue 是输入框显示的文字(纯
+// v-model,每次按键都变),searchValue 是真正参与 matchesFilters 过滤的
+// "已提交"查询词,只在收到 SearchInput 的 search 事件时才更新,细节见
+// SearchInput/notes.md。
+const searchInputValue = ref('')
 const searchValue = ref('')
 const sortColumn = ref(null)
 
@@ -832,6 +838,16 @@ function rowShowsNew(row) {
 // 不会再出现两者对不上的情况。
 function matchesFilters(row) {
   if (removedAuctionIds.value.includes(row.auctionId)) return false
+  // 2026-09-11 按你的要求:搜索框之前只是接了 v-model,没有真的接上筛选
+  // 逻辑。搜索框占位文案写的是 "Search by year, make, model, VIN",所以
+  // 只匹配 vehicleTitle(年份+品牌+型号拼在一起的字段)和 vin 这两个
+  // 字段,不含 Auction ID/Dealer Name;大小写不敏感、trim 掉两端空格,
+  // 和其它筛选条件一样是 AND 组合、实时生效,细节见 SearchInput/notes.md。
+  const searchQuery = searchValue.value.trim().toLowerCase()
+  if (searchQuery) {
+    const haystack = (row.vehicleTitle + ' ' + row.vin).toLowerCase()
+    if (!haystack.includes(searchQuery)) return false
+  }
   if (dealerFilter.value.length && !dealerFilter.value.includes(row.dealerName)) {
     return false
   }

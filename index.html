@@ -242,6 +242,8 @@
   .search-input__icon { display: inline-flex; width: 20px; height: 20px; flex-shrink: 0; }
   .search-input__field { flex: 1; border: none; outline: none; background: none; font-family: 'Roboto', sans-serif; font-size: 16px; line-height: 24px; letter-spacing: 0.5px; color: rgba(0, 0, 0, 0.87); }
   .search-input__field::placeholder { color: rgba(0, 0, 0, 0.67); }
+  .search-input__clear { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; flex-shrink: 0; border: none; background: none; color: rgba(0, 0, 0, 0.67); cursor: pointer; }
+  .search-input__clear:hover { color: rgba(0, 0, 0, 0.87); }
 
   /* -- FilterChipGroup -- */
   .filter-chip-group { display: flex; align-items: center; gap: 8px; font-family: 'Roboto', sans-serif; flex-wrap: wrap; }
@@ -1042,11 +1044,12 @@
       modelValue: { type: String, default: '' },
       placeholder: { type: String, default: 'Search by year, make, model, VIN' }
     },
-    emits: ['update:modelValue'],
+    emits: ['update:modelValue', 'search'],
     template:
       '<label class="search-input">' +
       '<span class="search-input__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M13.4369 12.0629H12.7106L12.4581 11.8122C13.35 10.7721 13.8925 9.42367 13.8925 7.94625C13.8925 4.66209 11.2304 2 7.94625 2C4.66209 2 2 4.66209 2 7.94625C2 11.2304 4.66209 13.8925 7.94625 13.8925C9.42367 13.8925 10.7712 13.3509 11.8113 12.4599L12.0638 12.7106V13.4351L16.636 18.0009L18 16.6369L13.4369 12.0629V12.0629ZM7.94626 12.0629C5.67204 12.0629 3.82962 10.2205 3.82962 7.94625C3.82962 5.67295 5.67204 3.82961 7.94626 3.82961C10.2196 3.82961 12.0629 5.67295 12.0629 7.94625C12.0629 10.2205 10.2196 12.0629 7.94626 12.0629V12.0629Z" fill="black" fill-opacity="0.87"/></svg></span>' +
-      '<input class="search-input__field" type="text" :placeholder="placeholder" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">' +
+      '<input class="search-input__field" type="text" :placeholder="placeholder" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" @keyup.enter="$emit(\'search\', modelValue)">' +
+      '<button v-if="modelValue" type="button" class="search-input__clear" aria-label="Clear search" @click="$emit(\'update:modelValue\', \'\'); $emit(\'search\', \'\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>' +
       '</label>',
     setup: function (props) { return toRefs(props); }
   });
@@ -2531,7 +2534,7 @@
       '<main class="offer-dashboard__content">' +
       '<OfferTabs v-bind="tabs" @select="handleTabSelect" />' +
       '<div class="offer-dashboard__toolbar">' +
-      '<SearchInput v-model="searchValue" />' +
+      '<SearchInput v-model="searchInputValue" @search="searchValue = $event" />' +
       '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" class="offer-dashboard__filters" :is-multi-dealer="effectiveMultiDealer" ' +
       ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" :show-declined="activeMainTab !== \'selling\'" ' +
       '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event; currentTablePage = 1" @clear-dealer="dealerFilter = []; currentTablePage = 1" />' +
@@ -2563,6 +2566,7 @@
       '</div></main></div></div>',
     setup: function (props) {
       var header = { initialSelectedIndex: 1, companyName: 'Magnacar Auto Corp', userName: 'Emily Huang', avatarLetter: 'A' };
+      var searchInputValue = ref('');
       var searchValue = ref('');
       var sortColumn = ref(null);
       var dealershipDropdownOpen = ref(false);
@@ -2827,6 +2831,11 @@
       }
       function matchesFilters(row) {
         if (removedAuctionIds.value.indexOf(row.auctionId) !== -1) return false;
+        var searchQuery = searchValue.value.trim().toLowerCase();
+        if (searchQuery) {
+          var haystack = (row.vehicleTitle + ' ' + row.vin).toLowerCase();
+          if (haystack.indexOf(searchQuery) === -1) return false;
+        }
         if (dealerFilter.value.length && dealerFilter.value.indexOf(row.dealerName) === -1) return false;
         var negotiation = chipFilter.value.negotiation, makeOffer = chipFilter.value.makeOffer, single = chipFilter.value.single;
         if (negotiation || makeOffer) {
@@ -2970,7 +2979,7 @@
       });
       return {
         isMultiDealer: toRefs(props).isMultiDealer,
-        header: header, sidebar: sidebar, tabs: tabs, filters: filters, searchValue: searchValue,
+        header: header, sidebar: sidebar, tabs: tabs, filters: filters, searchInputValue: searchInputValue, searchValue: searchValue,
         sortColumn: sortColumn, dealershipDropdownOpen: dealershipDropdownOpen, viewMode: viewMode,
         rows: rows, visibleRows: visibleRows, rowsWithDealerMode: rowsWithDealerMode,
         rowsPerPage: rowsPerPage, currentTablePage: currentTablePage,

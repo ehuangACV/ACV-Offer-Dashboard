@@ -1321,3 +1321,35 @@ wheel）不受影响，影子滚动条本来就是靠同步 `scrollLeft` 实现�
 浏览器实测:刷新服务器首页直接显示 Offer Dashboard;侧边栏 "Page
 Assembly" 分组排在最顶部,"Offer Dashboard" 是第一个可点的条目;无
 console 报错。
+
+## 2026-09-11（第二次）搜索框之前只是接了线，没有真的筛选
+
+你反馈搜索框输入后好像没有真的在搜索。查了一下:`searchValue` 这个
+变量一直都存在,也真的用 `v-model` 绑定到了 `SearchInput`,但
+`matchesFilters(row)`(真正决定表格/卡片显示哪些行的函数)从来没有
+读过它——纯粹是接了线没接上逻辑,不是这次改坏的,是一直没做完。
+
+在 `matchesFilters` 最前面加了一条:输入的文字(trim + 转小写)去匹配
+每行的 `vehicleTitle` 和 `vin`,命中其一就算匹配;不匹配直接
+`return false`,和下面 dealer/chip 筛选是同一套 AND 组合、实时生效的
+写法,不需要按 Enter。只搜 vehicleTitle + VIN,不含 Auction ID/Dealer
+Name,理由和搜索框自己那侧的详细记录见
+[SearchInput/notes.md](../SearchInput/notes.md)。
+
+浏览器实测:输入年份/型号/VIN 片段(比如"2016"、"Ford"、"884523")后
+表格/卡片视图都只显示匹配的行,清空输入恢复显示全部;无 console 报错。
+
+## 2026-09-11（第三次）改成按 Enter 才搜索
+
+你反馈不希望"一输入还没打完就开始 search",要求改成按回车才真的执行。
+新增了 `searchInputValue`(输入框显示的文字,纯 v-model,每次按键都变)
+和原来的 `searchValue`(真正参与 `matchesFilters` 过滤的"已提交"查询词)
+两个独立的 ref。`<SearchInput>` 改成 `v-model="searchInputValue"` +
+`@search="searchValue = $event"`——`search` 是 `SearchInput` 新增的
+emit,只在按 Enter 或点清空按钮时触发,细节见
+[SearchInput/notes.md](../SearchInput/notes.md)。`matchesFilters` 本身
+不用改,还是读 `searchValue`,只是这个值现在不再随每次按键实时更新。
+
+浏览器实测:输入文字但不按 Enter,表格/卡片都不受影响;按 Enter 后立刻
+按新文字过滤;点清空按钮文字消失且立即恢复显示全部行;无 console
+报错。
