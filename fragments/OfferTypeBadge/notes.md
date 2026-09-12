@@ -87,3 +87,20 @@ Card 那边（`ImageBadge.vue`）这次没有跟着改回去——两个组件�
 浏览器实测：表格 Dealer 列的 Make Offer 徽标边框 `#8D9199`、
 padding `4px 6px`，无 console 报错。
 
+## 2026-09-11 Playground 页面改成"所有变体同时展示"
+
+跟 Image Badge/Status Chip 这次改的做法一样，你要求把 Offer Type Badge
+也做成"所有变体同时展示，上方标名称"的页面，不要再靠 Controls 面板切换
+type 才能看到。新增 `OfferTypeBadgeGallery.vue`（照抄
+`ImageBadgeGallery`/`StatusChipGallery` 已经用过的"摆放+打标签"模式），
+把 In Negotiation / Make Offer 两个变体一次性铺出来，数值原样抄之前
+Playground 页面的 2 个 Mock examples，没有重新编。
+
+`controls.js`/`mock.js` 两个文件不再对应实际展示逻辑，已删除。
+`OfferTypeBadge.vue` 本身、以及 `OfferTableRow`/`OfferTableHeader`/
+`InformationDialog`（Type guide 说明弹层里的插图）等真实用到它的地方都
+没有改动，这次改动只影响 Playground 展示层。
+
+浏览器实测：Offer Type Badge 页面 Controls 面板不再有 type/label 两个
+控件，Mock examples 按钮行也消失了；舞台里 2 个变体同时显示，每个上方
+都有对应名称；无 console 报错。

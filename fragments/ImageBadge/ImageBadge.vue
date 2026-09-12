@@ -21,6 +21,12 @@
     Figma 数值,没有重新核实;圆角统一成 4px 是你直接指出"Make Offer 看
     起来是4px"之后定的,不是重新核实的 Figma 数值(细节见
     OfferCard/notes.md)。
+
+    【2026-09-11 移除】`ring` prop 和对应的 `.image-badge--in-negotiation-
+    ring` class 已删除——2026-09-08 就已经把 OfferCard 里唯一的真实用法
+    去掉了(不再传 `:ring`),之后这个能力只在这个组件自己的 Playground
+    页面上留着做演示,没有任何真实页面在用,现在按你的要求彻底删掉。细节见
+    notes.md。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
@@ -28,7 +34,6 @@
     class="image-badge"
     :class="[
       `image-badge--${variant}`,
-      variant === 'in-negotiation' && ring ? 'image-badge--in-negotiation-ring' : '',
       variant === 'make-offer' && strokeMakeOffer ? 'image-badge--make-offer-stroke' : ''
     ]"
   >{{ label }}<slot /></span>
@@ -39,10 +44,6 @@ defineProps({
   // 'in-negotiation' | 'make-offer' | 'dealer'
   variant: { type: String, default: 'in-negotiation' },
   label: { type: String, required: true },
-  // 只在 variant='in-negotiation' 时生效——PM 反馈默认样式不够明显,
-  // 定下来的第二种画法(深色底不变,加一圈白色描边+投影),细节见
-  // fragments/OfferCard/notes.md
-  ring: { type: Boolean, default: false },
   // 2026-09-09 新增,只在 variant='make-offer' 时生效——这个组件同时被
   // OfferCard(卡片图片上的徽标)和 InformationDialog(弹层顶部主徽标)
   // 共用同一份 CSS,但你要求两处的 Make Offer 徽标要不一样:卡片不要
@@ -74,24 +75,6 @@ defineProps({
   background: #1C1D1F;
   color: #FFFFFF;
   padding: 3px 6px;
-}
-
-/* PM 反馈"In Negotiation 徽标不够明显"之后定的第二种画法:不换主色调,
-   加一圈白色描边,靠"有清晰边缘"提升可辨识度。字重是 Regular,不单独设
-   font-weight。2026-09-02 按你的要求去掉了投影(原来是 box-shadow: 0 1px
-   4px rgba(0, 0, 0, 0.45)),只保留描边——Card 上的图片叠层徽标现在是
-   "白描边、无投影"。
-   【2026-09-02 再次更正】你指出描边应该是"outside"(往外扩,不占用
-   徽标本身的空间)——原来用 border 画描边,border 是盒子自身的一部分,
-   会往内挤占空间,所以之前特地把 padding 从默认的 3px 6px 减到 2px 5px
-   (让描边+padding的和还是24px高,视觉上不会变大)。现在改用 outline
-   (只往外画,不参与盒模型计算,不影响元素自身尺寸),padding 直接跟
-   .image-badge--in-negotiation 保持一致(3px 6px),不用再刻意减掉描边
-   占的空间——outline-offset:0 让描边紧贴徽标外缘,不留额外间隙。 */
-.image-badge--in-negotiation-ring {
-  padding: 3px 6px;
-  outline: 1px solid #FFFFFF;
-  outline-offset: 0;
 }
 
 .image-badge--make-offer {

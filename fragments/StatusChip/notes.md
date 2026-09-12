@@ -73,3 +73,47 @@ Declined 四个 filter chip 的状态。核实结果:
    (OfferTableRow 的 mock 目前只有 statusNew/statusReceived 两个字段),
    如果你想让某些行的 Update 列也显示 Sent/Declined,需要告诉我。
 
+## 2026-09-11 Playground 页面改成"所有状态同时展示"
+
+跟 Image Badge 这次改的做法一样,你要求把 Status Chip 也做成"所有状态
+同时展示,上方标名称"的页面,不要再靠 Controls 面板一个个切换 status 才
+能看到。新增 `StatusChipGallery.vue`(照抄 `ImageBadgeGallery`/
+`OfferCardGallery` 已经用过的"摆放+打标签"模式),把 6 个单独状态
+(New/Received/Sent/Declined/Expired/+N 溢出徽标)一次性铺出来,数值原样
+抄之前 Playground 页面的 6 个 Mock examples,没有重新编。
+
+额外加了一个"Stacked (table cell example)"——New + Received 叠加显示
+在同一个格子里的场景,抄自 `mock.js` 里原本就有的 `stackedExample`(对应
+真实表格 Update 列会同时出现两个 chip 的情况)。这个示例之前只存在
+`mock.js` 文件里,从来没有在 Playground 页面上展示过,这次一起加进来。
+叠加时的间距(`gap:4px`)照抄 `OfferTableRow.vue` 里
+`.offer-table-row__status-pills` 已经用的同一个数值,不是新定的。
+
+`controls.js`/`mock.js` 两个文件不再对应实际展示逻辑,已删除(内容并入
+上面这条记录和新组件里)。`StatusChip.vue` 组件本身、以及
+`OfferTableRow`/`OfferCard` 等真实用到它的地方都没有改动,这次改动只
+影响 Playground 展示层。
+
+浏览器实测:Status Chip 页面 Controls 面板不再有 status/label/showIcon
+三个控件,Mock examples 按钮行也消失了;舞台里 6 个单独状态 + 1 个叠加
+示例同时显示,每个上方都有对应名称;无 console 报错。
+
+## 2026-09-11（第二次）更正:New 不该带星星图标
+
+上面新加的 Gallery 里 "New" 那个单独示例照抄了旧 Mock examples 的
+`showIcon: true`,结果星星图标又出现了——你指出这个问题"说了很多遍了"。
+
+查了一下:`showIcon` 是 `StatusChip.vue` 自己 prop 的默认值(`default:
+true`),但**整个项目里真实用到 New 这个状态的地方,没有一处用过这个
+默认值**——`OfferTableRow.vue`(表格 Update 列)和 `OfferCard.vue`
+(卡片视图)全部都是显式传 `show-icon="false"`,这条约定已经在
+[OfferTableRow/notes.md](../OfferTableRow/notes.md)("2026-08 你指出:
+Update 列的 New chip 不应该有星星图标")和
+[OfferCard/notes.md](../OfferCard/notes.md) 里记录过。这次新建 Gallery
+时只是照抄了旧 Mock examples 的数值,没有对照这条已经反复确认过的真实
+约定,属于我的疏漏,不是你的要求变了。
+
+已把 Gallery 里 New 的 `showIcon` 改成 `false`,和项目里所有真实用法保持
+一致。**以后任何地方渲染 New 状态的 StatusChip,都不要用组件自己的
+`showIcon` 默认值,必须显式传 `false`**——这条规则已经出现过不止一次,
+记在这里避免再错。

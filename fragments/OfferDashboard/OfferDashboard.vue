@@ -3,7 +3,7 @@
   METADATA
   name: Offer Dashboard (整页组装)
   group: 页面组装 (Page Assembly)
-  order: 90
+  order: 1
   description: >
     把前面 10 个已核实的 fragment 组件(AppHeader / Breadcrumb /
     SidebarNav / OfferTabs / SearchInput / FilterChipGroup /

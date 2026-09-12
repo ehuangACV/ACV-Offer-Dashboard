@@ -106,3 +106,35 @@ class（`border:1px solid #8D9199` + `padding:2px 6px` 补偿边框占用的
 浏览器实测三处：Card 图片上的 Make Offer 徽标——无边框；表格 Dealer
 列的 Make Offer 徽标——边框 `#8D9199`；Information Dialog 顶部主
 徽标——边框 `#8D9199`。三处都符合预期，无 console 报错。
+
+## 2026-09-11 删除 ring 变体 + Playground 页面改成"所有徽标同时展示"
+
+你提出两点：
+1. `ring` 这个变体应该已经不存在了。查了一下：2026-08 就已经把 OfferCard
+   里唯一的真实用法删掉了（`:ring` 不再传，见上面 2026-09-08 那条记录），
+   之后 `ring` prop/`.image-badge--in-negotiation-ring` class 只在这个组件
+   自己的 Playground 页面上留着做演示，没有任何真实页面在用了。现在按你
+   的要求彻底删除：`ImageBadge.vue` 去掉 `ring` prop 和对应的 class 绑定/
+   CSS 规则，`index.html` 同步删除。
+2. Image Badge 的 Playground 页面希望把几个徽标同时展示出来，每个上方标
+   名称，不要再靠 Controls 面板一个个切换 variant 才能看到。新增
+   `ImageBadgeGallery.vue`（同一个文件夹下，照抄
+   `OfferCardGallery`已经用过的"摆放+打标签"展示壳模式），把 3 个真实
+   变体（In Negotiation/Make Offer/Dealer name）一次性铺出来，数值原样
+   抄之前 Playground 页面的 3 个 Mock examples，没有重新编。`index.html`
+   的 REGISTRY 里 `ImageBadge` 这个入口的 `def` 换成新的
+   `ImageBadgeGallery`，`controls`/`mocks` 都改成空对象（照抄
+   `OfferCardGallery` 入口已经用过的写法）——这个组件本身
+   (`ImageBadge.vue`) 没有变成"多徽标"组件，`OfferCard.vue`/
+   `InformationDialog.vue` 用到的还是原来那个只渲染单个徽标的组件，改动
+   范围只限于 Playground 展示层。
+
+   没有包含 `strokeMakeOffer`（InformationDialog 专用的边框版 Make
+   Offer）——那是同一个 CSS 类基础上加一条边框，不是一个独立的"徽标
+   类型"，细节见上面 2026-09-09（第二次）那条记录，如果你觉得也该在这
+   个总览页里展示出来，告诉我加上。
+
+浏览器实测：Image Badge 页面 Controls 面板不再有 variant/label/ring 三个
+控件、Mock examples 那一行按钮也消失了（`controls`/`mocks` 都是空对象，
+符合 Harness 已有的空控件兜底逻辑）；舞台里 3 个徽标同时显示，每个上方
+都有对应名称；无 console 报错。

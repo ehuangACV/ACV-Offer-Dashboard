@@ -34,3 +34,15 @@ From List" 现在改成打开这个新弹窗,不再打开 InformationDialog;其�
 "黑背板 50% + 居中" 这套机制是直接照抄 InformationDialog 现有实现搬过来
 的,不是针对这个组件单独核实过的数值——如果以后有专门给这个弹窗的
 背板参照帧,需要回来对照检查是否一致。
+
+## 2026-09-11 Playground 分组从 Card View 挪到新的 Shared Components
+
+你指出这个组件不该待在 "Card View" 分组里——上面"接线方式"那条已经
+记过,它是 `OfferCard.vue` 和 `OfferTableRow.vue` 两处共用的,放在
+"Card View" 里不准确,容易让人以为只属于卡片视图。
+
+新建了一个分组 "Shared Components"(共用组件),放在 "Nav & Filters"
+和 "Offers Table" 之间(order 25),`RemoveFromListDialog` 从 "Card
+View"(原 order 43)挪到这个新分组。纯 Playground 侧边栏/分组层面的
+改动——`OfferCard.vue`/`OfferTableRow.vue` 实际怎么打开这个弹窗完全
+没变。

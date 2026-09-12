@@ -64,6 +64,29 @@
      机制,细节(container-type、cqw 换算公式)见下面 .offer-dashboard
      相关规则旁边的注释,这里不重复。 */
   .pg-stage__resize-frame { container-type: inline-size; }
+  /* 2026-09-11 Spec Mode 相关样式,细节见 Harness setup() 里那段注释。
+     鼠标悬浮预览框用蓝色描边(跟截图参考的那个工具同一个思路,不是抄
+     它的具体像素值),点击后的详细面板走这个项目自己已有的色板
+     (#0E0E0F/#55575C/#E8E9EB 这些是全项目通用的深色/灰色/描边色,不是
+     新配的一套颜色)。 */
+  .pg-stage--spec-mode .pg-stage__resize-frame { cursor: crosshair; }
+  .pg-spec-hover { position: fixed; z-index: 60; pointer-events: none; border: 1px solid #2196F5; background: rgba(33,150,243,0.08); box-sizing: border-box; }
+  .pg-spec-hover__label { position: absolute; top: -22px; left: 0; background: #2196F5; color: #FFFFFF; font-size: 11px; line-height: 18px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; font-family: 'Roboto', sans-serif; }
+  .pg-spec-panel { position: fixed; z-index: 61; width: 300px; max-height: 420px; overflow-y: auto; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); font-family: 'Roboto', sans-serif; }
+  .pg-spec-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #E8E9EB; }
+  .pg-spec-panel__title { font-size: 12px; font-family: 'Menlo', 'Consolas', monospace; color: #0E0E0F; word-break: break-all; }
+  .pg-spec-panel__close { border: none; background: none; font-size: 18px; line-height: 1; color: #757575; cursor: pointer; padding: 0 2px; }
+  .pg-spec-panel__close:hover { color: #0E0E0F; }
+  .pg-spec-panel__body { padding: 8px 12px; }
+  .pg-spec-panel__section { font-size: 11px; font-weight: 700; color: #757575; text-transform: uppercase; letter-spacing: .3px; margin: 10px 0 4px; }
+  .pg-spec-panel__section:first-child { margin-top: 2px; }
+  .pg-spec-panel__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 12px; }
+  .pg-spec-panel__row-label { color: #55575C; flex-shrink: 0; }
+  .pg-spec-panel__row-value { color: #0E0E0F; text-align: right; word-break: break-word; }
+  .pg-spec-panel__foot { padding: 10px 12px; border-top: 1px solid #E8E9EB; }
+  .pg-spec-panel__copy { padding: 8px 12px; font-size: 13px; }
+  .pg-spec-panel__copy::before { content: none; }
+  .pg-no-controls--inline { width: auto; margin: 8px 0 0; }
   /* 2026-08 按你的要求:全屏时右边不应该有空白,Buying/Selling下面那条
      横线(以及搜索框/筛选chip行/表格,它们右边界都是同一个)之前都会在
      content 右边固定留 24px 的padding,导致这些行的右边缘都停在比
@@ -366,10 +389,22 @@
   .status-chip--expired { background: #E0E0E0; color: #55575C; border-radius: 4px; }
   .status-chip--overflow { background: #E0E0E0; color: #212121; border-radius: 3px; justify-content: center; }
 
+  /* -- StatusChipGallery (Status Chip Playground 展示壳,2026-09-11) -- */
+  .status-chip-gallery { display: flex; flex-direction: column; gap: 24px; font-family: 'Roboto', sans-serif; }
+  .status-chip-gallery__row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px; }
+  .status-chip-gallery__item { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .status-chip-gallery__label { font-size: 12px; line-height: 16px; color: #757575; }
+  .status-chip-gallery__stack { display: flex; align-items: center; gap: 4px; }
+
   /* -- OfferTypeBadge -- */
   .offer-type-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 6px; border-radius: 4px; font-size: 12px; line-height: 12px; letter-spacing: 0.4px; white-space: nowrap; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   .offer-type-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; border: 1px solid #FFFFFF; }
   .offer-type-badge--make-offer { background: #FFFFFF; color: #0E0E0F; border: 1px solid #8D9199; }
+
+  /* -- OfferTypeBadgeGallery (Offer Type Badge Playground 展示壳,2026-09-11) -- */
+  .offer-type-badge-gallery { display: flex; align-items: flex-start; gap: 32px; font-family: 'Roboto', sans-serif; }
+  .offer-type-badge-gallery__item { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .offer-type-badge-gallery__label { font-size: 12px; line-height: 16px; color: #757575; }
 
   /* -- Pagination -- */
   /* 2026-08 重做:ACV Pagination(Claude Design 项目 09c-pagination.card.html） */
@@ -481,10 +516,14 @@
   /* -- ImageBadge -- */
   .image-badge { position: relative; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; white-space: nowrap; border-radius: 8px; box-sizing: border-box; }
   .image-badge--in-negotiation { background: #1C1D1F; color: #FFFFFF; padding: 3px 6px; }
-  .image-badge--in-negotiation-ring { padding: 3px 6px; outline: 1px solid #FFFFFF; outline-offset: 0; }
   .image-badge--make-offer { background: #FFFFFF; color: #0E0E0F; padding: 3px 6px; }
   .image-badge--make-offer-stroke { border: 1px solid #8D9199; padding: 2px 6px; }
   .image-badge--dealer { backdrop-filter: blur(0.75px); background: rgba(0, 0, 0, 0.4); color: #FFFFFF; text-align: right; padding: 3px 10px; }
+
+  /* -- ImageBadgeGallery (Image Badge Playground 展示壳,2026-09-11) -- */
+  .image-badge-gallery { display: flex; align-items: flex-start; gap: 32px; font-family: 'Roboto', sans-serif; }
+  .image-badge-gallery__item { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .image-badge-gallery__label { font-size: 12px; line-height: 16px; color: #757575; }
 
   /* -- OfferCard -- */
   .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; justify-self: center; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
@@ -708,6 +747,41 @@
     }
   });
 
+  // ---------- StatusChipGallery (Status Chip 的 Playground 展示壳,order 32,数据表格) ----------
+  // 2026-09-11 新增,细节见 fragments/StatusChip/notes.md,这里只做逐字镜像。
+  var StatusChipGallery = defineComponent({
+    name: 'StatusChipGallery',
+    components: { StatusChip: StatusChip },
+    data: function () {
+      return {
+        items: [
+          { name: 'New', status: 'new', label: 'New', showIcon: false },
+          { name: 'Received', status: 'received', label: 'Received', showIcon: false },
+          { name: 'Sent', status: 'sent', label: 'Sent', showIcon: false },
+          { name: 'Declined', status: 'declined', label: 'Declined', showIcon: false },
+          { name: 'Expired', status: 'expired', label: 'Expired', showIcon: false },
+          { name: '+N (overflow badge)', status: 'overflow', label: '+1', showIcon: false }
+        ]
+      };
+    },
+    template:
+      '<div class="status-chip-gallery">' +
+      '<div class="status-chip-gallery__row">' +
+      '<div v-for="item in items" :key="item.name" class="status-chip-gallery__item">' +
+      '<div class="status-chip-gallery__label">{{ item.name }}</div>' +
+      '<StatusChip :status="item.status" :label="item.label" :show-icon="item.showIcon"></StatusChip>' +
+      '</div>' +
+      '</div>' +
+      '<div class="status-chip-gallery__item">' +
+      '<div class="status-chip-gallery__label">Stacked (table cell example)</div>' +
+      '<div class="status-chip-gallery__stack">' +
+      '<StatusChip status="new" label="New" :show-icon="false"></StatusChip>' +
+      '<StatusChip status="received" label="Received"></StatusChip>' +
+      '</div>' +
+      '</div>' +
+      '</div>'
+  });
+
   // ---------- OfferTypeBadge (order 33) ----------
   var OfferTypeBadge = defineComponent({
     name: 'OfferTypeBadge',
@@ -720,6 +794,28 @@
     setup: function (props) {
       return toRefs(props);
     }
+  });
+
+  // ---------- OfferTypeBadgeGallery (Offer Type Badge 的 Playground 展示壳,order 33,数据表格) ----------
+  // 2026-09-11 新增,细节见 fragments/OfferTypeBadge/notes.md,这里只做逐字镜像。
+  var OfferTypeBadgeGallery = defineComponent({
+    name: 'OfferTypeBadgeGallery',
+    components: { OfferTypeBadge: OfferTypeBadge },
+    data: function () {
+      return {
+        items: [
+          { name: 'In Negotiation', type: 'in-negotiation', label: 'In Negotiation' },
+          { name: 'Make Offer', type: 'make-offer', label: 'Make Offer' }
+        ]
+      };
+    },
+    template:
+      '<div class="offer-type-badge-gallery">' +
+      '<div v-for="item in items" :key="item.name" class="offer-type-badge-gallery__item">' +
+      '<div class="offer-type-badge-gallery__label">{{ item.name }}</div>' +
+      '<OfferTypeBadge :type="item.type" :label="item.label"></OfferTypeBadge>' +
+      '</div>' +
+      '</div>'
   });
 
   // ---------- AppHeader (order 10) ----------
@@ -1287,11 +1383,33 @@
     props: {
       variant: { type: String, default: 'in-negotiation' },
       label: { type: String, required: true },
-      ring: { type: Boolean, default: false },
       strokeMakeOffer: { type: Boolean, default: false }
     },
     template:
-      '<span class="image-badge" :class="[`image-badge--${variant}`, variant === \'in-negotiation\' && ring ? \'image-badge--in-negotiation-ring\' : \'\', variant === \'make-offer\' && strokeMakeOffer ? \'image-badge--make-offer-stroke\' : \'\']">{{ label }}<slot></slot></span>'
+      '<span class="image-badge" :class="[`image-badge--${variant}`, variant === \'make-offer\' && strokeMakeOffer ? \'image-badge--make-offer-stroke\' : \'\']">{{ label }}<slot></slot></span>'
+  });
+
+  // ---------- ImageBadgeGallery (Image Badge 的 Playground 展示壳,order 39,卡片视图) ----------
+  // 2026-09-11 新增,细节见 fragments/ImageBadge/notes.md,这里只做逐字镜像。
+  var ImageBadgeGallery = defineComponent({
+    name: 'ImageBadgeGallery',
+    components: { ImageBadge: ImageBadge },
+    data: function () {
+      return {
+        items: [
+          { name: 'In Negotiation', variant: 'in-negotiation', label: 'In Negotiation' },
+          { name: 'Make Offer', variant: 'make-offer', label: 'Make Offer' },
+          { name: 'Dealer name (lane badge)', variant: 'dealer', label: 'Apple Chevrolet' }
+        ]
+      };
+    },
+    template:
+      '<div class="image-badge-gallery">' +
+      '<div v-for="item in items" :key="item.name" class="image-badge-gallery__item">' +
+      '<div class="image-badge-gallery__label">{{ item.name }}</div>' +
+      '<ImageBadge :variant="item.variant" :label="item.label"></ImageBadge>' +
+      '</div>' +
+      '</div>'
   });
 
   var InformationDialog = defineComponent({
@@ -2884,6 +3002,9 @@
   // Registry: 分组 / 顺序 / controls / mock 示例 / notes.md 原文
   // ============================================================
   var GROUPS = [
+    { title: 'Page Assembly', items: [
+      { key: 'OfferDashboard', order: 1, name: 'Offer Dashboard' }
+    ]},
     { title: 'Page Shell', items: [
       { key: 'AppHeader', order: 10, name: 'App Header' },
       { key: 'Breadcrumb', order: 11, name: 'Breadcrumb' },
@@ -2894,6 +3015,9 @@
       { key: 'SearchInput', order: 21, name: 'Search Input' },
       { key: 'FilterChipGroup', order: 22, name: 'Filter Chip Group' },
       { key: 'DealershipFilterDropdown', order: 23, name: 'Dealership Filter Dropdown' }
+    ]},
+    { title: 'Shared Components', items: [
+      { key: 'RemoveFromListDialog', order: 25, name: 'Remove From List Dialog' }
     ]},
     { title: 'Offers Table', items: [
       { key: 'OfferTableHeader', order: 30, name: 'Offer Table Header' },
@@ -2907,11 +3031,7 @@
       { key: 'ImageBadge', order: 39, name: 'Image Badge' },
       { key: 'OfferCard', order: 40, name: 'Offer Card' },
       { key: 'OfferCardGallery', order: 41, name: 'Offer Card — All States' },
-      { key: 'InformationDialog', order: 42, name: 'Information Dialog' },
-      { key: 'RemoveFromListDialog', order: 43, name: 'Remove From List Dialog' }
-    ]},
-    { title: 'Page Assembly', items: [
-      { key: 'OfferDashboard', order: 90, name: 'Offer Dashboard' }
+      { key: 'InformationDialog', order: 42, name: 'Information Dialog' }
     ]}
   ];
 
@@ -3043,23 +3163,16 @@
       notes: 'Verified (hidden=false, checked against three real row instances): the photo is 80px (the image itself is 64x64, corner radius wasn\'t obtained from Figma as a specific pixel value, padding 8px); Dealer Name (200px) has a name at 14px/21, letter-spacing .25px, color #0E0E0F, and an ID at 12px/18, letter-spacing .4px, color #55575C, with the ID and the OfferTypeBadge below it sitting side by side horizontally on the same line (gap 8px, corrected 2026-08 based on new Figma frame 7403:4653 — previously mistakenly laid out as three stacked rows); Vehicle (195px, centered); Sent/Received can show the literal value "--" to mean not yet initiated; the Update column stacks StatusChips (0 to 2) plus a date.\n\nImportant finding: while building this component, checking against the second row of real data revealed that the "Make Offer" badge, in real usage, is wrapped in a parent container with a border (#8D9199) — this corrects the earlier OfferTypeBadge conclusion of "no border."\n\nFor you to confirm: 1. The vehicle thumbnail\'s specific corner-radius value was not obtained from Figma. 2. The photo assets in the three example rows look like they were exported as two overlapping layers of the same image; the component only uses a single photoUrl. 3. Only cases with 0/1/2 stacked StatusChips in the Update column have been observed; the trigger threshold for the "+N overflow" logic has not been verified.\n\n2026-08 added isMultiDealer: verified against the single-dealer reference frame 6837:16538 — under a single-dealer account the second column does not show dealerName, using auctionId as the main title instead (with the original dealer-name\'s font size/color), with the OfferTypeBadge pinned to the left on its own and auctionId not repeated elsewhere.'
     },
     StatusChip: {
-      name: 'Status Chip', group: 'Offers Table', order: 32, def: StatusChip,
-      controls: {
-        status: { type: 'select', label: 'Status', options: [{ value: 'new', label: 'New' }, { value: 'received', label: 'Received' }, { value: 'sent', label: 'Sent' }, { value: 'declined', label: 'Declined' }, { value: 'expired', label: 'Expired' }, { value: 'overflow', label: '+N (overflow badge)' }], default: 'new' },
-        label: { type: 'text', label: 'Label text', default: 'New' },
-        showIcon: { type: 'boolean', label: 'Show icon', default: true }
-      },
-      mocks: { newExample: { status: 'new', label: 'New', showIcon: true }, receivedExample: { status: 'received', label: 'Received', showIcon: true }, sentExample: { status: 'sent', label: 'Sent', showIcon: false }, declinedExample: { status: 'declined', label: 'Declined', showIcon: false }, expiredExample: { status: 'expired', label: 'Expired', showIcon: false }, overflowExample: { status: 'overflow', label: '+1', showIcon: false } },
-      notes: 'This component is the update-event badge (New/Received) in the table\'s Update column — it is not the filter row\'s FilterChipGroup. The two look visually similar but are completely different, with different purposes and different places where they appear.\n\nAn important correction (2026-08): an earlier version also listed "Counter Received"/"Counter Sent" as verified states, on the basis that "real color values could be found for them," but both of those nodes in Figma are hidden=true variants representing old versions the designer kept around — they can\'t be treated as equivalent to the currently valid design. Conclusion: only hidden=false instances count as verified.\n\nVerified (hidden=false): New has background #F4FFF6, text #006C4C, corner radius 4px, with an icon; Received has background #F0F8FF, text #0061A5, corner radius 4px, no icon; Sent has background #E0E0E0, text #212121, corner radius 3px, no icon (added 2026-08, verified against node 7487:62990 — it happens to share the same color as the overflow badge, but that\'s a coincidence, not the same state); Declined has background #FFEFBF, text #402D00, corner radius 4px, no icon (added 2026-08, verified against node 7487:62983); the overflow badge "+N" has background #E0E0E0, text #212121, corner radius 3px, no icon.\n\n2026-08 you provided Frame 630266091 (node 7487:62998) to verify that the New/Received/Sent/Declined chips correspond to the four filter-row filter-chip states, and in the process it was found that New/Received actually have a 4px corner radius, not the 3px that had been applied uniformly before — this has now been fixed; Sent is separately 3px (these chips\' corner radii genuinely aren\'t uniform in Figma itself — this isn\'t something I got wrong), and the overflow badge stays unchanged at 3px.\n\nRemoved / downgraded to unverified: Counter Received/Counter Sent (previously mistakenly listed as verified, now removed); In Negotiation (actually belongs under OfferTypeBadge, removed to avoid a duplicate/conflicting definition); Outbid still has no instance found; Declined has been confirmed above.'
+      name: 'Status Chip', group: 'Offers Table', order: 32, def: StatusChipGallery,
+      controls: {},
+      mocks: {},
+      notes: 'This component is the update-event badge (New/Received) in the table\'s Update column — it is not the filter row\'s FilterChipGroup. The two look visually similar but are completely different, with different purposes and different places where they appear.\n\nAn important correction (2026-08): an earlier version also listed "Counter Received"/"Counter Sent" as verified states, on the basis that "real color values could be found for them," but both of those nodes in Figma are hidden=true variants representing old versions the designer kept around — they can\'t be treated as equivalent to the currently valid design. Conclusion: only hidden=false instances count as verified.\n\nVerified (hidden=false): New has background #F4FFF6, text #006C4C, corner radius 4px, with an icon; Received has background #F0F8FF, text #0061A5, corner radius 4px, no icon; Sent has background #E0E0E0, text #212121, corner radius 3px, no icon (added 2026-08, verified against node 7487:62990 — it happens to share the same color as the overflow badge, but that\'s a coincidence, not the same state); Declined has background #FFEFBF, text #402D00, corner radius 4px, no icon (added 2026-08, verified against node 7487:62983); the overflow badge "+N" has background #E0E0E0, text #212121, corner radius 3px, no icon.\n\n2026-08 you provided Frame 630266091 (node 7487:62998) to verify that the New/Received/Sent/Declined chips correspond to the four filter-row filter-chip states, and in the process it was found that New/Received actually have a 4px corner radius, not the 3px that had been applied uniformly before — this has now been fixed; Sent is separately 3px (these chips\' corner radii genuinely aren\'t uniform in Figma itself — this isn\'t something I got wrong), and the overflow badge stays unchanged at 3px.\n\nRemoved / downgraded to unverified: Counter Received/Counter Sent (previously mistakenly listed as verified, now removed); In Negotiation (actually belongs under OfferTypeBadge, removed to avoid a duplicate/conflicting definition); Outbid still has no instance found; Declined has been confirmed above.\n\n2026-09-11: same treatment as Image Badge — this page no longer shows one chip at a time driven by a status/label/showIcon control. It now renders all 6 real states (New/Received/Sent/Declined/Expired/+N overflow) at once via a new display-only wrapper, StatusChipGallery.vue, each with a caption naming it above. Also added a "Stacked (table cell example)" item (New + Received together) — that scenario already existed in the fragment\'s mock.js as stackedExample but had never actually been shown on this Playground page before. StatusChip.vue itself is unchanged in how OfferTableRow/OfferCard use it — this only replaces what the Playground stage shows for this entry, hence controls/mocks are now empty objects.\n\n2026-09-11 correction: the New item in the gallery initially still showed the star icon (copied from the old Mock example\'s showIcon:true default). You\'ve flagged this more than once — every real usage of New (OfferTableRow, OfferCard) always explicitly passes show-icon="false"; the component\'s own default of true is never actually used anywhere in the app. Fixed the gallery to match.'
     },
     OfferTypeBadge: {
-      name: 'Offer Type Badge', group: 'Offers Table', order: 33, def: OfferTypeBadge,
-      controls: {
-        type: { type: 'select', label: 'Type', options: [{ value: 'in-negotiation', label: 'In Negotiation' }, { value: 'make-offer', label: 'Make Offer' }], default: 'in-negotiation' },
-        label: { type: 'text', label: 'Label text', default: 'In Negotiation' }
-      },
-      mocks: { inNegotiationExample: { type: 'in-negotiation', label: 'In Negotiation' }, makeOfferExample: { type: 'make-offer', label: 'Make Offer' } },
-      notes: 'Difference from StatusChip: StatusChip appears in the table\'s Update column and represents an "update event," and multiple can stack in the same cell; OfferTypeBadge appears below the Dealer Name/Auction ID column and represents the current stage/type — there is only ever one per row, no stacking.\n\nVerified (both hidden=false): In Negotiation has background #1C1D1F, white text, white 1px border; the Make Offer chip itself has background #FFFFFF, text #0E0E0F, with the border actually coming from its wrapper container #8D9199 (see the correction below).\n\nCorrection record one: the early version of Make Offer used a placeholder style eyeballed from a screenshot (white background + dashed border + #212121 text), which was later replaced with a real instance.\n\nCorrection record two (found while building OfferTableRow): the previous correction only queried the chip\'s own node in isolation and concluded "no border." While building OfferTableRow, checking the second row of real data against the full table row revealed that in real usage this chip is wrapped inside a parent "status pills" container, and that wrapper itself carries a 1px border, color #8D9199, corner radius 3px. In other words, "no border" was wrong — querying a child node on its own misses borders applied on a parent node, and this has now been corrected. This is also a reminder of a general lesson: when verifying chip/badge styling, you can\'t just look at its own node — you also need to check whether the parent node in real usage layers on any extra styling.\n\nRe-check record (after you raised a corner-radius/centering question): 6837:16706 and 6837:16269/6837:16275 were re-verified, and both corner radii are rounded-[3px], matching the 3px already in the code, so no corner-radius value needed changing; however, justify-center had been missed, so justify-content:center and box-sizing:border-box have been added. If the corner radius still looks off after this, an actual rendered screenshot will be needed to keep investigating.\n\n2026-08 override specified directly by the user: you sent a screenshot saying the corner radius wasn\'t visible and directly asked for "corner radius 4," so it has been changed to border-radius:4px, no longer the 3px verified from Figma — this is your explicit instruction, not a newly discovered Figma value. StatusChip is still 3px and has not been changed to match.'
+      name: 'Offer Type Badge', group: 'Offers Table', order: 33, def: OfferTypeBadgeGallery,
+      controls: {},
+      mocks: {},
+      notes: 'Difference from StatusChip: StatusChip appears in the table\'s Update column and represents an "update event," and multiple can stack in the same cell; OfferTypeBadge appears below the Dealer Name/Auction ID column and represents the current stage/type — there is only ever one per row, no stacking.\n\nVerified (both hidden=false): In Negotiation has background #1C1D1F, white text, white 1px border; the Make Offer chip itself has background #FFFFFF, text #0E0E0F, with the border actually coming from its wrapper container #8D9199 (see the correction below).\n\nCorrection record one: the early version of Make Offer used a placeholder style eyeballed from a screenshot (white background + dashed border + #212121 text), which was later replaced with a real instance.\n\nCorrection record two (found while building OfferTableRow): the previous correction only queried the chip\'s own node in isolation and concluded "no border." While building OfferTableRow, checking the second row of real data against the full table row revealed that in real usage this chip is wrapped inside a parent "status pills" container, and that wrapper itself carries a 1px border, color #8D9199, corner radius 3px. In other words, "no border" was wrong — querying a child node on its own misses borders applied on a parent node, and this has now been corrected. This is also a reminder of a general lesson: when verifying chip/badge styling, you can\'t just look at its own node — you also need to check whether the parent node in real usage layers on any extra styling.\n\nRe-check record (after you raised a corner-radius/centering question): 6837:16706 and 6837:16269/6837:16275 were re-verified, and both corner radii are rounded-[3px], matching the 3px already in the code, so no corner-radius value needed changing; however, justify-center had been missed, so justify-content:center and box-sizing:border-box have been added. If the corner radius still looks off after this, an actual rendered screenshot will be needed to keep investigating.\n\n2026-08 override specified directly by the user: you sent a screenshot saying the corner radius wasn\'t visible and directly asked for "corner radius 4," so it has been changed to border-radius:4px, no longer the 3px verified from Figma — this is your explicit instruction, not a newly discovered Figma value. StatusChip is still 3px and has not been changed to match.\n\n2026-09-11: same treatment as Image Badge/Status Chip — this page no longer shows one badge at a time driven by a type/label control. It now renders both real variants (In Negotiation / Make Offer) at once via a new display-only wrapper, OfferTypeBadgeGallery.vue, each with a caption naming it above. OfferTypeBadge.vue itself is unchanged in how OfferTableRow/OfferTableHeader/InformationDialog use it — this only replaces what the Playground stage shows for this entry, hence controls/mocks are now empty objects.'
     },
     Pagination: {
       name: 'Pagination', group: 'Offers Table', order: 34, def: Pagination,
@@ -3092,23 +3205,10 @@
       notes: '2026-09-02 addition: a standalone component extracted out of OfferDashboard — you provided two screenshots, a tile view ("Viewing 5 results" + toggle buttons) and a table view ("🔑 Private Lane" + Pagination + toggle buttons), and pointed out that these two toolbars should be built as two views of the same component rather than written separately each time. The component name was made up at your request ("whatever name you think fits") — taken from the "results" in "Viewing N results" plus the fact that it\'s itself a toolbar being assembled — it is not a name that came from a Figma layer.\n\nThis was a pure relocation, with no change to any value or behavior — the CSS class names were uniformly renamed from offer-dashboard__* to results-toolbar__*, with the selectors themselves unchanged. viewMode changed from a local ref set directly by the component\'s internal buttons to a standard v-model two-way binding (update:viewMode emit); resultsCount/hasPrevPage/hasNextPage correspond to the tile view\'s "Viewing N results" number and the table view\'s top Pagination arrow states. All the Figma verification records explaining "why it looks like this" (the toggle button\'s pill shape checked against node 7432:69595, the Private Lane label copied from the reference prototype My-ACV--Dealer-filter-main, the reasoning behind the fixed 76px row height) live in fragments/OfferDashboard/notes.md and this component\'s own CSS comments — not repeated here.'
     },
     ImageBadge: {
-      name: 'Image Badge', group: 'Card View', order: 39, def: ImageBadge,
-      controls: {
-        variant: { type: 'select', label: 'Badge type', options: [
-          { value: 'in-negotiation', label: 'In Negotiation' },
-          { value: 'make-offer', label: 'Make Offer' },
-          { value: 'dealer', label: 'Dealer name (lane badge)' }
-        ], default: 'in-negotiation' },
-        label: { type: 'text', label: 'Badge text', default: 'In Negotiation' },
-        ring: { type: 'boolean', label: 'Ring style', default: false }
-      },
-      mocks: {
-        inNegotiationExample: { variant: 'in-negotiation', label: 'In Negotiation' },
-        inNegotiationRingExample: { variant: 'in-negotiation', label: 'In Negotiation', ring: true },
-        makeOfferExample: { variant: 'make-offer', label: 'Make Offer' },
-        dealerExample: { variant: 'dealer', label: 'Apple Chevrolet' }
-      },
-      notes: '2026-09-02 addition: a standalone component extracted out of OfferCard — you pointed out that the three badges in the photo\'s bottom-left corner (In Negotiation/Make Offer/dealer name) should use the same component, rather than three separately hand-written <span> elements with their own classes. The color/border values were carried over as-is with no visual change — this just merges the four rules that used to be scattered across OfferCard.vue (.offer-card__type-badge--in-negotiation / --make-offer / --in-negotiation-ring / .offer-card__lane-badge) into a single component with a variant (\'in-negotiation\'/\'make-offer\'/\'dealer\') plus a ring boolean (only takes effect when variant=\'in-negotiation\').\n\nHeight (24px) and corner radius (4px) are the two shared base-style geometry properties; only the background/text color/border/horizontal padding differ per variant — these two values were settled gradually over several earlier rounds of changes (standardized around Make Offer\'s height as the baseline, then reduced by 2px top and bottom, with the corner radius standardized per your point that "Make Offer is clearly 4px") — the reasoning behind that is recorded in fragments/OfferCard/notes.md and not repeated here.\n\nThere is currently no separate comparison against a table version — the OfferTypeBadge component in the table (order 33) is a completely separate component whose values genuinely differ from this one; the two have not been merged this time, nor did you ask for them to be merged — this is just a reminder that these are two different components and shouldn\'t be confused.\n\n2026-09-02 update: corner radius changed from 4px to 8px (applied uniformly to all three variants), and the ring style\'s stroke changed from an inset border to an outside outline (outline-offset: 0) per your request. Because outline sits outside the box model instead of eating into it, the ring variant\'s padding no longer needs to be shrunk to compensate — it now matches the default in-negotiation padding (3px 6px) exactly, instead of the previous 2px 5px.'
+      name: 'Image Badge', group: 'Card View', order: 39, def: ImageBadgeGallery,
+      controls: {},
+      mocks: {},
+      notes: '2026-09-02 addition: a standalone component extracted out of OfferCard — you pointed out that the three badges in the photo\'s bottom-left corner (In Negotiation/Make Offer/dealer name) should use the same component, rather than three separately hand-written <span> elements with their own classes. The color/border values were carried over as-is with no visual change — this just merges the four rules that used to be scattered across OfferCard.vue (.offer-card__type-badge--in-negotiation / --make-offer / --in-negotiation-ring / .offer-card__lane-badge) into a single component with a variant (\'in-negotiation\'/\'make-offer\'/\'dealer\') plus a ring boolean (only took effect when variant=\'in-negotiation\').\n\nHeight (24px) and corner radius (4px) are the two shared base-style geometry properties; only the background/text color/border/horizontal padding differ per variant — these two values were settled gradually over several earlier rounds of changes (standardized around Make Offer\'s height as the baseline, then reduced by 2px top and bottom, with the corner radius standardized per your point that "Make Offer is clearly 4px") — the reasoning behind that is recorded in fragments/OfferCard/notes.md and not repeated here.\n\nThere is currently no separate comparison against a table version — the OfferTypeBadge component in the table (order 33) is a completely separate component whose values genuinely differ from this one; the two have not been merged this time, nor did you ask for them to be merged — this is just a reminder that these are two different components and shouldn\'t be confused.\n\n2026-09-02 update: corner radius changed from 4px to 8px (applied uniformly to all three variants), and the ring style\'s stroke changed from an inset border to an outside outline (outline-offset: 0) per your request. Because outline sits outside the box model instead of eating into it, the ring variant\'s padding no longer needed to be shrunk to compensate — it matched the default in-negotiation padding (3px 6px) exactly, instead of the previous 2px 5px.\n\n2026-09-11: two changes per your request. First, the ring variant is gone — it had already lost its only real caller back on 2026-09-08 (OfferCard stopped passing :ring) and had been living on purely as a demo option on this Playground page ever since; the ring prop and its CSS class have now been deleted from ImageBadge.vue itself as well, since nothing in the real app uses it any more. Second, this page no longer shows one badge at a time driven by a variant/label control — it now renders all of ImageBadge\'s real variants (In Negotiation / Make Offer / Dealer name) at once via a new display-only wrapper, ImageBadgeGallery.vue, each with a small caption naming it above (same "caption above example" pattern already used by OfferCardGallery). ImageBadge.vue itself is unchanged in how OfferCard/InformationDialog use it — this only replaces what the Playground stage shows for this entry, hence controls/mocks are now empty objects.'
     },
     OfferCard: {
       name: 'Offer Card', group: 'Card View', order: 40, def: OfferCard,
@@ -3257,15 +3357,15 @@
       notes: 'This is not a standalone new component — it\'s a Playground page built specifically for the already-existing fragments/InformationDialog/InformationDialog.vue (the dialog that opens when you click any hover CTA on OfferCard), so it can have its own Controls/Mock switching just like OfferCard, instead of having to go to the OfferCard page and hover-then-click a button every time just to see it.\n\nNo other component has been changed — the OfferCard page\'s own Controls/Mocks and its hover-to-open-dialog behavior are exactly the same as before; this just adds an extra standalone page where InformationDialog\'s own props can be tweaked directly.\n\nBecause this component relies on v-model (modelValue) to control show/hide, unlike other components that are visible as soon as they mount, the modelValue control here defaults to true so the dialog is visible as soon as you land on the page; to see what it looks like "closed" (i.e. nothing shown), turn this control off.\n\nThe 5 Mocks cover a handful of key combinations across buyer/seller × in-negotiation/make-offer (the two input-panel shapes for Received, Sent/Received for Make Offer, and one Declined closed state) — this is not a full replica of OfferCard\'s 10 Mocks. This page\'s focus is checking the Dialog\'s own content/interaction rules (the amount area/history bubbles/input panel/Footer), not covering OfferCard\'s full state matrix — let me know if the other 5 combinations need to be filled in. The detailed Figma verification records, the handful of decisions where "this specific Figma frame was deliberately not copied directly," and the 9 out of 10 states that have not yet been individually verified are all recorded in fragments/InformationDialog/notes.md and not repeated here.'
     },
     RemoveFromListDialog: {
-      name: 'Remove From List Dialog', group: 'Card View', order: 43, def: RemoveFromListDialog,
+      name: 'Remove From List Dialog', group: 'Shared Components', order: 25, def: RemoveFromListDialog,
       controls: {
         modelValue: { type: 'boolean', label: 'Open', default: true }
       },
       mocks: {},
-      notes: 'New 2026-09-02: built from Figma node 1:31040 ("Dialog", file "Offers - Negotiation") as its own component. Opens when you click "Remove From List" on OfferCard or OfferTableRow (only shows up in the Declined/Expired closed states) — "Yes, Remove" actually filters the row out of the list, "No, Keep It" or the top-right × both just cancel with no change.\n\nBefore this, "Remove From List" behaved exactly like every other hover button (Accept/Decline/Counter/View Details/Manage Offer/Raise Your Offer) — clicking any of them opened the same InformationDialog (see the "you said this isn\'t right, do it this way for now" note in OfferCard/OfferTableRow\'s own notes.md). This is the one exception carved out of that rule; every other button\'s behavior is unchanged.\n\nWiring: OfferCard.vue/OfferTableRow.vue each got a local removeDialogOpen state plus a remove-from-list emit. The hover button click handler branches on btn.label === \'Remove From List\'; if it matches, it opens removeDialogOpen instead of the shared dialogOpen. This new dialog\'s @remove event is forwarded as the component\'s own remove-from-list emit, which OfferDashboard listens for and uses to actually filter that row out (by auctionId, added to a removedAuctionIds list checked inside matchesFilters) — see OfferDashboard\'s own notes for detail.\n\nColor/asset notes: the close icon reuses the exact same stroke-X path already used by InformationDialog\'s close button (viewBox 0 0 24 24, path "M6 6l12 12M18 6L6 18"), just at 24×24 instead of 20×20 (this node\'s icon container size). "No, Keep It" uses this project\'s already-established link color #0061A5 rather than the raw Figma token (#004E7D) — consistent with every other link/text button in this codebase that has made the same substitution. The overlay backdrop was not verified against this specific node (it only contains the card itself, no backdrop reference) — it directly reuses InformationDialog\'s current 50%-black backdrop for visual consistency across the app\'s modals, not a separately verified value.'
+      notes: 'New 2026-09-02: built from Figma node 1:31040 ("Dialog", file "Offers - Negotiation") as its own component. Opens when you click "Remove From List" on OfferCard or OfferTableRow (only shows up in the Declined/Expired closed states) — "Yes, Remove" actually filters the row out of the list, "No, Keep It" or the top-right × both just cancel with no change.\n\nBefore this, "Remove From List" behaved exactly like every other hover button (Accept/Decline/Counter/View Details/Manage Offer/Raise Your Offer) — clicking any of them opened the same InformationDialog (see the "you said this isn\'t right, do it this way for now" note in OfferCard/OfferTableRow\'s own notes.md). This is the one exception carved out of that rule; every other button\'s behavior is unchanged.\n\nWiring: OfferCard.vue/OfferTableRow.vue each got a local removeDialogOpen state plus a remove-from-list emit. The hover button click handler branches on btn.label === \'Remove From List\'; if it matches, it opens removeDialogOpen instead of the shared dialogOpen. This new dialog\'s @remove event is forwarded as the component\'s own remove-from-list emit, which OfferDashboard listens for and uses to actually filter that row out (by auctionId, added to a removedAuctionIds list checked inside matchesFilters) — see OfferDashboard\'s own notes for detail.\n\nColor/asset notes: the close icon reuses the exact same stroke-X path already used by InformationDialog\'s close button (viewBox 0 0 24 24, path "M6 6l12 12M18 6L6 18"), just at 24×24 instead of 20×20 (this node\'s icon container size). "No, Keep It" uses this project\'s already-established link color #0061A5 rather than the raw Figma token (#004E7D) — consistent with every other link/text button in this codebase that has made the same substitution. The overlay backdrop was not verified against this specific node (it only contains the card itself, no backdrop reference) — it directly reuses InformationDialog\'s current 50%-black backdrop for visual consistency across the app\'s modals, not a separately verified value.\n\n2026-09-11: moved out of the "Card View" group into a new "Shared Components" group (order 25, between Nav & Filters and Offers Table) — this dialog is used by both OfferCard (Card View) and OfferTableRow (Offers Table), so filing it under "Card View" was misleading. Playground navigation/grouping only; OfferCard.vue/OfferTableRow.vue\'s actual wiring to this dialog is unchanged.'
     },
     OfferDashboard: {
-      name: 'Offer Dashboard', group: 'Page Assembly', order: 90, def: OfferDashboard,
+      name: 'Offer Dashboard', group: 'Page Assembly', order: 1, def: OfferDashboard,
       controls: {
         reset: { type: 'button', label: 'Reset dashboard' },
         // 2026-09-03 按你的要求挪到 reset 按钮正下方——原来排在所有控件
@@ -3301,7 +3401,7 @@
   // ============================================================
   var Harness = defineComponent({
     setup: function () {
-      var selectedKey = ref('AppHeader');
+      var selectedKey = ref('OfferDashboard');
       var controlValues = reactive({});
       var current = computed(function () { return REGISTRY[selectedKey.value]; });
       var sidebarOpen = ref(true);
@@ -3465,6 +3565,151 @@
         return null;
       });
 
+      // ============================================================
+      // 2026-09-11 新增 Spec Mode(规格模式):开启后点组件里任何元素不会
+      // 触发它平时的交互(阻止默认行为+阻止冒泡),改成弹出一个面板显示
+      // 这个元素的实际渲染数值(尺寸/padding/margin/间距/字体/颜色/
+      // 边框),方便直接交付给 dev 实现,面板上带"Copy CSS"一键复制。
+      // 这是 Playground 工具本身的功能,不属于任何一个 fragment 组件,
+      // 只写在这个 Harness 里,没有对应的 .vue 源文件可以镜像——跟其它
+      // 组件不一样,这次改动不需要去同步任何 fragments/*.vue。
+      // 入口按你的要求放在每个组件 Controls 面板最顶端;OfferDashboard
+      // 恰好有一个 Reset 按钮,按你的要求 Spec Mode 排在它下面,其它没有
+      // Reset 的组件里 Spec Mode 就是最上面第一项——用 hasResetControl/
+      // otherControls 这两个 computed 把 "reset" 这一项从原来的 v-for
+      // 循环里摘出来单独渲染,不是改了原来的循环逻辑本身。
+      // ============================================================
+      var hasResetControl = computed(function () {
+        return !!(current.value.controls && current.value.controls.reset);
+      });
+      var otherControls = computed(function () {
+        var c = current.value.controls || {};
+        var result = {};
+        Object.keys(c).forEach(function (k) { if (k !== 'reset') result[k] = c[k]; });
+        return result;
+      });
+
+      var specModeEnabled = ref(false);
+      var specHover = reactive({ visible: false, top: 0, left: 0, width: 0, height: 0, label: '' });
+      var specPanel = reactive({ visible: false, top: 0, left: 0, title: '', rows: [], cssText: '' });
+
+      // 选中元素的规则(你确认过的方案):从鼠标实际落点(event.target)
+      // 往上找,直到找到一个自己带 class 名字的元素为止——这个项目全部
+      // 用 BEM 命名(比如 offer-card__cell),纯图标(svg/path)、纯文字
+      // 包裹的无 class 节点会被跳过,一直跳到 .pg-stage__resize-frame
+      // 这个"天花板"为止,不会往上跳到 Playground 自己的外壳上。
+      function findSpecTarget(el) {
+        var ceiling = document.querySelector('.pg-stage__resize-frame');
+        var node = el;
+        while (node && node !== ceiling && node.nodeType === 1) {
+          var cls = node.className;
+          if (typeof cls === 'string' && cls.trim()) return node;
+          if (node.parentElement === ceiling) return node;
+          node = node.parentElement;
+        }
+        return el;
+      }
+      function describeSelector(el) {
+        var cls = (el.className || '').toString().trim().split(/\s+/)[0];
+        return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+      }
+      function pxRound(n) { return Math.round(n * 100) / 100; }
+      // 按你确认的方案,不显示对应的 CSS 变量名(这个项目本身没有 design
+      // token/CSS 自定义属性体系,颜色/间距都是直接写死的 hex/px),只用
+      // getComputedStyle 量出来的原始渲染数值,不虚构不存在的 var 名字。
+      function computeSpecRows(el) {
+        var rect = el.getBoundingClientRect();
+        var cs = getComputedStyle(el);
+        var parent = el.parentElement;
+        var parentRect = parent ? parent.getBoundingClientRect() : null;
+        var parentCs = parent ? getComputedStyle(parent) : null;
+        var rows = [];
+        rows.push({ section: 'SIZE', label: 'Width × Height', value: pxRound(rect.width) + ' × ' + pxRound(rect.height) + 'px' });
+        rows.push({ section: null, label: 'Padding', value: [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].join(' ') });
+        rows.push({ section: null, label: 'Margin', value: [cs.marginTop, cs.marginRight, cs.marginBottom, cs.marginLeft].join(' ') });
+
+        rows.push({ section: 'SPACING', label: null, value: null });
+        var next = el.nextElementSibling;
+        if (next) {
+          var nextRect = next.getBoundingClientRect();
+          var parentIsRow = parentCs && ((parentCs.display.indexOf('flex') !== -1 && parentCs.flexDirection.indexOf('row') !== -1) || parentCs.display.indexOf('grid') !== -1);
+          var gap = parentIsRow ? (nextRect.left - rect.right) : (nextRect.top - rect.bottom);
+          rows.push({ section: null, label: 'To next element', value: pxRound(gap) + 'px' });
+        } else {
+          rows.push({ section: null, label: 'To next element', value: '(last child)' });
+        }
+        if (parentCs && parentCs.display.indexOf('flex') !== -1 || (parentCs && parentCs.display.indexOf('grid') !== -1)) {
+          rows.push({ section: null, label: 'Parent gap', value: (parentCs.gap || '0px') + '  ·  parent: ' + describeSelector(parent) });
+        }
+        if (parentRect) {
+          rows.push({
+            section: null, label: 'To parent edges',
+            value: 'top ' + pxRound(rect.top - parentRect.top) + 'px · right ' + pxRound(parentRect.right - rect.right) +
+              'px · bottom ' + pxRound(parentRect.bottom - rect.bottom) + 'px · left ' + pxRound(rect.left - parentRect.left) + 'px'
+          });
+        }
+
+        rows.push({ section: 'TYPOGRAPHY', label: null, value: null });
+        rows.push({ section: null, label: 'Font', value: cs.fontSize + ' / ' + cs.fontWeight + ' / ' + cs.fontFamily.split(',')[0].replace(/['"]/g, '') });
+        rows.push({ section: null, label: 'Line height', value: cs.lineHeight });
+        rows.push({ section: null, label: 'Letter spacing', value: cs.letterSpacing });
+        rows.push({ section: null, label: 'Color', value: cs.color });
+
+        rows.push({ section: 'FILL & BORDER', label: null, value: null });
+        rows.push({ section: null, label: 'Background', value: cs.backgroundColor });
+        rows.push({ section: null, label: 'Border', value: cs.borderTopWidth === '0px' ? 'none' : (cs.borderTopWidth + ' ' + cs.borderTopStyle + ' ' + cs.borderTopColor) });
+        rows.push({ section: null, label: 'Border radius', value: cs.borderRadius });
+        return rows;
+      }
+      function buildCssText(el, cs) {
+        var rect = el.getBoundingClientRect();
+        return [
+          'width: ' + pxRound(rect.width) + 'px;',
+          'height: ' + pxRound(rect.height) + 'px;',
+          'padding: ' + cs.padding + ';',
+          'margin: ' + cs.margin + ';',
+          'font: ' + cs.fontWeight + ' ' + cs.fontSize + '/' + cs.lineHeight + ' ' + cs.fontFamily + ';',
+          'letter-spacing: ' + cs.letterSpacing + ';',
+          'color: ' + cs.color + ';',
+          'background: ' + cs.backgroundColor + ';',
+          'border: ' + (cs.borderTopWidth === '0px' ? 'none' : cs.borderTopWidth + ' ' + cs.borderTopStyle + ' ' + cs.borderTopColor) + ';',
+          'border-radius: ' + cs.borderRadius + ';'
+        ].join('\n');
+      }
+      function handleSpecMouseMove(e) {
+        if (!specModeEnabled.value || specPanel.visible) return;
+        var target = findSpecTarget(e.target);
+        var rect = target.getBoundingClientRect();
+        specHover.visible = true;
+        specHover.top = rect.top;
+        specHover.left = rect.left;
+        specHover.width = rect.width;
+        specHover.height = rect.height;
+        specHover.label = pxRound(rect.width) + ' × ' + pxRound(rect.height);
+      }
+      function handleSpecMouseLeaveStage() { specHover.visible = false; }
+      function handleSpecClick(e) {
+        if (!specModeEnabled.value) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var target = findSpecTarget(e.target);
+        var cs = getComputedStyle(target);
+        specPanel.title = describeSelector(target);
+        specPanel.rows = computeSpecRows(target);
+        specPanel.cssText = buildCssText(target, cs);
+        var rect = target.getBoundingClientRect();
+        var panelWidth = 320;
+        specPanel.left = Math.max(12, Math.min(rect.right + 12, window.innerWidth - panelWidth - 12));
+        specPanel.top = Math.max(12, Math.min(rect.top, window.innerHeight - 420));
+        specPanel.visible = true;
+        specHover.visible = false;
+      }
+      function closeSpecPanel() { specPanel.visible = false; }
+      function copySpecCss() {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(specPanel.cssText);
+      }
+      watch(specModeEnabled, function (v) { if (!v) { specPanel.visible = false; specHover.visible = false; } });
+
       return {
         groups: GROUPS, selectedKey: selectedKey, current: current,
         controlValues: controlValues, applyMock: applyMock, selectComponent: selectComponent,
@@ -3472,7 +3717,11 @@
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
         componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageRef: stageRef,
-        markScreenWidthManual: markScreenWidthManual
+        markScreenWidthManual: markScreenWidthManual,
+        hasResetControl: hasResetControl, otherControls: otherControls,
+        specModeEnabled: specModeEnabled, specHover: specHover, specPanel: specPanel,
+        handleSpecMouseMove: handleSpecMouseMove, handleSpecMouseLeaveStage: handleSpecMouseLeaveStage,
+        handleSpecClick: handleSpecClick, closeSpecPanel: closeSpecPanel, copySpecCss: copySpecCss
       };
     },
     template:
@@ -3497,16 +3746,26 @@
       '<button v-for="(mockObj, mockKey) in current.mocks" :key="mockKey" type="button" class="pg-mock-btn" @click="applyMock(mockObj)">{{ mockKey }}</button>' +
       '</div>' +
       '<div class="pg-workspace">' +
-      '<div class="pg-stage" ref="stageRef"><div class="pg-stage__resize-frame" :style="stageFrameStyle">' +
+      '<div class="pg-stage" ref="stageRef" :class="{ \'pg-stage--spec-mode\': specModeEnabled }">' +
+      '<div class="pg-stage__resize-frame" :style="stageFrameStyle" ' +
+      '@click.capture="handleSpecClick" @mousemove="handleSpecMouseMove" @mouseleave="handleSpecMouseLeaveStage">' +
       '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
       '</div></div>' +
-      '<template v-if="Object.keys(current.controls || {}).length">' +
       '<button type="button" class="pg-rail-toggle pg-rail-toggle--controls" @click="toggleControls" ' +
       ':title="controlsOpen ? \'Hide controls\' : \'Show controls\'">{{ controlsOpen ? \'›\' : \'‹\' }}</button>' +
       '<aside class="pg-controls" :class="{ \'pg-controls--collapsed\': !controlsOpen }">' +
       '<div class="pg-controls__inner">' +
       '<div class="pg-controls__title">Controls</div>' +
-      '<div v-for="(def, key) in current.controls" :key="key" class="pg-control-field" :class="{ \'pg-control-field--switch\': def.type === \'boolean\' }">' +
+      // 2026-09-11 新增 Spec Mode:Reset(如果这个组件有)排在最前面不动,
+      // Spec Mode 紧跟在它下面;没有 Reset 的组件里 Spec Mode 就是第一项。
+      '<div v-if="hasResetControl" class="pg-control-field">' +
+      '<button type="button" class="pg-control-button" @click="handleControlButton(\'reset\')">{{ current.controls.reset.label || \'Reset\' }}</button>' +
+      '</div>' +
+      '<div class="pg-control-field pg-control-field--switch">' +
+      '<label>Spec Mode</label>' +
+      '<input type="checkbox" v-model="specModeEnabled">' +
+      '</div>' +
+      '<div v-for="(def, key) in otherControls" :key="key" class="pg-control-field" :class="{ \'pg-control-field--switch\': def.type === \'boolean\' }">' +
       '<button v-if="def.type === \'button\'" type="button" class="pg-control-button" @click="handleControlButton(key)">{{ def.label || key }}</button>' +
       '<template v-else>' +
       '<label>{{ def.label || key }}</label>' +
@@ -3525,14 +3784,34 @@
       '</div>' +
       '<input v-else type="text" v-model="controlValues[key]">' +
       '</template>' +
-      '</div></div></aside>' +
-      '</template>' +
-      '<p v-else class="pg-no-controls">This component has no adjustable controls (see Notes for details).</p>' +
+      '</div>' +
+      '<p v-if="!hasResetControl && Object.keys(otherControls).length === 0" class="pg-no-controls pg-no-controls--inline">No other adjustable controls (see Notes for details).</p>' +
+      '</div></aside>' +
       '</div>' +
       '<details class="pg-notes" open>' +
       '<summary>Notes / Open Questions</summary>' +
       '<pre>{{ current.notes }}</pre>' +
       '</details>' +
+      // 2026-09-11 Spec Mode 的悬浮预览框(蓝色描边+尺寸小标签,鼠标移动
+      // 到哪个元素上就跟到哪,不用点击就能先看一眼选中的是谁)和点击后的
+      // 详细规格面板,都用 position:fixed(viewport坐标,getBoundingClientRect
+      // 量出来的本来就是这个坐标系,不用管 .pg-stage 自己内部滚没滚动)。
+      '<div v-if="specHover.visible" class="pg-spec-hover" :style="{ top: specHover.top + \'px\', left: specHover.left + \'px\', width: specHover.width + \'px\', height: specHover.height + \'px\' }">' +
+      '<span class="pg-spec-hover__label">{{ specHover.label }}</span>' +
+      '</div>' +
+      '<div v-if="specPanel.visible" class="pg-spec-panel" :style="{ top: specPanel.top + \'px\', left: specPanel.left + \'px\' }">' +
+      '<div class="pg-spec-panel__head">' +
+      '<span class="pg-spec-panel__title">{{ specPanel.title }}</span>' +
+      '<button type="button" class="pg-spec-panel__close" aria-label="Close" @click="closeSpecPanel">×</button>' +
+      '</div>' +
+      '<div class="pg-spec-panel__body">' +
+      '<template v-for="(row, i) in specPanel.rows" :key="i">' +
+      '<div v-if="row.section" class="pg-spec-panel__section">{{ row.section }}</div>' +
+      '<div v-if="row.label" class="pg-spec-panel__row"><span class="pg-spec-panel__row-label">{{ row.label }}</span><span class="pg-spec-panel__row-value">{{ row.value }}</span></div>' +
+      '</template>' +
+      '</div>' +
+      '<div class="pg-spec-panel__foot"><button type="button" class="pg-control-button pg-spec-panel__copy" @click="copySpecCss">Copy CSS</button></div>' +
+      '</div>' +
       '</main></div>'
   });
 

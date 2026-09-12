@@ -1301,3 +1301,23 @@ wheel）不受影响，影子滚动条本来就是靠同步 `scrollLeft` 实现�
 浏览器实测：跟你截图同一个1238px宽度、滚到底部同一个位置，现在只有
 一条影子滚动条可见；拖动影子滚动条真实表格内容依然正确跟着横向滚动，
 无 console 报错。
+
+## 2026-09-11 挪到侧边栏最顶部 + 设为服务器默认打开页面
+
+你要求把 "Offer Dashboard" 挪到 Playground 侧边栏最顶部,并且设成服务器
+打开时的默认页面。这两处都是纯 Harness 导航层面的改动,不涉及
+`OfferDashboard.vue` 组件本身的任何逻辑/样式:
+
+1. `index.html` 的 `GROUPS` 数组:"Page Assembly" 这个分组(只有
+   `OfferDashboard` 一项)从数组最后挪到最前面,排在 "Page Shell" 前面。
+   `order` 顺带从 90 改成 1(纯粹是为了让页面头部显示的"order"数字和它
+   现在排第一这件事看起来一致,不影响侧边栏排序——侧边栏排序本身就是按
+   `GROUPS` 数组字面顺序渲染,不是按 order 数字排序)。`REGISTRY.
+   OfferDashboard.order` 和 `OfferDashboard.vue` 自己 METADATA 里的
+   `order` 字段一起同步改成 1。
+2. Harness 的 `selectedKey` 初始值从 `'AppHeader'` 改成 `'OfferDashboard'`
+   ——打开服务器首页时默认直接显示 Offer Dashboard,不再是 App Header。
+
+浏览器实测:刷新服务器首页直接显示 Offer Dashboard;侧边栏 "Page
+Assembly" 分组排在最顶部,"Offer Dashboard" 是第一个可点的条目;无
+console 报错。

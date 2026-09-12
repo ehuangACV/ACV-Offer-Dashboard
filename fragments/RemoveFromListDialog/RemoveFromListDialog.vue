@@ -2,8 +2,8 @@
   ═══════════════════════════════════════════════════════════
   METADATA
   name: Remove From List Dialog
-  group: 卡片视图 (Card View)
-  order: 43
+  group: 共用组件 (Shared Components)
+  order: 25
   description: >
     点 OfferCard/OfferTableRow 上 "Remove From List" 按钮(只在 Declined/
     Expired 这两个关闭状态出现)弹出的二次确认弹窗——"Yes, Remove" 才真的
