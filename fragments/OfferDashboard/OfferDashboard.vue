@@ -456,7 +456,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, inject } from 'vue'
 import AppHeader from '../AppHeader/AppHeader.vue'
 import Breadcrumb from '../Breadcrumb/Breadcrumb.vue'
 import SidebarNav from '../SidebarNav/SidebarNav.vue'
@@ -530,6 +530,10 @@ const mobileListTwoColumn = computed(() => measuredWidth.value >= 760)
 const filterChipGroupRef = ref(null)
 const dealerPopoverWrapRef = ref(null)
 const dealerPopoverStyle = ref({})
+// 2026-09-13(第三次)Playground 专用,细节见 updateDealerPopoverPosition
+// 里的注释——生产环境没有任何地方会 provide 这个值,inject 到的默认值
+// 是 null,不影响真实用法。
+const mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null)
 
 // 2026-09-12 新增 mobile 分支:mobile 版这个浮层不再是"跟着触发按钮的
 // 位置算 top/left"的悬浮弹窗,是贴着视口底边(MobileBottomNav 上边缘)
@@ -537,6 +541,30 @@ const dealerPopoverStyle = ref({})
 // DealershipFilterDropdown/notes.md。
 function updateDealerPopoverPosition() {
   if (effectiveDeviceView.value === 'mobile') {
+    // 2026-09-13(第三次)真机上 left:0/right:0(铺满真实屏幕宽度)是对
+    // 的,body 本来就是设备屏幕。在 Playground 里,"手机屏幕"只是桌面
+    // 浏览器窗口里一个模拟的390px窄框,这个浮层是普通的 position:fixed
+    // (不是 Teleport),之前靠给模拟框加 contain:layout 让它贴合窄框,
+    // 后来那个技巧因为别的原因(InformationDialog 的 mobile 弹层用
+    // Teleport,和 contain:layout 冲突导致整个 Playground 崩过两次)被
+    // 整体撤销了,这个浮层也跟着"退化"回铺满真实视口宽度。这次改成和
+    // InformationDialog 同一套做法:inject Harness 提供的模拟手机框
+    // DOM 节点(生产环境这个 inject 拿到的默认值是 null),用
+    // getBoundingClientRect() 量它的屏幕位置,换算成 left/width/bottom
+    // 这几个具体像素值——不涉及 Teleport,只是普通的响应式 style 绑定,
+    // 风险和之前那两次导致崩溃的改法不是一回事。
+    const frameEl = mobileDeviceFrameEl?.value
+    if (frameEl) {
+      const rect = frameEl.getBoundingClientRect()
+      dealerPopoverStyle.value = {
+        position: 'fixed',
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        bottom: `${window.innerHeight - rect.bottom + 56}px`,
+        zIndex: 10000
+      }
+      return
+    }
     dealerPopoverStyle.value = {
       position: 'fixed',
       left: '0',

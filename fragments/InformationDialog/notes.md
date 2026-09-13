@@ -75,6 +75,25 @@ Screen width 滑块都跟着失灵,整个 Playground 卡死。排查确认这两
 同名条目,这里不重复。以后如果还想解决这个视觉瑕疵,需要先确认清楚不会
 影响主应用的响应式稳定性,不能再这样直接改、边改边测。
 
+**2026-09-13(第三次,已上线)换一套完全不碰 Teleport 目标的思路,重新
+解决了这个问题**——`<Teleport>` 还是永远 `to="body"`,不再动它。新增
+`mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null)`(生产环境
+inject 到的默认值是 null,不影响真实用法;只有 Playground 的 Harness
+在渲染 Mobile view 模拟框时才会 provide 这个真实 DOM 节点),配合新的
+`mobileOverlayRect`/`mobileOverlayStyle`:对话框打开时用
+`getBoundingClientRect()` 量一次这个模拟框在屏幕上的实际像素位置,换算
+成 `top/left/width/height` 当 inline style 绑定给 `.info-dialog-mobile
+--overlay`(不再用 `inset:0`),窗口 resize 时也会重新量一次。这是最
+基础的 Vue style 响应式绑定,不涉及 Teleport 内部机制,和前两次真正
+出问题的地方(动态改 `<Teleport :to>`)是两回事。浏览器实测(逐步、
+每一步单独查 console,不是全部操作完再查):Mobile view/全屏 Mobile
+view 下点 "Manage Offer",对话框位置和模拟框精确重合;把模拟框滚动过
+再开对话框(复现最早那个 bug 的场景)依然精确重合;连续切换
+Mobile⇄Web⇄Mobile view 并重新开关对话框、Web view 下打开桌面版对话框、
+拖 Screen width 滑块——每一步都确认无 console 报错,没有再出现 Teleport
+内部报错。细节见 [PLAYGROUND_NOTES.md](../../PLAYGROUND_NOTES.md) 同名
+条目("第九次")。
+
 ## 2026-09-03 去掉 V1,只保留 V2 行为(不再是可切换的版本)
 你确认"去掉 information dialog version V1，已确认使用V2版本"——V1/V2 从
 "两套可切换的版本"变成"只有一套行为",不再是一个 prop。

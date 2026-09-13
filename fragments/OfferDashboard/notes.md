@@ -1,5 +1,19 @@
 # OfferDashboard — Notes
 
+## 2026-09-13(第三次)Dealership mobile 浮层贴合 Playground 模拟手机框
+
+`updateDealerPopoverPosition()` 的 mobile 分支新增
+`mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null)`——生产环境
+inject 到的默认值是 null,行为和以前一样(`left:0/right:0/bottom:56px`
+铺满真机屏幕,真机上本来就是对的)。只有 Playground 的 Harness 在渲染
+Mobile view 模拟框时才会 provide 这个真实 DOM 节点,这时改成用
+`getBoundingClientRect()` 量它的屏幕位置,换算成具体的
+`left/width/bottom` 像素值,让这个浮层贴合那个模拟框而不是铺满桌面
+浏览器整个窗口。这个浮层本来就是普通的 `position:fixed`,不是
+Teleport,和 [InformationDialog](../InformationDialog/notes.md) 那边
+"两次改 Teleport 目标搞坏整个 Playground" 是不同的技术路径,风险更低,
+细节见 PLAYGROUND_NOTES.md 同名条目("第九次")。
+
 ## 2026-09-03(第三次)Buying/Selling 各扩到15行,补齐全部状态组合
 你要求"Vehicles shown on Buying/Selling 各增加到15个",并且要求新增的
 mockup 数据要把所有状态都用上。问你新车图怎么处理(assets/vehicle-

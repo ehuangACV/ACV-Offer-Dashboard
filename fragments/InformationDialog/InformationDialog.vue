@@ -181,7 +181,7 @@
            居中的黑背板小卡片——细节和取舍见 notes.md。这次只做 Negotiation
            History tab 的内容(气泡历史+Accept/Decline+输入面板),Info
            tab 先留空,是你明确说的范围,不是漏做。 -->
-      <div v-if="mobile" :class="['info-dialog-mobile', { 'info-dialog-mobile--overlay': !inline }]">
+      <div v-if="mobile" :class="['info-dialog-mobile', { 'info-dialog-mobile--overlay': !inline }]" :style="mobileOverlayStyle">
         <MobileTopBar :title="vehicleTitle" @back="handleClose" />
         <div class="info-dialog-mobile__tabs">
           <button
@@ -528,10 +528,53 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, inject } from 'vue'
 import ImageBadge from '../ImageBadge/ImageBadge.vue'
 import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
 import MobileTopBar from '../MobileTopBar/MobileTopBar.vue'
+
+// 2026-09-13(第三次)真机上这个 mobile 全屏页面靠 CSS 的
+// position:fixed;inset:0 铺满整个屏幕就是对的(body 本来就是设备屏幕)。
+// 在 Playground 里,"手机屏幕"只是桌面浏览器窗口里一个模拟的390px窄框,
+// 之前两次为了让它贴合那个模拟框,分别改过 Teleport 的目标选择器——两次
+// 都触发了 Vue Teleport 内部的报错,把整个 Playground 的响应式全部打断
+// (细节和踩坑记录见 notes.md)。这次改用完全不同、不碰 Teleport 机制的
+// 思路:Teleport 永远 teleport 到 body,不再动它的目标;改成用 JS 直接
+// 量出模拟手机框在屏幕上的实际像素位置(getBoundingClientRect,浏览器
+// 自己处理所有滚动链路的计算,不需要自己猜 CSS containing block 规则),
+// 拿到的位置/尺寸当普通的 inline style(top/left/width/height,不是
+// inset)绑定给这个弹层——这是最基础的响应式 style 绑定,不涉及 Teleport
+// 那套容易出问题的内部机制。inject 到的是 Harness 提供的一个 ref(只在
+// 真的在渲染 Mobile view 模拟框时才有值,否则是 null),真实生产环境
+// 没有任何地方会 provide 这个东西,inject 拿到的默认值是 null——那种情况
+// 下 mobileOverlayStyle 走生产环境该有的"铺满真实视口"这条分支,行为
+// 和从来没做过这次改动一样。
+const mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null)
+const mobileOverlayRect = ref(null)
+function updateMobileOverlayRect() {
+  // inline 模式(Playground 独立预览这个组件的页面)本身就不用
+  // position:fixed,不需要量任何位置,细节见 .info-dialog-mobile--overlay
+  // 旁边的注释。
+  var el = mobileDeviceFrameEl && mobileDeviceFrameEl.value
+  if (!props.mobile || props.inline || !el) {
+    mobileOverlayRect.value = null
+    return
+  }
+  var r = el.getBoundingClientRect()
+  mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height }
+}
+const mobileOverlayStyle = computed(() => {
+  if (props.inline) return null
+  if (mobileOverlayRect.value) {
+    var r = mobileOverlayRect.value
+    return { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' }
+  }
+  // 生产环境(没有 Harness provide 这个 ref)、或者这次不是在模拟框里
+  // 打开(Auto/Web view,或者 OfferCard 自己独立的 Playground 页)——
+  // 显式写出 4 个方向,不依赖 CSS 里的 inset 简写,避免和上面这条分支
+  // 混用时出现"left+width+right 三个都有值,过度约束"的歧义。
+  return { position: 'fixed', top: '0', left: '0', right: '0', bottom: '0' }
+})
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -609,10 +652,17 @@ function handleTypeGuideEscapeKey(event) {
 onMounted(() => {
   document.addEventListener('mousedown', handleTypeGuideOutsideClick)
   document.addEventListener('keydown', handleTypeGuideEscapeKey)
+  // 只在 Playground 模拟框场景下有意义(mobileDeviceFrameEl 有值时),
+  // 窗口 resize 时重新量一次模拟框的位置/尺寸,保持弹层贴合。生产环境
+  // 这个监听器本身没有害处(resize 时调用 updateMobileOverlayRect,
+  // 内部因为 mobileDeviceFrameEl 是 null 直接把 mobileOverlayRect 设回
+  // null,不会有任何实际效果)。
+  window.addEventListener('resize', updateMobileOverlayRect)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleTypeGuideOutsideClick)
   document.removeEventListener('keydown', handleTypeGuideEscapeKey)
+  window.removeEventListener('resize', updateMobileOverlayRect)
 })
 const isClosed = computed(() => props.dealState === 'declined' || props.dealState === 'expired')
 const hasCountdown = computed(() => !!props.timeLeft && !isClosed.value)
@@ -675,7 +725,15 @@ function resetTransientState() {
   useSplit.value = false
   mobileActiveTab.value = 'history'
 }
-watch(() => props.modelValue, (open) => { if (open) resetTransientState() })
+watch(() => props.modelValue, (open) => {
+  if (open) {
+    resetTransientState()
+    // nextTick 等这个弹层自己先挂载完(不然量出来的可能是上一帧的
+    // 数据),再量一次模拟框的位置——细节见上面 mobileOverlayStyle 旁边
+    // 的注释。
+    nextTick(updateMobileOverlayRect)
+  }
+})
 // 2026-09 修复:Playground 里切换 mock 示例时 modelValue 一直是 true(对话
 // 框没有真的关闭再打开过),上面那个 watch 不会触发,导致上一个场景点了
 // Accept 留下的确认面板/checkbox 状态原样带到下一个场景里——这在真实用法
@@ -1421,10 +1479,12 @@ function handleFooterCommit() {
    黑背板,是铺满的白色全屏页面。inline(Playground 独立预览这个组件的
    页面)时不用 position:fixed,原地占一块普通流内空间,避免像桌面版
    inline 模式一样挡住 Controls 面板,道理跟 .info-dialog-inline-shell
-   一样。 */
+   一样。
+   2026-09-13(第三次):真正的 position/top/left/width/height 现在都是
+   通过 mobileOverlayStyle 这个 inline style 绑定给的(细节见 script
+   里的注释),这里不再写 position:fixed/inset,避免和 inline style
+   混用时产生冲突——这个 class 现在只负责 z-index。 */
 .info-dialog-mobile--overlay {
-  position: fixed;
-  inset: 0;
   z-index: 1000;
 }
 

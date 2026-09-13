@@ -355,3 +355,48 @@ bug 去处理,这个判断是错的。
 打开对话框;切到 Web view,frame 宽度正确变成1422px;拖动 Screen width
 滑块,frame 宽度正确跟着变;Selling tab 打开 Dealership 下拉正常;无
 console 报错。
+
+## 2026-09-13(第九次)换一套不碰 Teleport 的思路,重新解决"贴合模拟手机框"
+
+回退之后你确认 Manage Offer 恢复正常,但老问题还在:mobile 版对话框
+在 Playground 里还是铺满整个桌面窗口,不贴合那个390px的模拟手机框。
+你要求继续修,同时要保证可以 rewind——当时确认工作区是干净的,HEAD
+(`e7d0ac8 dialog -mobile problem`)本身就是一个可靠的回退点。
+
+这次换了一套完全不碰 Teleport 目标的思路,避开前两次真正的问题根源
+(动态改 `<Teleport :to>` 触发 Vue 内部报错、拖垮整个应用的响应式):
+
+- `<Teleport>` 永远 `to="body"`,这次完全不改它的目标。
+- Harness 新增 `resizeFrameRef`(挂在 `.pg-stage__resize-frame` 这个
+  DOM 节点上)+ `provide('mobileDeviceFrameEl', computed(function () {
+  return stageFrameHeight.value ? resizeFrameRef.value : null; }))`——
+  只在真的在渲染 Mobile view 模拟框时才把这个真实 DOM 节点交出去,
+  否则给 null。
+- `InformationDialog.vue` inject 这个值(默认 null,生产环境不受
+  影响),用普通的 `getBoundingClientRect()` 量出模拟框在屏幕上的
+  实际像素位置,换算成 `top/left/width/height` 当 inline style 绑定
+  给这个弹层(不再用 `inset:0`)——这是最基础的 Vue style 响应式绑定,
+  不涉及 Teleport 内部那套容易出问题的机制。对话框打开时(`modelValue`
+  变 true 的 watch 里)`nextTick` 之后量一次,窗口 resize 时也会重新量
+  一次(`onMounted`/`onBeforeUnmount` 里加了 `window.addEventListener
+  ('resize', updateMobileOverlayRect)`)。inline 模式(独立 Playground
+  页)不受影响,直接跳过这套逻辑。
+
+顺带发现并修了一个"退化"的旧问题:Dealership 下拉浮层(mobile 版
+bottom sheet)之前是靠 `contain:layout` 贴合模拟框的,回退时那条
+`contain:layout` 也被删了,这个浮层跟着"退化"回铺满真实视口宽度。
+既然验证过 inject 这套 DOM 节点 + `getBoundingClientRect()` 的做法是
+安全的,`OfferDashboard.vue` 的 `updateDealerPopoverPosition()` 也改成
+同一套做法(这个浮层本来就不是 Teleport,一直是普通的
+`position:fixed`,风险比 InformationDialog 那边更低)。
+
+浏览器实测(每一步之间都单独查了一次 console,不是全部操作完再统一
+查):Mobile view 点 "Manage Offer",`getBoundingClientRect()` 量出来
+弹层和模拟框完全重合(宽390/高844);把模拟框 scrollTop 设到650(复现
+最早那个"滚动后点开看不到"的场景)再开对话框,弹层位置依然精确重合,
+没有被顶偏;"Expand to full page" 全屏模式下同样精确重合;连续
+Mobile view ⇄ Web view ⇄ Mobile view 切换 + 重新打开对话框、Web view
+下打开桌面版对话框(确认还是 teleport 到真正的 body)、拖动 Screen
+width 滑块、Selling tab 打开 Dealership 下拉(现在也贴合模拟框了)——
+每一步都单独确认无 console 报错,没有再出现之前那个 Teleport 内部
+报错。

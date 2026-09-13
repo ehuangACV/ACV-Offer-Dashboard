@@ -799,7 +799,7 @@
   /* -- InformationDialog mobile 版(2026-09-13 新增),细节见
      fragments/InformationDialog/InformationDialog.vue 同名注释 -- */
   .info-dialog-mobile { display: flex; flex-direction: column; height: 100%; background: #FFFFFF; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
-  .info-dialog-mobile--overlay { position: fixed; inset: 0; z-index: 1000; }
+  .info-dialog-mobile--overlay { z-index: 1000; }
   .info-dialog-mobile__tabs { display: flex; background: #FFFFFF; flex-shrink: 0; }
   .info-dialog-mobile__tab { flex: 1; display: flex; align-items: center; justify-content: center; height: 39px; position: relative; border: none; background: none; padding: 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.25px; color: #757575; cursor: pointer; }
   .info-dialog-mobile__tab--active { color: #0061A5; }
@@ -854,7 +854,8 @@
   var V = Vue;
   var ref = V.ref, reactive = V.reactive, computed = V.computed, onMounted = V.onMounted,
       onBeforeUnmount = V.onBeforeUnmount, nextTick = V.nextTick, watch = V.watch,
-      toRefs = V.toRefs, defineComponent = V.defineComponent, createApp = V.createApp;
+      toRefs = V.toRefs, defineComponent = V.defineComponent, createApp = V.createApp,
+      provide = V.provide, inject = V.inject;
 
   // ============================================================
   // 下面是把 fragments/*/*.vue 手工转写成"零构建"的 Vue defineComponent
@@ -1694,7 +1695,7 @@
     template:
       '<teleport to="body" :disabled="inline">' +
       '<template v-if="modelValue">' +
-      '<div v-if="mobile" :class="[\'info-dialog-mobile\', { \'info-dialog-mobile--overlay\': !inline }]">' +
+      '<div v-if="mobile" :class="[\'info-dialog-mobile\', { \'info-dialog-mobile--overlay\': !inline }]" :style="mobileOverlayStyle">' +
       '<MobileTopBar :title="vehicleTitle" @back="handleClose" />' +
       '<div class="info-dialog-mobile__tabs">' +
       '<button type="button" class="info-dialog-mobile__tab" :class="{ \'info-dialog-mobile__tab--active\': mobileActiveTab === \'history\' }" @click="mobileActiveTab = \'history\'">Negotiation History</button>' +
@@ -1875,6 +1876,31 @@
       '</teleport>',
     setup: function (props, ctx) {
       var emit = ctx.emit;
+      // 2026-09-13(第三次)给 mobile 弹层用,细节见
+      // fragments/InformationDialog/notes.md——这次完全不碰 Teleport 的
+      // 目标(前两次改 Teleport 目标都拖垮了整个 Playground 的响应式),
+      // 只是 inject Harness 提供的模拟手机框 DOM 节点(真实生产环境
+      // inject 到的默认值是 null),自己用 getBoundingClientRect() 量它
+      // 的屏幕位置/尺寸,再当普通 inline style 贴给这个弹层。
+      var mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null);
+      var mobileOverlayRect = ref(null);
+      function updateMobileOverlayRect() {
+        var el = mobileDeviceFrameEl && mobileDeviceFrameEl.value;
+        if (!props.mobile || props.inline || !el) {
+          mobileOverlayRect.value = null;
+          return;
+        }
+        var r = el.getBoundingClientRect();
+        mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height };
+      }
+      var mobileOverlayStyle = computed(function () {
+        if (props.inline) return null;
+        if (mobileOverlayRect.value) {
+          var r = mobileOverlayRect.value;
+          return { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' };
+        }
+        return { position: 'fixed', top: '0', left: '0', right: '0', bottom: '0' };
+      });
       var isBuyer = computed(function () { return props.viewerRole === 'buyer'; });
       var isMakeOffer = computed(function () { return props.offerType === 'make-offer'; });
       var offerTypeLabel = computed(function () { return isMakeOffer.value ? 'Make Offer' : 'In Negotiation'; });
@@ -1893,10 +1919,12 @@
       onMounted(function () {
         document.addEventListener('mousedown', handleTypeGuideOutsideClick);
         document.addEventListener('keydown', handleTypeGuideEscapeKey);
+        window.addEventListener('resize', updateMobileOverlayRect);
       });
       onBeforeUnmount(function () {
         document.removeEventListener('mousedown', handleTypeGuideOutsideClick);
         document.removeEventListener('keydown', handleTypeGuideEscapeKey);
+        window.removeEventListener('resize', updateMobileOverlayRect);
       });
       var isClosed = computed(function () { return props.dealState === 'declined' || props.dealState === 'expired'; });
       var hasCountdown = computed(function () { return !!props.timeLeft && !isClosed.value; });
@@ -1941,7 +1969,12 @@
         useSplit.value = false;
         mobileActiveTab.value = 'history';
       }
-      watch(function () { return props.modelValue; }, function (open) { if (open) resetTransientState(); });
+      watch(function () { return props.modelValue; }, function (open) {
+        if (open) {
+          resetTransientState();
+          nextTick(updateMobileOverlayRect);
+        }
+      });
       // 2026-09 修复:Playground 切换 mock 时 modelValue 一直是 true,上面
       // 那个 watch 不会触发,上一个场景的确认面板状态会原样带到下一个场景
       watch(function () { return [props.dealState, props.counterpartyAmount, props.ownAmount, props.viewerRole, props.offerType]; }, resetTransientState);
@@ -1999,7 +2032,7 @@
         footerButtonEnabled: footerButtonEnabled, footerButton: footerButton,
         handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleFooterCommit: handleFooterCommit,
         showTypeGuide: showTypeGuide, typeInfoBtnRef: typeInfoBtnRef, typeGuideRef: typeGuideRef,
-        mobileActiveTab: mobileActiveTab
+        mobileActiveTab: mobileActiveTab, mobileOverlayStyle: mobileOverlayStyle
       });
     }
   });
@@ -2924,9 +2957,25 @@
       var filterChipGroupRef = ref(null);
       var dealerPopoverWrapRef = ref(null);
       var dealerPopoverStyle = ref({});
+      // 2026-09-13(第三次)Playground 专用,细节见 OfferDashboard.vue 同名
+      // 注释——生产环境没有任何地方会 provide 这个值,inject 到的默认值
+      // 是 null,不影响真实用法。
+      var mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null);
 
       function updateDealerPopoverPosition() {
         if (effectiveDeviceView.value === 'mobile') {
+          var frameEl = mobileDeviceFrameEl && mobileDeviceFrameEl.value;
+          if (frameEl) {
+            var frameRect = frameEl.getBoundingClientRect();
+            dealerPopoverStyle.value = {
+              position: 'fixed',
+              left: frameRect.left + 'px',
+              width: frameRect.width + 'px',
+              bottom: (window.innerHeight - frameRect.bottom + 56) + 'px',
+              zIndex: 10000
+            };
+            return;
+          }
           dealerPopoverStyle.value = { position: 'fixed', left: '0', right: '0', bottom: '56px', zIndex: 10000 };
           return;
         }
@@ -4045,6 +4094,22 @@
         }
         return Object.keys(style).length ? style : null;
       });
+      // 2026-09-13(第三次)给 InformationDialog 的 mobile 弹层用,细节见
+      // fragments/InformationDialog/notes.md。这次完全不碰 Teleport 的
+      // 目标(前两次改 Teleport 目标都触发了 Vue 内部报错、拖垮整个
+      // Playground 的响应式,细节见 PLAYGROUND_NOTES.md 的教训记录)——
+      // 只是把这个模拟手机框的真实 DOM 节点,通过 provide 交给
+      // InformationDialog 自己去用 getBoundingClientRect() 量它的屏幕
+      // 位置/尺寸,再用普通的 inline style(不涉及 Teleport 机制)贴上去。
+      // resizeFrameRef 只在真的在渲染 Mobile view 模拟框(stageFrameHeight
+      // 有值)时才把元素传出去,否则给 null——Auto/Web view,或者没有这个
+      // 模拟框的其它页面(比如 OfferCard 自己的 Playground 页)都拿到
+      // null,InformationDialog 那边会走"生产环境铺满真实视口"这条分支,
+      // 不会指向一个不存在/不相关的节点。
+      var resizeFrameRef = ref(null);
+      provide('mobileDeviceFrameEl', computed(function () {
+        return stageFrameHeight.value ? resizeFrameRef.value : null;
+      }));
 
       // ============================================================
       // 2026-09-11 新增 Spec Mode(规格模式):开启后点组件里任何元素不会
@@ -4197,7 +4262,7 @@
         sidebarOpen: sidebarOpen, controlsOpen: controlsOpen, fullscreenOpen: fullscreenOpen,
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
-        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef,
+        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef, resizeFrameRef: resizeFrameRef,
         markScreenWidthManual: markScreenWidthManual, handleSegmentedClick: handleSegmentedClick,
         hasResetControl: hasResetControl, otherControls: otherControls,
         specModeEnabled: specModeEnabled, specHover: specHover, specPanel: specPanel,
@@ -4228,7 +4293,7 @@
       '</div>' +
       '<div class="pg-workspace">' +
       '<div class="pg-stage" ref="stageRef" :class="{ \'pg-stage--spec-mode\': specModeEnabled }">' +
-      '<div class="pg-stage__resize-frame" :class="{ \'pg-stage__resize-frame--device\': !!stageFrameHeight }" :style="stageFrameStyle" ' +
+      '<div class="pg-stage__resize-frame" ref="resizeFrameRef" :class="{ \'pg-stage__resize-frame--device\': !!stageFrameHeight }" :style="stageFrameStyle" ' +
       '@click.capture="handleSpecClick" @mousemove="handleSpecMouseMove" @mouseleave="handleSpecMouseLeaveStage">' +
       '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
       '</div></div>' +
