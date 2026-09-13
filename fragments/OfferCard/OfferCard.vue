@@ -412,6 +412,7 @@
          fragments/RemoveFromListDialog/notes.md。 -->
     <InformationDialog
       v-model="dialogOpen"
+      :mobile="mobileActions"
       :photo-url="photoUrl"
       :vehicle-title="vehicleTitle"
       :vin="vin"

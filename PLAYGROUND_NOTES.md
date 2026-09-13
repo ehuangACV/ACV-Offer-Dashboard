@@ -304,3 +304,54 @@ Selling tab,MobileBottomNav 的 `bottom`(975)和手机框的 `bottom`
 手机框内部滚动查看,顶部/底部两条 sticky 栏行为没有变化;切到 Web
 view,`.offer-dashboard` 的 min-height 正确解析成真实浏览器视口高度
 (640px,不是844),确认桌面场景没有被这次改动误伤;无 console 报错。
+
+## 2026-09-13(第六~七次,已整体撤销/rewind)"让 mobile 弹层贴合模拟手机框"这个尝试最终导致整个 Playground 失灵,回退
+
+背景:给 InformationDialog 加了 mobile 版之后,你反馈从 OfferDashboard
+Mobile view 里点卡片按钮打开这个弹层,会铺满整个 Playground 浏览器
+窗口宽度,不会被约束在模拟的390px手机框(`.pg-stage__resize-frame--
+device`)里。为了解决这个纯视觉问题,先后做了两轮尝试:
+
+- **第六次**:用 provide/inject 给这个弹层一个可覆盖的 teleport 目标,
+  只在 Mobile view 时把 teleport 目标从 `body` 换成模拟手机框的选择器。
+- **第七次**:第六次上线后你反馈"mobile view 下点 Manage Offer 没
+  反应"——排查发现是把 `contain:layout`(让这个框当 fixed 元素的
+  containing block)和 `overflow-y:auto`(卡片列表内部滚动)加在了
+  同一个元素上,这两个职责互相干扰,导致 fixed 定位的弹层会被这个元素
+  自己的滚动量顶偏,滚动越多、弹层被顶得越远,越容易顶出可视区域看
+  不见。第七次把"滚动"和"当 containing block"拆成两个不同的元素来解决
+  这个偏移问题。
+
+**第七次上线后,你反馈"问题更严重了"**——不只是 Manage Offer 还是没
+反应,连 Web view 切换、Screen width 滑块都跟着失灵,整个 Playground
+的交互都卡死了。排查确认:第六/七次这两轮改动会触发 Vue 内部一个
+Teleport 相关的报错(`Cannot read properties of null (reading
+'nextSibling')`),这个报错一旦抛出会打断 Vue 整个应用的响应式渲染
+循环——不是某个按钮的问题,是整个页面的交互都被这一个报错卡死了。之前
+我自己测试时也见过同样的报错,但错误地判断成"是我测试时手动同时开了
+两个弹层这种测试脏状态导致的偶发情况",没当成这两轮改动真正引入的
+bug 去处理,这个判断是错的。
+
+**决定并执行:把第六次和第七次这两轮"贴合模拟手机框"的改动整体撤销
+(rewind)**,回到更早(第三次,只有圆角/阴影/居中/隐藏滚动条这几条
+纯视觉样式,不带 `contain:layout`)、已经验证过稳定的状态:
+- 删掉 Harness 里的 `provide('mobileDialogTeleportTarget', ...)`,以及
+  为它专门解构的 `provide`/`inject`。
+- `InformationDialog.vue`(fragment 源文件 + index.html 镜像)的
+  `<Teleport>` 改回原来无条件的 `to="body"`,删掉 `inject` 那段。
+- `.pg-stage__resize-frame--device` 删掉 `contain:layout` +
+  `overflow:hidden`,删掉新增的内层 `.pg-stage__resize-frame__scroll`
+  包装 div 和它对应的 `stageFrameScrollStyle` computed,`overflow-y:
+  auto` 挪回外框自己身上(回到第三次的原样,单层结构)。
+
+回退后的状态:Manage Offer/Dealership 下拉这些用 `position:fixed` 的
+弹层,在真实手机上完全正常(逻辑从来没有问题);在这个 Playground 里
+预览时会铺满整个桌面浏览器窗口宽度,不会贴合那个 390px 的模拟手机框——
+这只是预览工具本身的纯视觉瑕疵,不影响任何真实逻辑,也不会导致任何
+交互失灵。以后如果还想解决这个视觉瑕疵,需要先确认清楚不会影响主应用
+的响应式稳定性,不能再这样直接改、边改边测。
+
+浏览器实测(用干净的新标签页):Mobile view 下点 "Manage Offer" 正确
+打开对话框;切到 Web view,frame 宽度正确变成1422px;拖动 Screen width
+滑块,frame 宽度正确跟着变;Selling tab 打开 Dealership 下拉正常;无
+console 报错。

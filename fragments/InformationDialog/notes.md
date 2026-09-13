@@ -1,5 +1,80 @@
 # InformationDialog — Notes
 
+## 2026-09-13 新增 mobile 版(对照 Figma node 7780:68649),只做 Negotiation History tab
+
+你给的 Figma 链接(node 7780:68649,mobile "Offers" 详情页)展示了 web 版
+这个弹层在 mobile 上的样子:不再是居中的黑背板卡片,变成一个全屏页面——
+顶部 MobileTopBar(标题是车辆名,不是"Information")+ 两个 tab
+("Negotiation History"/"Info")。你明确说"逻辑什么的和web一样,只是展示
+方式不同",而且这次只做 Negotiation History,Info tab 的内容先不管。
+
+**接口**:新增 `mobile` prop(默认 false,不影响任何已有用法)。`mobile=
+true` 时整个渲染分支切换成全屏页面结构,不再渲染桌面版那一整套(黑背板/
+居中卡片/车辆图/金额区/状态chip/Previous-Next两侧按钮——这些在这次的
+Figma mock 里 Negotiation History tab 都不显示,大概率被挪到了 Info
+tab,但那部分内容你说先不管,所以这里没有去猜/去实现)。
+
+**逻辑复用,一个字没改**:气泡历史(`history`/`viewerRole`/
+`lastCounterpartyIndex`/`declineProseText`)、Accept/Decline
+(`canDecline`/`canAccept`/`confirmingAccept`)、输入面板
+(`inputPanel`/`showSplitDifference`/`splitAmount`/`enteredAmount`/
+`useSplit`)、提交(`footerButton`/`footerButtonEnabled`/
+`handleFooterCommit`)全部是桌面版已有的同一批 computed/ref/function,
+mobile 分支的模板只是换了一套 markup/class 去渲染同一份数据,没有新写
+任何一条业务规则——这正是你说的"逻辑和web一样,只是展示方式不同"。
+
+**视觉几何(照 Figma 这个 mobile 节点单独量的,和桌面版的 .info-dialog__*
+不是同一套数值)**:
+- 顶部栏:直接复用已有的 `MobileTopBar` 组件,`:title="vehicleTitle"`
+  (车辆名当标题,不是"Information"),`@back="handleClose"`(点返回箭头
+  = 关闭对话框)——量出来的几何(20px/30行高/500字重/#545454,底部1px
+  #DCDFE8描边)和 MobileTopBar 已有的样式完全一样,不用改这个组件本身。
+- Tabs:375px 平分两个各187.5px,39px高,选中态文字/底部2px下划线都是
+  `#0061A5`(这个颜色同时也是桌面版 own 气泡的颜色,Figma 里两处用的是
+  同一个 token,不是我瞎配的)。
+- 聊天气泡:mobile 版是"缺一角"的聊天泡形状(other缺左下角、own缺右下角,
+  尖角指向发言方),不是桌面版统一4px圆角的矩形——padding 8px 16px、
+  14px/21行高/0.25字距,other底色`#F1F1F1`字色`#212121`,own底色
+  `#0061A5`字色白(own的底色和桌面版一样,other的底色/字色和桌面版
+  `#F0F1F3`/`#0E0E0F`不是同一个值,是Figma这个节点自己的数值)。时间戳
+  10px/18/0.4/`#757575`。
+- Accept/Decline 按钮:**直接复用桌面版已有的 `.info-dialog__btn`/
+  `--grey-outline`/`--filled`**,没有新写一套 class——Figma 量出来是
+  34px 高,桌面版是36px,2px 的差异不值得为此单独维护一套几乎一样的
+  按钮样式,算合理的简化,不是漏看。
+- 输入面板("Counter offer"/"New offer"):外层一条1px `#D1D3D6` 描边+
+  "缺右下角"圆角(呼应聊天气泡同一个视觉语言),内部输入区背景
+  `#FAFAFA`+下划线`#E0E0E0`+"Between X and Y"/"Greater than X"这行
+  helper文字排在下划线下方——Figma 原始节点是一个完整的设计系统 Text
+  Field 组件(自带 surface+indicator+helper 三层),这次没有照抄那个
+  组件的完整实现,用等效的简化 markup(输入行+下划线+helper文字三个
+  独立元素)还原出同样的视觉效果,细节和取舍见 `InformationDialog.vue`
+  同名 CSS 注释。金额符号沿用桌面版的字面"$"字符,没有换成 Figma 那个
+  单独的 dollar-icon svg 资源(视觉上几乎无法分辨,不值得多引入一个
+  图片资源)。
+- Send Counter/Send Offer/Accept 主按钮:**待你确认的一处**——Figma
+  这次的 mock 只截图了"禁用态"(没填金额时):描边+文字都是浅橙色轮廓,
+  不是桌面版"同一个实心按钮调透明度"的做法,这次照截图实测颜色抄了
+  (`rgba(242,101,34,0.5)`,这个透明度是估的,不是精确核实的数值)。
+  **启用态**这次的 mock 没有给对应截图,沿用了桌面版已核实的渐变实心
+  样式(`.info-dialog__commit-btn` 同款渐变),是合理推断,不是照抄
+  Figma——如果启用态实际截图给的样子不一样,需要回头改。
+
+**2026-09-13(第二~三次,已撤销/rewind)"让弹层贴合模拟手机框" 这个
+尝试最终搞坏了整个 Playground,已经整体回退**——你反馈从 OfferDashboard
+Mobile view 点卡片按钮打开这个弹层,会铺满整个 Playground 浏览器窗口
+宽度,不会被约束在模拟的 390px 手机框里。先后试了两轮修法(provide/
+inject 换 teleport 目标;后来发现那样会导致"点 Manage Offer 没反应"
+又加了一层拆分),第二轮上线后你反馈"问题更严重了"——连 Web view 切换、
+Screen width 滑块都跟着失灵,整个 Playground 卡死。排查确认这两轮改动
+会触发 Vue 内部一个 Teleport 相关的报错,一旦抛出会打断整个应用的响应式
+渲染循环。**已经把这两轮改动全部撤销**,`<Teleport>` 改回原来无条件的
+`to="body"`,回到 mobile 弹层逻辑本身完全正常(能打开、能操作)、只是
+在这个 Playground 预览时会铺满整个桌面窗口宽度(纯视觉瑕疵,不影响真实
+逻辑)的状态。撤销细节记在 [PLAYGROUND_NOTES.md](../../PLAYGROUND_NOTES.md)
+同名条目,这里不重复。以后如果还想解决这个视觉瑕疵,需要先确认清楚不会
+影响主应用的响应式稳定性,不能再这样直接改、边改边测。
+
 ## 2026-09-03 去掉 V1,只保留 V2 行为(不再是可切换的版本)
 你确认"去掉 information dialog version V1，已确认使用V2版本"——V1/V2 从
 "两套可切换的版本"变成"只有一套行为",不再是一个 prop。

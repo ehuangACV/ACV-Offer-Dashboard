@@ -443,6 +443,23 @@ watch([negotiationSelectedLocal, makeOfferSelectedLocal, singleSelected], () => 
   padding: 0 12px;
 }
 
+/* 2026-09-13 按你的要求:Clear 底下盖住的 chip 不应该是硬边缘的
+   "一刀切"(直接从 chip 内容跳到纯白背景),要像截图那样有一段渐变
+   过渡——chip 先渐渐淡出到白色,再接上 Clear 文字本身的实心白底。用
+   ::before 在 Clear 这个 sticky 元素左边(right:100% 正好贴着它的左
+   边缘)加一段 24px 宽的 transparent→#FFFFFF 渐变,Clear 自身的实心
+   白色背景不变,俩者拼接起来就是"渐变+实色"两段,不是纯色一刀切。 */
+.filter-chip-group--mobile .filter-chip-group__clear::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), #FFFFFF);
+  pointer-events: none;
+}
+
 .filter-chip-group--mobile .filter-chip {
   padding: 6px 8px;
   gap: 4px;

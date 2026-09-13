@@ -114,7 +114,9 @@
       "Bash(curl -sL \"https://www.figma.com/api/mcp/asset/d6b26d8d-338a-4c5e-8a87-8f73cf1accae.svg\")",
       "Bash(curl -sL -o \"/c/Users/Einphix/AppData/Local/Temp/claude/mobile_dealer_filter.png\" \"https://www.figma.com/api/mcp/asset/b54b4146-cfe2-4489-a508-f74044ad0222.png\")",
       "Bash(awk -F: '$1 > 3540 && $1 < 3700')",
-      "Bash(curl -sL -o \"/c/Users/Einphix/AppData/Local/Temp/claude/mobile_filter_active.png\" \"https://www.figma.com/api/mcp/asset/910b790d-6275-4b2f-a54d-7c93b0aa2533.png\")"
+      "Bash(curl -sL -o \"/c/Users/Einphix/AppData/Local/Temp/claude/mobile_filter_active.png\" \"https://www.figma.com/api/mcp/asset/910b790d-6275-4b2f-a54d-7c93b0aa2533.png\")",
+      "Bash(mkdir -p /tmp/figma_screens)",
+      "Bash(curl -sL -o \"C:\\\\Users\\\\Einphix\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Einphix-ACV-Offer-Dashboard\\\\134ff27a-a4dd-4522-9cd1-5a6e77fd496d\\\\scratchpad\\\\mobile_info_dialog.png\" \"https://www.figma.com/api/mcp/asset/a5307f63-7911-4cf9-9ec0-e33904ded493.png\")"
     ]
   }
 }

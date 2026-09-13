@@ -1,5 +1,14 @@
 # OfferCard 核实记录
 
+## 2026-09-13 InformationDialog 新增 mobile prop,这里透传 mobileActions
+
+InformationDialog 新增了 mobile 版(对照 Figma node 7780:68649,细节见
+[InformationDialog/notes.md](../InformationDialog/notes.md)),这里
+`<InformationDialog>` 加了一个 `:mobile="mobileActions"` 绑定——这个
+卡片本身有没有开 mobileActions(mobile 布局)就直接决定点开的 dialog
+是不是也该是 mobile 版,不需要新增一个单独的 prop,复用已有的
+mobileActions 就是同一个判断。
+
 ## 2026-09-08(第三次)更正:hover VIN 时背景和图标颜色也要跟着变
 上一次(第一次)把 [OfferTableRow](../OfferTableRow/notes.md) 的
 "hover 才出现复制图标"搬过来时,明确没有加浅蓝底 pill、没有把图标改成

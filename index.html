@@ -91,27 +91,27 @@
     border-radius: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,.12), 0 16px 40px rgba(0,0,0,.14);
     scrollbar-width: none;
-    /* 2026-09-13(第四次)你反馈 mobile 版 Dealership 下拉("Select
-       Dealerships" bottom sheet)在这个 Playground 里 fit 不对,整个铺满
-       了桌面浏览器窗口,不是贴着手机屏幕底部的 bottom sheet——排查确认
-       这不是 DealershipFilterDropdown/OfferDashboard 组件本身的 bug:
-       它的 mobile 弹层用 position:fixed + left:0/right:0/bottom:56px
-       (细节见 OfferDashboard.vue updateDealerPopoverPosition 的 mobile
-       分支),这个写法在真实手机浏览器里是对的(fixed 天然相对整个屏幕,
-       屏幕本身就是"viewport"),但在这个 Playground 里,"手机屏幕"只是
-       桌面浏览器窗口里的一个 390×844 小方框,不是真的 viewport——
-       position:fixed 天生只认真实浏览器 viewport,会直接穿透这个小方框,
-       铺满整个桌面窗口,实测确认了这一点(fixed 元素 left:0/width 等于
-       整个 944px 视口宽度,不是 390px 的手机框宽度)。
-       修法:给这个手机屏幕外框加 contain:layout——按 CSS Containment
-       规范,声明了 layout containment 的元素会变成它内部所有
-       position:fixed/absolute 后代的 containing block,这样 fixed 定位
-       就会相对这个 390×844 的框计算,不再相对整个浏览器窗口,等效于
-       "把这个框模拟成一个真的手机屏幕"。这个类本来就只在 Mobile view
-       (stageFrameHeight 有值)时生效,不影响 Web view/桌面场景下同样用
-       position:fixed 定位的经销商浮层(那边的 fixed 本来就应该相对真实
-       浏览器视口算,不能加这个 containment)。 */
-    contain: layout;
+    /* 2026-09-13(第八次,rewind)第四/第七次为了让 Dealership 下拉、
+       InformationDialog 的 mobile 弹层贴合这个模拟手机框,分别加过
+       contain:layout(第四次)和"拆成两层"(第七次)。第七次上线后你
+       反馈"问题更严重了"——Mobile view 点 Manage Offer 还是没反应,
+       连 Web view 切换、Screen width 滑块都跟着失灵。排查到根因:那两次
+       改动会触发 Vue Teleport 内部一个报错("Cannot read properties of
+       null (reading 'nextSibling')"),这个报错一旦抛出会打断 Vue 整个
+       应用的响应式渲染循环——不是某一个按钮的问题,是整个页面的交互都被
+       卡死了。之前我自己测试时也见过这个报错,但错误地当成"手动同时开了
+       两个弹层"这种测试脏状态导致的偶发现象,没当真正的 bug 处理,这是
+       我的判断失误。
+       决定:整体撤销第四/第七次这两轮"贴合手机框"的实验性改动,回到更早
+       (第三次,只有"手机的感觉"这几条圆角/阴影/居中/隐藏滚动条的视觉
+       样式,不带 contain:layout)、已经验证过稳定的样子——这个状态下
+       Manage Offer/Dealership 下拉等弹层功能本身完全正常(能打开、能
+       操作),唯一的代价是纯视觉上的:Playground 预览这些 fixed 定位的
+       弹层时会铺满整个桌面浏览器窗口宽度,不会贴合这个 390px 的模拟
+       手机框——这只是预览工具本身的视觉小瑕疵,不影响任何真实逻辑,也
+       不会导致任何交互失灵,比反复尝试更"聪明"的定位技巧但屡次搞坏整个
+       工具划算得多。以后如果要再解决这个视觉瑕疵,需要先在不影响主应用
+       稳定性的前提下更谨慎地验证,不能再这样反复直接改。 */
   }
   .pg-stage__resize-frame--device::-webkit-scrollbar { display: none; }
   /* 2026-09-11 Spec Mode 相关样式,细节见 Harness setup() 里那段注释。
@@ -327,6 +327,9 @@
   .filter-chip-group--mobile { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; cursor: grab; }
   .filter-chip-group--mobile::-webkit-scrollbar { display: none; }
   .filter-chip-group--mobile .filter-chip-group__clear { position: sticky; right: 0; z-index: 2; display: inline-flex; align-items: center; height: 32px; background: #FFFFFF; padding: 0 12px; }
+  /* 2026-09-13 按你的要求:Clear 底下盖住的 chip 加一段渐变过渡(见
+     FilterChipGroup.vue 同名注释),不再是纯白硬边缘的一刀切。 */
+  .filter-chip-group--mobile .filter-chip-group__clear::before { content: ''; position: absolute; right: 100%; top: 0; bottom: 0; width: 24px; background: linear-gradient(to right, rgba(255, 255, 255, 0), #FFFFFF); pointer-events: none; }
   .filter-chip-group--mobile .filter-chip { padding: 6px 8px; gap: 4px; }
   .filter-chip-group--mobile .filter-chip--dealership,
   .filter-chip-group--mobile .filter-chip--dealer-active { padding-left: 8px; padding-right: 8px; }
@@ -792,6 +795,41 @@
   .info-dialog__close-link { padding: 0; border: none; background: none; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #0061A5; cursor: pointer; }
   .info-dialog__commit-btn { display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 20px; border: none; border-radius: 100px; background: linear-gradient(99.496deg, #F26522 8.67%, #FC4243 91.33%); font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #FFFFFF; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
   .info-dialog__commit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* -- InformationDialog mobile 版(2026-09-13 新增),细节见
+     fragments/InformationDialog/InformationDialog.vue 同名注释 -- */
+  .info-dialog-mobile { display: flex; flex-direction: column; height: 100%; background: #FFFFFF; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  .info-dialog-mobile--overlay { position: fixed; inset: 0; z-index: 1000; }
+  .info-dialog-mobile__tabs { display: flex; background: #FFFFFF; flex-shrink: 0; }
+  .info-dialog-mobile__tab { flex: 1; display: flex; align-items: center; justify-content: center; height: 39px; position: relative; border: none; background: none; padding: 0; font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.25px; color: #757575; cursor: pointer; }
+  .info-dialog-mobile__tab--active { color: #0061A5; }
+  .info-dialog-mobile__tab--active::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #0061A5; }
+  .info-dialog-mobile__body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; padding: 20px 16px; box-sizing: border-box; }
+  .info-dialog-mobile__bubbles { display: flex; flex-direction: column; gap: 8px; }
+  .info-dialog-mobile__bubble-row { display: flex; flex-direction: column; gap: 4px; }
+  .info-dialog-mobile__bubble-row--own { align-items: flex-end; }
+  .info-dialog-mobile__bubble-row--other { align-items: flex-start; }
+  .info-dialog-mobile__bubble { max-width: 74%; padding: 8px 16px; box-sizing: border-box; font-size: 14px; font-weight: 500; line-height: 21px; letter-spacing: 0.25px; }
+  .info-dialog-mobile__bubble--other { background: #F1F1F1; color: #212121; border-radius: 8px 8px 8px 0; }
+  .info-dialog-mobile__bubble--own { background: #0061A5; color: #FFFFFF; border-radius: 8px 8px 0 8px; }
+  .info-dialog-mobile__bubble--prose { font-weight: 400; }
+  .info-dialog-mobile__bubble-time { font-size: 10px; line-height: 18px; letter-spacing: 0.4px; color: #757575; }
+  .info-dialog-mobile__bubble-actions { display: flex; gap: 8px; }
+  .info-dialog-mobile__panel { display: flex; flex-direction: column; gap: 12px; align-items: flex-end; flex-shrink: 0; }
+  .info-dialog-mobile__panel-title, .info-dialog-mobile__split { align-self: flex-start; }
+  .info-dialog-mobile__panel-title { font-size: 14px; font-weight: 500; line-height: 21px; letter-spacing: 0.25px; color: #212121; }
+  .info-dialog-mobile__input-box { display: flex; flex-direction: column; width: 100%; border: 1px solid #D1D3D6; border-radius: 8px 8px 8px 0; padding: 12px; box-sizing: border-box; }
+  .info-dialog-mobile__input-field { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 12px; background: #FAFAFA; border-radius: 4px 4px 0 0; box-sizing: border-box; }
+  .info-dialog-mobile__input-dollar { font-size: 16px; color: #545454; }
+  .info-dialog-mobile__input-native { flex: 1; border: none; background: none; outline: none; font-size: 16px; font-family: 'Roboto', sans-serif; letter-spacing: 0.15px; color: #0E0E0F; }
+  .info-dialog-mobile__input-native::placeholder { color: #545454; }
+  .info-dialog-mobile__input-underline { height: 1px; background: #E0E0E0; }
+  .info-dialog-mobile__input-helper { padding: 8px 0 0; font-size: 12px; line-height: 18px; letter-spacing: 0.4px; color: #545454; }
+  .info-dialog-mobile__split { display: flex; align-items: center; gap: 10px; font-size: 13px; letter-spacing: 0.1px; color: #0E0E0F; cursor: pointer; }
+  .info-dialog-mobile__split input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: #0061A5; }
+  .info-dialog-mobile__split strong { font-weight: 500; color: #0061A5; }
+  .info-dialog-mobile__commit-btn { display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 20px; border: 1px solid transparent; border-radius: 100px; background: linear-gradient(99.496deg, #F26522 8.67%, #FC4243 91.33%); font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; color: #FFFFFF; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
+  .info-dialog-mobile__commit-btn:disabled { background: #FFFFFF; border-color: rgba(242, 101, 34, 0.5); color: rgba(242, 101, 34, 0.5); cursor: not-allowed; }
 
   /* -- OfferCardGallery (QA/文档用总览页,不是 Figma 来源) -- */
   .offer-card-gallery { display: flex; flex-direction: column; gap: 20px; font-family: 'Roboto', sans-serif; }
@@ -1622,9 +1660,12 @@
 
   var InformationDialog = defineComponent({
     name: 'InformationDialog',
-    components: { ImageBadge: ImageBadge, OfferTypeBadge: OfferTypeBadge },
+    components: { ImageBadge: ImageBadge, OfferTypeBadge: OfferTypeBadge, MobileTopBar: MobileTopBar },
     props: {
       modelValue: { type: Boolean, default: false },
+      // 2026-09-13 新增,对照 Figma node 7780:68649——mobile 上这个"弹层"
+      // 变成一个全屏页面,细节见 fragments/InformationDialog/notes.md。
+      mobile: { type: Boolean, default: false },
       photoUrl: { type: String, default: '' },
       vehicleTitle: { type: String, default: 'Year Make Model' },
       vin: { type: String, default: '192211' },
@@ -1652,7 +1693,56 @@
     emits: ['update:modelValue', 'close', 'decline', 'accept', 'send-counter', 'send-offer', 'prev', 'next'],
     template:
       '<teleport to="body" :disabled="inline">' +
-      '<div v-if="modelValue" :class="inline ? \'info-dialog-inline-shell\' : \'info-dialog-overlay\'" @click.self="handleOverlayClick">' +
+      '<template v-if="modelValue">' +
+      '<div v-if="mobile" :class="[\'info-dialog-mobile\', { \'info-dialog-mobile--overlay\': !inline }]">' +
+      '<MobileTopBar :title="vehicleTitle" @back="handleClose" />' +
+      '<div class="info-dialog-mobile__tabs">' +
+      '<button type="button" class="info-dialog-mobile__tab" :class="{ \'info-dialog-mobile__tab--active\': mobileActiveTab === \'history\' }" @click="mobileActiveTab = \'history\'">Negotiation History</button>' +
+      '<button type="button" class="info-dialog-mobile__tab" :class="{ \'info-dialog-mobile__tab--active\': mobileActiveTab === \'info\' }" @click="mobileActiveTab = \'info\'">Info</button>' +
+      '</div>' +
+      '<div class="info-dialog-mobile__body">' +
+      '<template v-if="mobileActiveTab === \'history\'">' +
+      '<div class="info-dialog-mobile__bubbles">' +
+      '<div v-for="(msg, i) in history" :key="i" class="info-dialog-mobile__bubble-row" :class="msg.speaker === viewerRole ? \'info-dialog-mobile__bubble-row--own\' : \'info-dialog-mobile__bubble-row--other\'">' +
+      '<template v-if="msg.kind === \'declined\'">' +
+      '<span class="info-dialog-mobile__bubble info-dialog-mobile__bubble--other info-dialog-mobile__bubble--prose">{{ declineProseText }}</span>' +
+      '<span class="info-dialog-mobile__bubble-time">{{ msg.timestamp }}</span>' +
+      '</template>' +
+      '<template v-else>' +
+      '<span class="info-dialog-mobile__bubble" :class="msg.speaker === viewerRole ? \'info-dialog-mobile__bubble--own\' : \'info-dialog-mobile__bubble--other\'">{{ bubbleLabels[msg.kind] }}: {{ msg.amount }}</span>' +
+      '<span class="info-dialog-mobile__bubble-time">{{ msg.timestamp }}</span>' +
+      '<div v-if="i === lastCounterpartyIndex && !isClosed" class="info-dialog-mobile__bubble-actions">' +
+      '<template v-if="!confirmingAccept">' +
+      '<button v-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit(\'decline\')">Decline</button>' +
+      '<button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">Accept {{ counterpartyAmount }}</button>' +
+      '</template>' +
+      '<button v-else-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit(\'decline\')">Decline</button>' +
+      '</div>' +
+      '</template>' +
+      '</div>' +
+      '</div>' +
+      '<div v-if="confirmingAccept" class="info-dialog-mobile__panel">' +
+      '<span class="info-dialog-mobile__panel-title">Accept {{ counterpartyAmount }} for the {{ vehicleTitle }}?</span>' +
+      '<label class="info-dialog-mobile__split"><input type="checkbox" v-model="acceptChecked"><span>{{ isMakeOffer ? \'Accept Offer\' : \'Accept Counter\' }}</span></label>' +
+      '<button type="button" class="info-dialog-mobile__commit-btn" :disabled="!footerButtonEnabled" @click="handleFooterCommit">{{ footerButton }}</button>' +
+      '</div>' +
+      '<div v-else-if="inputPanel === \'counter\' || inputPanel === \'offer\'" class="info-dialog-mobile__panel">' +
+      '<span class="info-dialog-mobile__panel-title">{{ inputPanel === \'counter\' ? \'Counter offer\' : \'New offer\' }}</span>' +
+      '<div class="info-dialog-mobile__input-box">' +
+      '<div class="info-dialog-mobile__input-field"><span class="info-dialog-mobile__input-dollar">$</span>' +
+      '<input v-model="enteredAmount" type="text" class="info-dialog-mobile__input-native" :placeholder="inputPanel === \'counter\' ? \'Enter counter\' : \'Enter offer\'"></div>' +
+      '<div class="info-dialog-mobile__input-underline"></div>' +
+      '<span class="info-dialog-mobile__input-helper">{{ inputPanel === \'counter\' ? (\'Between \' + buyerAmount + \' and \' + sellerAmount) : (\'Greater than \' + ownAmount) }}</span>' +
+      '</div>' +
+      '<template v-if="inputPanel === \'counter\' && showSplitDifference">' +
+      '<label class="info-dialog-mobile__split"><input type="checkbox" v-model="useSplit"><span>Split The Difference: <strong>{{ splitAmount }}</strong></span></label>' +
+      '</template>' +
+      '<button type="button" class="info-dialog-mobile__commit-btn" :disabled="!footerButtonEnabled" @click="handleFooterCommit">{{ footerButton }}</button>' +
+      '</div>' +
+      '</template>' +
+      '</div>' +
+      '</div>' +
+      '<div v-else :class="inline ? \'info-dialog-inline-shell\' : \'info-dialog-overlay\'" @click.self="handleOverlayClick">' +
       '<div class="info-dialog__stage">' +
       '<div class="info-dialog" role="dialog" aria-label="Information">' +
       '<div class="info-dialog__header"><span class="info-dialog__title">Information</span>' +
@@ -1781,6 +1871,7 @@
       '</button>' +
       '</div>' +
       '</div>' +
+      '</template>' +
       '</teleport>',
     setup: function (props, ctx) {
       var emit = ctx.emit;
@@ -1840,11 +1931,15 @@
       var acceptChecked = ref(false);
       var enteredAmount = ref('');
       var useSplit = ref(false);
+      // 2026-09-13 新增:mobile 版 tab 切换状态,每次重新打开/换一笔 deal
+      // 都要回到默认的 History tab,和下面其它临时状态一起重置。
+      var mobileActiveTab = ref('history');
       function resetTransientState() {
         confirmingAccept.value = false;
         acceptChecked.value = false;
         enteredAmount.value = '';
         useSplit.value = false;
+        mobileActiveTab.value = 'history';
       }
       watch(function () { return props.modelValue; }, function (open) { if (open) resetTransientState(); });
       // 2026-09 修复:Playground 切换 mock 时 modelValue 一直是 true,上面
@@ -1903,7 +1998,8 @@
         inputPanel: inputPanel, showSplitDifference: showSplitDifference, splitAmount: splitAmount,
         footerButtonEnabled: footerButtonEnabled, footerButton: footerButton,
         handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleFooterCommit: handleFooterCommit,
-        showTypeGuide: showTypeGuide, typeInfoBtnRef: typeInfoBtnRef, typeGuideRef: typeGuideRef
+        showTypeGuide: showTypeGuide, typeInfoBtnRef: typeInfoBtnRef, typeGuideRef: typeGuideRef,
+        mobileActiveTab: mobileActiveTab
       });
     }
   });
@@ -2180,7 +2276,7 @@
       '<div v-if="hoverButtons.length" class="offer-card__hover-buttons" :class="{ \'offer-card__hover-buttons--mobile\': mobileActions }">' +
       '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="handleHoverButtonClick(btn.label)">{{ btn.label }}</button>' +
       '</div>' +
-      '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
+      '<InformationDialog v-model="dialogOpen" :mobile="mobileActions" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
       '<RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit(\'remove-from-list\')" />' +
       '</div>',
     setup: function (props, ctx) {
@@ -3621,7 +3717,8 @@
         acvEstimate: { type: 'text', label: 'ACV Estimate', default: '$4,600' },
         reportUrl: { type: 'text', label: '"View Report" link', default: '#' },
         timeLeft: { type: 'text', label: 'Countdown text', default: '45m Left' },
-        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h', default: true }
+        timeLeftUrgent: { type: 'boolean', label: 'Countdown < 1h', default: true },
+        mobile: { type: 'boolean', label: 'Mobile variant', default: false }
       },
       mocks: {
         // 2026-09-01:这 5 个 mock 是 fragments/OfferCard/mock.js 里对应

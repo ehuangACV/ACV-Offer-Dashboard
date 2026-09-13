@@ -174,7 +174,98 @@
 -->
 <template>
   <Teleport to="body" :disabled="inline">
-    <div v-if="modelValue" :class="inline ? 'info-dialog-inline-shell' : 'info-dialog-overlay'" @click.self="handleOverlayClick">
+    <template v-if="modelValue">
+      <!-- 2026-09-13 新增 mobile 版,对照 Figma node 7780:68649(mobile
+           "Offers" 详情页):web 版的弹层在 mobile 上变成一个全屏的"页面"
+           (顶部 MobileTopBar + Negotiation History/Info 两个 tab),不是
+           居中的黑背板小卡片——细节和取舍见 notes.md。这次只做 Negotiation
+           History tab 的内容(气泡历史+Accept/Decline+输入面板),Info
+           tab 先留空,是你明确说的范围,不是漏做。 -->
+      <div v-if="mobile" :class="['info-dialog-mobile', { 'info-dialog-mobile--overlay': !inline }]">
+        <MobileTopBar :title="vehicleTitle" @back="handleClose" />
+        <div class="info-dialog-mobile__tabs">
+          <button
+            type="button"
+            class="info-dialog-mobile__tab"
+            :class="{ 'info-dialog-mobile__tab--active': mobileActiveTab === 'history' }"
+            @click="mobileActiveTab = 'history'"
+          >Negotiation History</button>
+          <button
+            type="button"
+            class="info-dialog-mobile__tab"
+            :class="{ 'info-dialog-mobile__tab--active': mobileActiveTab === 'info' }"
+            @click="mobileActiveTab = 'info'"
+          >Info</button>
+        </div>
+        <div class="info-dialog-mobile__body">
+          <template v-if="mobileActiveTab === 'history'">
+            <div class="info-dialog-mobile__bubbles">
+              <div
+                v-for="(msg, i) in history"
+                :key="i"
+                class="info-dialog-mobile__bubble-row"
+                :class="msg.speaker === viewerRole ? 'info-dialog-mobile__bubble-row--own' : 'info-dialog-mobile__bubble-row--other'"
+              >
+                <template v-if="msg.kind === 'declined'">
+                  <span class="info-dialog-mobile__bubble info-dialog-mobile__bubble--other info-dialog-mobile__bubble--prose">{{ declineProseText }}</span>
+                  <span class="info-dialog-mobile__bubble-time">{{ msg.timestamp }}</span>
+                </template>
+                <template v-else>
+                  <span class="info-dialog-mobile__bubble" :class="msg.speaker === viewerRole ? 'info-dialog-mobile__bubble--own' : 'info-dialog-mobile__bubble--other'">
+                    {{ bubbleLabels[msg.kind] }}: {{ msg.amount }}
+                  </span>
+                  <span class="info-dialog-mobile__bubble-time">{{ msg.timestamp }}</span>
+                  <div v-if="i === lastCounterpartyIndex && !isClosed" class="info-dialog-mobile__bubble-actions">
+                    <template v-if="!confirmingAccept">
+                      <button v-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit('decline')">Decline</button>
+                      <button v-if="canAccept" type="button" class="info-dialog__btn info-dialog__btn--filled" @click="confirmingAccept = true">Accept {{ counterpartyAmount }}</button>
+                    </template>
+                    <button v-else-if="canDecline" type="button" class="info-dialog__btn info-dialog__btn--grey-outline" @click="$emit('decline')">Decline</button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div v-if="confirmingAccept" class="info-dialog-mobile__panel">
+              <span class="info-dialog-mobile__panel-title">Accept {{ counterpartyAmount }} for the {{ vehicleTitle }}?</span>
+              <label class="info-dialog-mobile__split">
+                <input type="checkbox" v-model="acceptChecked">
+                <span>{{ isMakeOffer ? 'Accept Offer' : 'Accept Counter' }}</span>
+              </label>
+              <button type="button" class="info-dialog-mobile__commit-btn" :disabled="!footerButtonEnabled" @click="handleFooterCommit">{{ footerButton }}</button>
+            </div>
+
+            <div v-else-if="inputPanel === 'counter' || inputPanel === 'offer'" class="info-dialog-mobile__panel">
+              <span class="info-dialog-mobile__panel-title">{{ inputPanel === 'counter' ? 'Counter offer' : 'New offer' }}</span>
+              <div class="info-dialog-mobile__input-box">
+                <div class="info-dialog-mobile__input-field">
+                  <span class="info-dialog-mobile__input-dollar">$</span>
+                  <input
+                    v-model="enteredAmount"
+                    type="text"
+                    class="info-dialog-mobile__input-native"
+                    :placeholder="inputPanel === 'counter' ? 'Enter counter' : 'Enter offer'"
+                  >
+                </div>
+                <div class="info-dialog-mobile__input-underline" />
+                <span class="info-dialog-mobile__input-helper">
+                  {{ inputPanel === 'counter' ? `Between ${buyerAmount} and ${sellerAmount}` : `Greater than ${ownAmount}` }}
+                </span>
+              </div>
+              <template v-if="inputPanel === 'counter' && showSplitDifference">
+                <label class="info-dialog-mobile__split">
+                  <input type="checkbox" v-model="useSplit">
+                  <span>Split The Difference: <strong>{{ splitAmount }}</strong></span>
+                </label>
+              </template>
+              <button type="button" class="info-dialog-mobile__commit-btn" :disabled="!footerButtonEnabled" @click="handleFooterCommit">{{ footerButton }}</button>
+            </div>
+          </template>
+          <!-- 2026-09-13 按你的要求:Info tab 内容先不做,细节见 notes.md -->
+        </div>
+      </div>
+
+      <div v-else :class="inline ? 'info-dialog-inline-shell' : 'info-dialog-overlay'" @click.self="handleOverlayClick">
       <div class="info-dialog__stage">
       <div class="info-dialog" role="dialog" aria-label="Information">
         <div class="info-dialog__header">
@@ -431,7 +522,8 @@
         <span class="info-dialog__nav-label">Next</span>
       </button>
       </div>
-    </div>
+      </div>
+    </template>
   </Teleport>
 </template>
 
@@ -439,9 +531,15 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import ImageBadge from '../ImageBadge/ImageBadge.vue'
 import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
+import MobileTopBar from '../MobileTopBar/MobileTopBar.vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // 2026-09-13 新增,对照 Figma node 7780:68649——mobile 上这个"弹层"变成
+  // 一个全屏页面(MobileTopBar + Negotiation History/Info 两个tab),不是
+  // 居中的黑背板卡片,细节见 notes.md。默认 false,不传就是原来桌面版的
+  // 样子,不影响任何已有用法。
+  mobile: { type: Boolean, default: false },
   photoUrl: { type: String, default: '' },
   vehicleTitle: { type: String, default: 'Year Make Model' },
   vin: { type: String, default: '192211' },
@@ -565,11 +663,17 @@ const confirmingAccept = ref(false)
 const acceptChecked = ref(false)
 const enteredAmount = ref('')
 const useSplit = ref(false)
+// 2026-09-13 新增:mobile 版 tab 切换状态("history"/"info"),每次对话框
+// 重新打开(或换了一笔不同的 deal)都应该回到默认的 History tab,不该带着
+// 上一次点开的 Info tab 状态过来——和下面 confirmingAccept 等其它"每次打开
+// 都要重置"的临时状态是同一个道理,一起放进 resetTransientState()。
+const mobileActiveTab = ref('history')
 function resetTransientState() {
   confirmingAccept.value = false
   acceptChecked.value = false
   enteredAmount.value = ''
   useSplit.value = false
+  mobileActiveTab.value = 'history'
 }
 watch(() => props.modelValue, (open) => { if (open) resetTransientState() })
 // 2026-09 修复:Playground 里切换 mock 示例时 modelValue 一直是 true(对话
@@ -1291,6 +1395,268 @@ function handleFooterCommit() {
 }
 .info-dialog__commit-btn:disabled {
   opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===========================================================
+   Mobile 版(2026-09-13 新增),对照 Figma node 7780:68649。
+   这一整块几何/颜色是照这个 mobile 节点单独量的,跟上面桌面版的
+   .info-dialog__* 数值不是同一套(bubble 的圆角/字号/颜色都不一样,
+   气泡气泡本身是"缺一角"的聊天气泡形状,不是桌面版统一4px圆角的
+   矩形)——这是 Figma 设计本身对 mobile/web 两种展示方式的取舍,不是
+   我们自己发明的差异。Accept/Decline 两个按钮例外:直接复用桌面版的
+   .info-dialog__btn(细节见 notes.md,几何几乎一样,34px vs 36px的
+   差异忽略不计,不值得为2px另外维护一套class)。
+   =========================================================== */
+.info-dialog-mobile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #FFFFFF;
+  font-family: 'Roboto', sans-serif;
+  box-sizing: border-box;
+}
+/* !inline(真实场景,OfferCard 点开)时铺满整个屏幕,和桌面版
+   .info-dialog-overlay 的"弹层"概念对应,只是 mobile 上没有居中卡片+
+   黑背板,是铺满的白色全屏页面。inline(Playground 独立预览这个组件的
+   页面)时不用 position:fixed,原地占一块普通流内空间,避免像桌面版
+   inline 模式一样挡住 Controls 面板,道理跟 .info-dialog-inline-shell
+   一样。 */
+.info-dialog-mobile--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.info-dialog-mobile__tabs {
+  display: flex;
+  background: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.info-dialog-mobile__tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 39px;
+  position: relative;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  color: #757575;
+  cursor: pointer;
+}
+.info-dialog-mobile__tab--active {
+  color: #0061A5;
+}
+.info-dialog-mobile__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: #0061A5;
+}
+
+.info-dialog-mobile__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 16px;
+  box-sizing: border-box;
+}
+
+.info-dialog-mobile__bubbles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-dialog-mobile__bubble-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.info-dialog-mobile__bubble-row--own { align-items: flex-end; }
+.info-dialog-mobile__bubble-row--other { align-items: flex-start; }
+
+.info-dialog-mobile__bubble {
+  max-width: 74%;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+  letter-spacing: 0.25px;
+}
+/* "缺一角"聊天气泡:other 缺左下角,own 缺右下角(尖角指向发言方那一
+   侧),照 Figma 的 rounded-tl/tr/br(other)、rounded-tl/tr/bl(own)
+   量的,shorthand顺序是 TL TR BR BL */
+.info-dialog-mobile__bubble--other {
+  background: #F1F1F1;
+  color: #212121;
+  border-radius: 8px 8px 8px 0;
+}
+.info-dialog-mobile__bubble--own {
+  background: #0061A5;
+  color: #FFFFFF;
+  border-radius: 8px 8px 0 8px;
+}
+.info-dialog-mobile__bubble--prose {
+  font-weight: 400;
+}
+
+.info-dialog-mobile__bubble-time {
+  font-size: 10px;
+  line-height: 18px;
+  letter-spacing: 0.4px;
+  color: #757575;
+}
+
+.info-dialog-mobile__bubble-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.info-dialog-mobile__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.info-dialog-mobile__panel-title,
+.info-dialog-mobile__split {
+  align-self: flex-start;
+}
+
+.info-dialog-mobile__panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+  letter-spacing: 0.25px;
+  color: #212121;
+}
+
+/* 外层这条1px描边框 + 缺右下角圆角,是 Figma 里包住"Text fields"组件
+   的那层容器本身的几何(照抄 rounded-tl/tr/bl-8,缺右下角,呼应上面
+   聊天气泡"缺一角"的视觉语言);内部输入区/下划线/helper文字是这次
+   为了不额外引入一个完整的设计系统 Text Field 组件而做的简化实现,
+   效果(灰底输入区+下划线+下方helper文字)和 Figma 一致,细节见
+   notes.md。 */
+.info-dialog-mobile__input-box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid #D1D3D6;
+  border-radius: 8px 8px 8px 0;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.info-dialog-mobile__input-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  padding: 0 12px;
+  background: #FAFAFA;
+  border-radius: 4px 4px 0 0;
+  box-sizing: border-box;
+}
+
+.info-dialog-mobile__input-dollar {
+  font-size: 16px;
+  color: #545454;
+}
+
+.info-dialog-mobile__input-native {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: 0.15px;
+  color: #0E0E0F;
+}
+.info-dialog-mobile__input-native::placeholder {
+  color: #545454;
+}
+
+.info-dialog-mobile__input-underline {
+  height: 1px;
+  background: #E0E0E0;
+}
+
+.info-dialog-mobile__input-helper {
+  padding: 8px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0.4px;
+  color: #545454;
+}
+
+.info-dialog-mobile__split {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  letter-spacing: 0.1px;
+  color: #0E0E0F;
+  cursor: pointer;
+}
+.info-dialog-mobile__split input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #0061A5;
+}
+.info-dialog-mobile__split strong {
+  font-weight: 500;
+  color: #0061A5;
+}
+
+/* Send Counter/Send Offer/Accept 主按钮——启用态复用桌面版
+   .info-dialog__commit-btn 同款渐变实心样式(Figma 这次的 mock 没有
+   给启用态的截图,沿用桌面版已核实的样子,算合理推断,不是照抄);
+   禁用态照 Figma 截图实测,是描边+文字都变浅的橙色轮廓按钮,不是桌面版
+   "同一个实心按钮调透明度"的做法——这是这次 mock 唯一给了真实截图的
+   状态,按截图实测颜色抄,#F26522 半透明度是估的(比对截图目视效果),
+   待你确认。 */
+.info-dialog-mobile__commit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background: linear-gradient(99.496deg, #F26522 8.67%, #FC4243 91.33%);
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: #FFFFFF;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.info-dialog-mobile__commit-btn:disabled {
+  background: #FFFFFF;
+  border-color: rgba(242, 101, 34, 0.5);
+  color: rgba(242, 101, 34, 0.5);
   cursor: not-allowed;
 }
 </style>
