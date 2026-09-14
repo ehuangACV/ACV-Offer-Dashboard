@@ -516,8 +516,11 @@ const effectiveDeviceView = computed(() => {
 // 2026-09-13 按你的要求新增:mobile 版单列卡片列表,容器够宽(>=760px,
 // 比如横屏手机/小平板,同时还没跨过上面 768px 那个"整体换成 Web 版"
 // 的 breakpoint)时改成 2 列并排;不够 760 时还是 1 列、卡片左右撑满
-// 容器,不再受 OfferCard 自己那个给桌面网格用的 max-width:420px 限制
-// (见下面 CSS .offer-dashboard__mobile-list .offer-card 那条覆盖)。
+// 容器。【2026-09-14 更正】这里原来还提到"不再受 OfferCard 自己那个给
+// 桌面网格用的 max-width:420px 限制"——那条 420px 上限已经在
+// OfferCard.vue 里整个删掉了(细节见该文件 notes.md),所以下面配套的
+// CSS 覆盖规则(`.offer-dashboard__mobile-list .offer-card { max-width:
+// none }`)也跟着一起删掉了,不是遗漏。
 // 复用上面已经在测的 measuredWidth,不需要再单独起一个 ResizeObserver。
 const mobileListTwoColumn = computed(() => measuredWidth.value >= 760)
 
@@ -674,8 +677,18 @@ const header = {
 // buyingVehicleCount/sellingVehicleCount 截取,不看当前是在 Buying 还是
 // Selling tab——sidebar/两个tab的红点要同时反映两侧各自的数字,不能像
 // rowsLimited 那样只算"当前激活的那个tab")。
-const buyingNewCount = computed(() => buyingRowsLimited.value.filter(isRowNew).length)
-const sellingNewCount = computed(() => sellingRowsLimited.value.filter(isRowNew).length)
+// 【2026-09-14 第三次更正,真实bug】你反馈 Selling 只有3条会真的显示
+// New(filter chip "New (3)"),但 tab 旁边的红点却是6,sidebar Offers
+// 的数字也跟着错——这两个数字用的是 `isRowNew`(只看 statusNew 是否为真
+// +有没有被标记看过/移除),而 filter chip 的 newCount 用的是
+// `rowShowsNew`(见上面 isRowNew 旁边的注释,`isRowNew` 再叠加"dealState
+// 必须是 received 或 declined"——New 只会和这两种状态搭配显示,和 Sent
+// 状态搭配的行,New 从来不会真的渲染出来)。两处用的不是同一套判断,数字
+// 因此对不上——这正是 2026-09-03 那次专门修过、让 filter chip 数字改用
+// rowShowsNew 的同一类问题,只是这次漏掉了这两个红点,当时没有一起改。
+// 改法:这两个红点也换成 rowShowsNew,和 filter chip 保持同一套判断。
+const buyingNewCount = computed(() => buyingRowsLimited.value.filter(rowShowsNew).length)
+const sellingNewCount = computed(() => sellingRowsLimited.value.filter(rowShowsNew).length)
 
 // 2026-08 按你的要求新增,对照节点 7432:69595 核实:"My ACV" nav tab 旁
 // 边的红点,只要 Buying/Selling 任意一边有 New 状态的 deal 就显示,复用
@@ -1652,12 +1665,12 @@ const cardGridStyle = computed(() =>
 }
 
 /* 2026-09-13 按你的要求新增:容器 >=760px 时 2 列并排(见上面
-   mobileListTwoColumn),<760px 时保持上面的单列 flex,同时去掉
-   OfferCard 自己给桌面网格用的 max-width:420px——mobile 列表这里两种
-   状态都要"卡片撑满自己所在的列",不应该被那个桌面专用的上限卡住。 */
-.offer-dashboard__mobile-list .offer-card {
-  max-width: none;
-}
+   mobileListTwoColumn),<760px 时保持上面的单列 flex。【2026-09-14】
+   这里原来还有一条 `.offer-dashboard__mobile-list .offer-card {
+   max-width: none }`,用来抵消 OfferCard 自己给桌面网格用的
+   max-width:420px——那条420px上限本身已经从 OfferCard.vue 里整个删掉
+   了(细节见该文件 notes.md),这条用来抵消它的覆盖规则也就没有意义了,
+   一并删掉,不是遗漏。 */
 .offer-dashboard__mobile-list--two-col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

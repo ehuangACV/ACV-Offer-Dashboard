@@ -1,5 +1,27 @@
 # InformationDialog — Notes
 
+## 2026-09-14(第七次)业务规则更正:Make Offer 买家 Sent 后不能再抬价
+
+你反馈:买家在拍卖结束后 Make Offer 提交一次offer之后,应该只能等卖家
+Accept 或 Decline,不该再有机会发第二次——之前 `inputPanel` computed 里
+`dealState==='sent' && isBuyer` 会返回 `'offer'`,显示一个"New offer"
+输入面板让买家再抬一次价("Raise Your Offer"),这条规则本身是错的,
+不是这次新引入的退化。
+
+改法:`inputPanel` 里 `isMakeOffer` 一旦成立,直接返回 `null`,不再区分
+`dealState`/`viewerRole`——Make Offer 现在不管 received(卖家视角,
+一直就是只能 Accept/Decline)还是 sent(买家视角,以前能再抬价,现在也
+不能了),都没有输入面板。`inputPanel.value === 'offer'` 这个分支
+(footerButton/footerButtonEnabled/handleFooterCommit,模板里"New
+offer"/"Send Offer"那几处)因此现在永远不会被触发——保留没删,因为这些
+分支本身没错,如果这条业务规则以后又变回来,不用重新写。
+
+配套地,CTA 按钮的文案也要跟着改成 "View Details"(这条deal点开什么都
+做不了,不该再暗示"还能操作"的"Manage Offer")——这部分改动在
+[OfferCard.vue](../OfferCard/notes.md)/
+[OfferTableRow.vue](../OfferTableRow/notes.md) 的 `hoverButtons`
+computed 里,不在这个文件。
+
 ## 2026-09-14(第六次)Type 说明弹层去掉右上角关闭×图标
 
 你要求把这个弹层右上角的关闭×图标也去掉。不影响任何关闭方式——"Got it"

@@ -743,6 +743,13 @@ const messageLine2 = computed(() => {
 // InformationDialog。之前 buyer received 三个按钮(Accept/Counter/View
 // Details)、buyer sent 一到两个按钮、seller sent 的 View Details 这些
 // 区分全部去掉,不再按 role/dealState 拆分出不同的按钮组合。
+// 2026-09-14 按你的要求新增一条业务规则:Make Offer 里买家已经把offer
+// 发出去、还在等卖家 Accept/Decline(sent 状态)的时候,不能再发第二次
+// offer(细节见 InformationDialog 的 inputPanel computed 同名注释)——
+// 既然这时候点开 dialog 什么都做不了,只能看,CTA 也该跟着改成
+// "View Details"(和 declined/expired 那两个"看不能改"的状态一个待遇),
+// 不再是暗示"还能操作"的"Manage Offer"。这个状态deal本身还没结束(不是
+// declined/expired),所以只换文案,不带上"Remove From List"那个按钮。
 const hoverButtons = computed(() => {
   const s = props.dealState
   if (s === 'declined' || s === 'expired') {
@@ -750,6 +757,9 @@ const hoverButtons = computed(() => {
       { label: 'View Details', style: 'outlined' },
       { label: 'Remove From List', style: 'grey-outline' }
     ]
+  }
+  if (s === 'sent' && isMakeOffer.value && isBuyer.value) {
+    return [{ label: 'View Details', style: 'outlined' }]
   }
   return [{ label: 'Manage Offer', style: 'filled' }]
 })
@@ -781,23 +791,25 @@ function copyVin() {
    16px 更大(卡片本身没填满格子,不是 grid gap 变大了)。既然
    auto-fit 本身就会在卡片快要变太宽的时候自动多开一列、有自限效果,
    这个额外的 400px 硬上限已经不需要,删掉让卡片始终 100% 填满格子。
-   【2026-09-09 重新加回 max-width,原因不一样】这次不是"防御性上限"
-   ——你明确要求卡片最宽420px。auto-fit 的自限效果只保证"不会无限
-   变宽",不保证"正好封顶420px"(比如容器刚好只能塞2列时,平分下来
-   每列可能远超420px)。这次改法和上面2026-08删掉的那次不一样:
-   `.offer-dashboard__card-grid` 的列宽还是 `minmax(330px,1fr)`(见
-   OfferDashboard/notes.md 同名条目),让 auto-fit 继续自己决定开几列、
-   不留空白;卡片自己额外加 `max-width:420px` + `justify-self:center`,
-   列宽比420px宽时卡片在格子里居中、不再继续变宽,列宽本身仍然可以
-   比420px更宽(那部分变成卡片两侧的留白,不是整块留白)。 */
+   【2026-09-09 重新加回 max-width,原因不一样,后来又撤销了】这次不是
+   "防御性上限"——你当时明确要求卡片最宽420px,做法是卡片自己加
+   `max-width:420px`+`justify-self:center`,格子本身还是 auto-fit 撑满
+   整行,列宽比420px宽时卡片在格子里居中、不再继续变宽。
+   【2026-09-14 撤销,恢复回 2026-08 的样子】你反馈"card 之间的距离变大
+   了、不该这样"——这正是上面420px上限的直接后果:卡少、容器宽的时候,
+   格子被 auto-fit 撑得比420px宽,卡片却封顶不再变宽,多出来的空间变成
+   卡片两侧对称的留白,看起来就是"间距变大了"。核对下来你要的是"间距
+   始终是固定的16px(grid gap本身),卡片本身应该填满格子"——这和420px
+   上限这条规则是互斥的(格子多宽卡片就该多宽,不能又封顶又不出现留白),
+   两条规则不能同时满足,你确认这次以"间距固定16px"为准,撤销420px上限。
+   删掉 `max-width:420px`/`justify-self:center`,卡片重新 100% 填满格子,
+   不管格子被 auto-fit 撑到多宽。 */
 .offer-card {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  max-width: 420px;
-  justify-self: center;
   padding-bottom: 12px;
   background: #FFFFFF;
   border: 1px solid #E8E9EB;

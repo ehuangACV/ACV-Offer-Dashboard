@@ -1,5 +1,13 @@
 # OfferTableRow — Notes
 
+## 2026-09-14(第二次)业务规则更正:Make Offer 买家 Sent 后 CTA 改成 View Details
+
+跟 [OfferCard](../OfferCard/notes.md) 同一批修的同一条业务规则(买家
+Make Offer 发出去等卖家回应期间不能再抬价),这个文件是完全同一套改法
+——`hoverButtons` 里 `dealState==='sent' && offerType==='make-offer' &&
+viewerRole==='buyer'` 这个组合的 CTA 从"Manage Offer"改成"View
+Details"。细节和根因见 OfferCard/notes.md 同名条目,不重复。
+
 ## 2026-09-14 打开的 dialog 里 New 徽标不该跟着背后状态立刻消失
 
 跟 [OfferCard](../OfferCard/notes.md) 同一批修的同一个问题,这个文件是

@@ -617,9 +617,9 @@
   .offer-dashboard__toolbar--mobile { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 0; }
   .offer-dashboard__mobile-list { display: flex; flex-direction: column; gap: 16px; }
   /* 2026-09-13 按你的要求新增:容器 >=760px 时 2 列并排,<760px 时保持
-     单列、且去掉 OfferCard 自己给桌面网格用的 max-width:420px,细节见
-     OfferDashboard.vue 同名注释。 */
-  .offer-dashboard__mobile-list .offer-card { max-width: none; }
+     单列。【2026-09-14】这里原来还有一条抵消 OfferCard 桌面
+     max-width:420px 的覆盖规则——那条420px上限本身已经从 OfferCard 删掉
+     了,这条覆盖规则也跟着一起删掉,细节见 OfferDashboard.vue 同名注释。 */
   .offer-dashboard__mobile-list--two-col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 
   /* -- ResultsToolbar -- */
@@ -650,7 +650,11 @@
   .image-badge-gallery__label { font-size: 12px; line-height: 16px; color: #757575; }
 
   /* -- OfferCard -- */
-  .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; justify-self: center; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
+  /* 2026-09-14 撤销 2026-09-09 的 max-width:420px/justify-self:center——
+     卡少、容器宽时卡片封顶不再变宽,格子却还被 auto-fit 撑满,多出来的
+     空间变成卡片两侧对称留白,看起来就是"卡片间距变大了"。细节见真实文件
+     fragments/OfferCard/OfferCard.vue 同名注释。 */
+  .offer-card { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding-bottom: 12px; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; overflow: hidden; font-family: 'Roboto', sans-serif; box-sizing: border-box; }
   /* 2026-08 按你的要求新增,对照节点 7498:68345 的 V1 hover 按钮。只在
      V1 模式下 hover 才模糊——V2 的按钮也在 .offer-card__info 里面,如果
      不限定 .offer-card--v1,V2 模式 hover 卡片会把它自己一直可见的按钮
@@ -2028,11 +2032,15 @@
       // 不用等对方回复,只要遵守价格规则(自己这次比自己上一次更靠近对方),
       // 就可以在 dealState==='sent' 时也再发一次 counter,细节见真实文件
       // fragments/InformationDialog/InformationDialog.vue 同名 computed 注释。
+      // 2026-09-14 按你的要求更正业务规则:Make Offer 买家发出offer之后
+      // (sent)不能再发第二次,只能等卖家 Accept/Decline——以前这里 sent+
+      // buyer 会返回 'offer' 显示一个"再抬价"的输入面板,现在 isMakeOffer
+      // 成立就直接 null,不再区分 dealState/viewerRole。细节见
+      // fragments/InformationDialog/InformationDialog.vue 同名注释。
       var inputPanel = computed(function () {
         if (isClosed.value || confirmingAccept.value) return null;
         if (props.dealState !== 'received' && props.dealState !== 'sent') return null;
         if (!isMakeOffer.value) return 'counter';
-        if (props.dealState === 'sent' && isBuyer.value) return 'offer';
         return null;
       });
       var showSplitDifference = computed(function () {
@@ -2252,10 +2260,16 @@
       // 2026-09-03 按你的要求简化:除 declined 外统一只显示一个
       // "Manage Offer" 按钮,细节见
       // fragments/OfferTableRow/OfferTableRow.vue 的同名 computed 注释。
+      // 2026-09-14 按你的要求新增业务规则:Make Offer 里买家已经发出offer、
+      // 还在等卖家 Accept/Decline(sent)时不能再发第二次,CTA 改成
+      // "View Details",细节见 OfferCard.vue 同名注释。
       var hoverButtons = computed(function () {
         var s = dealState.value;
         if (s === 'declined') {
           return { buttons: [{ label: 'View Details', style: 'outlined' }, { label: 'Remove From List', style: 'grey-outline' }], infoLink: null };
+        }
+        if (s === 'sent' && props.offerType === 'make-offer' && props.viewerRole === 'buyer') {
+          return { buttons: [{ label: 'View Details', style: 'outlined' }], infoLink: null };
         }
         return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null };
       });
@@ -2453,6 +2467,10 @@
       // 2026-09-03 按你的要求简化:除 declined/expired 外统一只显示一个
       // "Manage Offer" 按钮,细节见 fragments/OfferCard/OfferCard.vue 的
       // 同名 computed 注释。
+      // 2026-09-14 按你的要求新增业务规则:Make Offer 里买家已经发出offer、
+      // 还在等卖家 Accept/Decline(sent)时不能再发第二次,CTA 改成
+      // "View Details"(单个按钮,不带 Remove From List——这条deal还没
+      // 结束,不是 declined/expired 那种已关闭状态)。
       var hoverButtons = computed(function () {
         var s = props.dealState;
         if (s === 'declined' || s === 'expired') {
@@ -2460,6 +2478,9 @@
             { label: 'View Details', style: 'outlined' },
             { label: 'Remove From List', style: 'grey-outline' }
           ];
+        }
+        if (s === 'sent' && isMakeOffer.value && isBuyer.value) {
+          return [{ label: 'View Details', style: 'outlined' }];
         }
         return [{ label: 'Manage Offer', style: 'filled' }];
       });
@@ -3196,8 +3217,13 @@
       // 红点数字/sidebar Offers badge 是"还有几个New(未处理)的",现在
       // 跟着 buyingVehicleCount/sellingVehicleCount 这两个演示用的截取
       // 数量联动(和 filter chip 一致)
-      var buyingNewCount = computed(function () { return buyingRowsLimited.value.filter(isRowNew).length; });
-      var sellingNewCount = computed(function () { return sellingRowsLimited.value.filter(isRowNew).length; });
+      // 2026-09-14 改成 rowShowsNew(不是 isRowNew)——New 只会和
+      // received/declined 状态搭配显示,和 Sent 搭配的行 New 从来不会真的
+      // 渲染出来,这两个红点之前只看 isRowNew 会把这些行也算进去,导致和
+      // filter chip 的 "New (N)" 数字不一致,细节见真实文件
+      // fragments/OfferDashboard/OfferDashboard.vue 同名注释。
+      var buyingNewCount = computed(function () { return buyingRowsLimited.value.filter(rowShowsNew).length; });
+      var sellingNewCount = computed(function () { return sellingRowsLimited.value.filter(rowShowsNew).length; });
       var hasAnyNewDeal = computed(function () { return buyingNewCount.value + sellingNewCount.value > 0; });
       var sidebar = computed(function () { return { activeItem: 'offers', offersCount: buyingNewCount.value + sellingNewCount.value }; });
       var tabs = computed(function () { return { activeTab: activeMainTab.value, buyingCount: buyingNewCount.value, sellingCount: sellingNewCount.value }; });

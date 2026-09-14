@@ -1,5 +1,15 @@
 # OfferDashboard — Notes
 
+## 2026-09-14(第二次)清掉一条跟着 OfferCard 420px上限一起撤销的覆盖规则
+
+[OfferCard.vue](../OfferCard/notes.md) 那边撤销了"卡片最宽420px"这条
+规则(桌面 tile 视图卡片间距变大的根因)。这个文件里有一条专门给 mobile
+卡片列表用的覆盖规则`.offer-dashboard__mobile-list .offer-card {
+max-width: none }`,作用是"抵消桌面那条420px上限,让mobile列表的卡片
+能撑满"——既然420px上限本身已经不存在了,这条抵消它的规则也没有意义,
+一并删掉,不是遗漏。mobile 列表本身的布局(单列/两列 flex/grid)没有
+变,只是不用再单独抵消一个已经不存在的上限。
+
 ## 2026-09-14 Previous/Next 切到相邻 New 的 deal,也要配合"打开时的快照"改法
 
 跟 [OfferCard](../OfferCard/notes.md)/[OfferTableRow](../OfferTableRow/notes.md)

@@ -1,5 +1,35 @@
 # OfferCard 核实记录
 
+## 2026-09-14(第四次)撤销 2026-09-09 的卡片420px宽度上限
+
+你反馈 tile 视图卡片之间的间距变大了,不该这样,卡片应该填满、间距应该
+固定不变。排查确认这正是 2026-09-09 那次"卡片最宽420px"改动的直接
+后果:`.offer-card` 有 `max-width:420px`+`justify-self:center`,格子
+本身还是 auto-fit 撑满整行——卡少、容器宽的时候,格子被撑得比420px宽,
+卡片却封顶不再变宽,多出来的空间变成卡片两侧对称的留白,肉眼看就是
+"卡片间距变大了"(不是 grid gap 真的变了,gap 属性本身一直是固定16px,
+是卡片自己没填满格子)。
+
+这条"间距固定16px、卡片应该填满格子"的要求和"卡片最宽420px"这条规则是
+互斥的——格子多宽卡片就该多宽才能不留白,不能同时又封顶又不出现留白。
+跟你确认过,这次以"间距固定"为准,`max-width:420px`/`justify-self:
+center` 两条整个删掉,卡片恢复回 2026-08 就核实过的"100% 填满格子"这个
+状态,不管 auto-fit 把格子撑到多宽。
+
+## 2026-09-14(第三次)业务规则更正:Make Offer 买家 Sent 后 CTA 改成 View Details
+
+你反馈:买家在拍卖结束后 Make Offer 提交一次offer之后,只能等卖家
+Accept/Decline,不该再有机会发第二次——`InformationDialog` 里对应的
+输入面板已经去掉(见 [InformationDialog/notes.md](../InformationDialog/notes.md)
+同名条目),这个文件要跟着改的是:既然这时候点开 dialog 什么都做不了,
+只能看,`hoverButtons` 里这个组合(`dealState==='sent' &&
+offerType==='make-offer' && viewerRole==='buyer'`)的 CTA 也从
+"Manage Offer"改成"View Details"——和 declined/expired 那两个"看不能
+改"的状态一个待遇,不再暗示"还能操作"。这条deal本身还没结束(不是
+declined/expired),所以只换文案,不带上"Remove From List"那个按钮
+(单个按钮,不是两个)。`OfferTableRow.vue` 是完全同一套改法,细节见该
+文件同名注释,不重复。
+
 ## 2026-09-14(第二次)打开的 dialog 里 New 徽标不该跟着背后状态立刻消失
 
 你反馈:点开一张带 New 徽标的卡片进 InformationDialog 之后,里面的 New

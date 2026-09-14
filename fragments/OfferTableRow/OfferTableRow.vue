@@ -497,6 +497,10 @@ const timeLeftUrgent = computed(() =>
 // Details 这些区分,也不再拆出单独的 "More Info" 分割线链接——点这个唯一
 // 按钮的行为没变,还是走下面同一个 handleHoverButtonClick,打开同一个
 // InformationDialog。
+// 2026-09-14 按你的要求新增一条业务规则,同 OfferCard.vue 的道理(细节
+// 见该文件同名注释):Make Offer 里买家已经发出offer、还在等卖家
+// Accept/Decline(sent)的时候不能再发第二次,这时候点开 dialog 什么都
+// 做不了,CTA 也该改成 "View Details"。
 const hoverButtons = computed(() => {
   const s = dealState.value
   if (s === 'declined') {
@@ -507,6 +511,9 @@ const hoverButtons = computed(() => {
       ],
       infoLink: null
     }
+  }
+  if (s === 'sent' && props.offerType === 'make-offer' && props.viewerRole === 'buyer') {
+    return { buttons: [{ label: 'View Details', style: 'outlined' }], infoLink: null }
   }
   return { buttons: [{ label: 'Manage Offer', style: 'filled' }], infoLink: null }
 })

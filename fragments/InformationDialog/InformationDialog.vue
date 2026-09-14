@@ -735,14 +735,24 @@ watch(() => [props.dealState, props.counterpartyAmount, props.ownAmount, props.v
 // 数字到卖家最新数字之间"(buyerAmount/sellerAmount 只看当前买卖双方各自
 // 最新的数字,不关心 dealState 是 received 还是 sent),连续出价时这个
 // 范围天然就等价于"比自己上一次出价更靠近对方",不用额外判断。
-// Make Offer 不受这条影响,规则不变:Received(卖家视角)只能
-// Accept/Decline,没有输入面板;Sent 只有 buyer 才能再抬价("Raise Your
-// Offer"),seller 在 Make Offer 上没有 Sent 状态。
+// Make Offer 不受这条影响。
+// 【2026-09-14 更正业务规则,推翻了下面这条曾经的说法】以前这里的规则是
+// "Sent 时 buyer 还能再抬价('Raise Your Offer')"——你现在明确要求改掉:
+// 买家在拍卖结束后提交了一次 offer,就只能等卖家 Accept 或 Decline,不能
+// 再发第二次。所以 Make Offer 现在不管 received(卖家视角,一直就是只能
+// Accept/Decline,没有输入面板,这条没变)还是 sent(买家视角,以前能再
+// 抬价,现在也没有输入面板了),都不会出现输入面板——`isMakeOffer` 一旦
+// 成立,直接返回 null,不再区分 dealState/viewerRole。对应的 CTA 按钮
+// 文案也要跟着改成 "View Details"(改法在 OfferCard.vue/
+// OfferTableRow.vue 的 hoverButtons computed,不在这个文件里)。
+// 下面 `inputPanel.value === 'offer'` 的分支(footerButton/
+// footerButtonEnabled/handleFooterCommit,以及模板里 "New offer"/"Send
+// Offer" 那几处)因此现在永远不会被触发到——保留没删,是因为这些分支本身
+// 没错(如果以后这条业务规则又变回来,不用重新写),不是遗漏。
 const inputPanel = computed(() => {
   if (isClosed.value || confirmingAccept.value) return null
   if (props.dealState !== 'received' && props.dealState !== 'sent') return null
   if (!isMakeOffer.value) return 'counter'
-  if (props.dealState === 'sent' && isBuyer.value) return 'offer'
   return null
 })
 
