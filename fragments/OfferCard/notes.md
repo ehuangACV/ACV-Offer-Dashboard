@@ -1,5 +1,55 @@
 # OfferCard 核实记录
 
+## 2026-09-14 VIN 复制图标在 mobile 上完全点不到,不是少个提示这么轻微
+
+你反馈"mobile 上 VIN 号码还是 hover on 才出现 tooltip,和 web 一样,但
+手机端没有 hover,明显不合理"。排查发现比预想的更严重:`.offer-card__
+copy-btn`(VIN 旁边的复制图标)默认是 `display:none`,只在
+`.offer-card:hover` 或点过之后的 `.is-copied` 状态时才变成
+`display:inline-flex`——mobile 上永远不会触发 `:hover`,这个复制按钮
+在 mobile 上是完全不存在于可视/可点区域的,不是"少了 hover 时的提示
+文字"这么轻微,是整个复制功能在 mobile 上访问不到。
+
+讨论后确认的方案:hover 触发的"预告性提示"(点之前的"Copy full VIN"
+文字提示 + 卡片 hover 时 VIN 变浅蓝底的高亮)在 mobile 上没有意义(没有
+"划过看一眼"这个中间状态),改成拆开处理——点之前不再需要提示,靠
+"常驻显示的浅蓝底 + 复制图标"本身的视觉样式暗示"这里可以点";点之后的
+"Copied" 反馈本来就是靠 `.is-copied` 这个状态类触发,不依赖 hover,
+不用改。新增 `.offer-card--mobile-actions .offer-card__vin`/
+`.offer-card--mobile-actions .offer-card__copy-btn` 两条规则,分别把
+背景/文字颜色和 `display` 常驻打开,数值直接复用桌面版 hover 态已经
+核实过的那一套(`#F5FBFF`/`#00558C`),没有另外设计新样式。
+
+浏览器实测:mobile 布局下 VIN 旁边的复制图标常驻可见(不需要 hover),
+点击后能正常复制到剪贴板、"Copied" 提示正常弹出;桌面版(非
+mobileActions)卡片复制图标依然是默认隐藏、hover 才出现,没有被这次
+改动影响;无 console 报错。
+
+**2026-09-14(第二次)上面这次改完你反馈"还是有hover"**——你截图给的
+是"Copy full VIN"这条 tooltip 卡住悬在那盖住旁边 chip,不会自己消失。
+排查确认:上一次只解决了"图标点不到"这一层,没动 tooltip 弹出的触发
+方式,`.offer-card__vin-tooltip` 的显示规则依然包含
+`.offer-card__copy-btn:hover`/`:focus-visible` 这两条——手机浏览器为了
+兼容"只考虑鼠标、没考虑触屏"的老网站,点击一个元素时会顺带模拟触发一次
+`:hover`,但触屏没有"移开鼠标"这个动作去结束它,这个模拟出来的 hover
+状态会卡住不消失,这就是你截图里看到的现象。
+
+改成 mobile(`.offer-card--mobile-actions`)只保留 `.is-copied` 这一条
+触发路径(点击后 1.5 秒自动消失的既有逻辑),不再让
+`:hover`/`:focus-visible` 这两个鼠标专属的触发方式在 mobile 上生效——
+用 `.offer-card:not(.offer-card--mobile-actions) .offer-card__copy-btn
+:hover ...`/`:focus-visible ...` 这样的写法把这两条规则的适用范围限定
+在"不是 mobile 卡片"的场景,`.is-copied` 这一条本身不区分桌面/mobile,
+两边都保留。桌面版行为完全没变。
+
+浏览器实测:直接读编译后的 CSSOM 规则文本,确认选择器精确是
+`.offer-card:not(.offer-card--mobile-actions) .offer-card__copy-btn
+:hover .offer-card__vin-tooltip`——mobile 卡片的复制按钮不管有没有
+hover 都不可能满足这个祖先条件,这条规则永远不会在 mobile 上生效,是
+选择器结构本身保证的,不依赖"真的触发一次 hover 再看效果"这种容易受
+远程自动化工具指针精度影响的验证方式;点击复制图标依然能正常复制、
+弹出"Copied";无 console 报错。
+
 ## 2026-09-13 InformationDialog 新增 mobile prop,这里透传 mobileActions
 
 InformationDialog 新增了 mobile 版(对照 Figma node 7780:68649,细节见

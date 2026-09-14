@@ -356,41 +356,37 @@
                    Decline,是打电话找 dealmaker)。跟
                    fragments/OfferTableHeader/notes.md 同一批改的,那边
                    的表格版本文案完全一样,这里复用已有的 isBuyer
-                   computed 分支,不用新增 prop。 -->
-              <div v-if="showTypeGuide" ref="typeGuideRef" class="info-dialog__type-guide">
-                <div class="info-dialog__type-guide-arrow" />
-                <div class="info-dialog__type-guide-head">
-                  <span class="info-dialog__type-guide-title">Type</span>
-                  <button type="button" class="info-dialog__type-guide-close" aria-label="Close" @click.stop="showTypeGuide = false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#545454" stroke-width="1.7" stroke-linecap="round"/></svg>
-                  </button>
-                </div>
-                <div class="info-dialog__type-guide-section">
-                  <OfferTypeBadge type="in-negotiation" label="In Negotiation" />
-                  <template v-if="isBuyer">
-                    <p class="info-dialog__type-guide-desc">(6h limit) You were the high bidder in the auction.</p>
-                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or counter.</p>
-                  </template>
-                  <template v-else>
-                    <p class="info-dialog__type-guide-desc">(6h limit) High bidder from the auction.</p>
-                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
-                  </template>
-                </div>
-                <div class="info-dialog__type-guide-section">
-                  <OfferTypeBadge type="make-offer" label="Make Offer" />
-                  <template v-if="isBuyer">
-                    <p class="info-dialog__type-guide-desc">(24h limit) You placed an offer on a vehicle that went unsold in it's previous run.</p>
-                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Chat with dealmakers at 1800-553-4070 Opt. 2</p>
-                  </template>
-                  <template v-else>
-                    <p class="info-dialog__type-guide-desc">(24h limit) Post-auction offer from any buyer.</p>
-                    <p class="info-dialog__type-guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
-                  </template>
-                </div>
-                <div class="info-dialog__type-guide-footer">
-                  <button type="button" class="info-dialog__type-guide-btn" @click.stop="showTypeGuide = false">Got it</button>
-                </div>
-              </div>
+                   computed 分支,不用新增 prop。
+
+                   2026-09-14:传了 offer-type(本组件已有的 offerType
+                   prop,这条offer真实的类型),TypeGuide 就只显示对应
+                   那一段,不用像 OfferTableHeader(不对应具体某一行,
+                   两种都要列)那样显示两段。细节见 TypeGuide.vue 文件头
+                   METADATA。
+
+                   2026-09-14(第二次):你要求把这段说明里的"Type"标题和
+                   OfferTypeBadge 徽标都去掉——这条offer的类型上面状态行
+                   已经用徽标显示过一次了,这里再重复画同一个信息是多余
+                   的。加了 hide-title/hide-badge 两个开关,只在这个文件
+                   传 true;OfferTableHeader 那边继续两段都显示,标题/
+                   徽标都还需要,不传这两个 prop。
+
+                   2026-09-14(第三次):右上角关闭×图标也去掉了(hide-
+                   close)——"Got it"按钮、点外部、按 Escape 都还能关闭,
+                   不影响任何关闭方式,只是不再多一个冗余图标。三个都传
+                   true 之后 `.type-guide__head` 这一整行在 TypeGuide 内部
+                   会直接不渲染(见该组件的 hasHead computed),不会留一条
+                   空白。 -->
+              <TypeGuide
+                v-if="showTypeGuide"
+                :viewer-role="viewerRole"
+                :offer-type="offerType"
+                hide-title
+                hide-badge
+                hide-close
+                :trigger-el="typeInfoBtnRef"
+                @close="showTypeGuide = false"
+              />
             </ImageBadge>
             <span v-if="showNewChip" class="info-dialog__chip info-dialog__chip--new">New</span>
             <span v-if="hasStateChip" class="info-dialog__chip" :class="`info-dialog__chip--${dealState}`">{{ stateChipLabel }}</span>
@@ -530,7 +526,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, inject } from 'vue'
 import ImageBadge from '../ImageBadge/ImageBadge.vue'
-import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
+import TypeGuide from '../TypeGuide/TypeGuide.vue'
 import MobileTopBar from '../MobileTopBar/MobileTopBar.vue'
 
 // 2026-09-13(第三次)真机上这个 mobile 全屏页面靠 CSS 的
@@ -634,24 +630,14 @@ const isMakeOffer = computed(() => props.offerType === 'make-offer')
 // ImageBadge 已核实的白底+灰描边样式,保持两种类型一致的视觉语言。
 const offerTypeLabel = computed(() => (isMakeOffer.value ? 'Make Offer' : 'In Negotiation'))
 
-// 2026-09-02 v2 徽标内 info 图标的说明弹层——点外部/按 Escape 关闭,照抄
-// OfferTableHeader.vue "Type" 信息图标弹层的同一套惯例(这个项目里弹层
-// 组件一贯的关闭方式,DealershipFilterDropdown/Pagination 下拉也是同一套)
+// 2026-09-02 v2 徽标内 info 图标的说明弹层。
+// 2026-09-14 "点外部/按 Escape 关闭"这套逻辑已经整个搬进
+// TypeGuide.vue 自己内部(细节见该组件文件头 METADATA),这里只保留
+// "要不要显示"这个开关状态和"触发按钮"的 ref(传给 TypeGuide 的
+// triggerEl,让它知道点这个按钮不算"点了外部")。
 const showTypeGuide = ref(false)
 const typeInfoBtnRef = ref(null)
-const typeGuideRef = ref(null)
-function handleTypeGuideOutsideClick(event) {
-  if (!showTypeGuide.value) return
-  if (typeInfoBtnRef.value?.contains(event.target)) return
-  if (typeGuideRef.value?.contains(event.target)) return
-  showTypeGuide.value = false
-}
-function handleTypeGuideEscapeKey(event) {
-  if (event.key === 'Escape') showTypeGuide.value = false
-}
 onMounted(() => {
-  document.addEventListener('mousedown', handleTypeGuideOutsideClick)
-  document.addEventListener('keydown', handleTypeGuideEscapeKey)
   // 只在 Playground 模拟框场景下有意义(mobileDeviceFrameEl 有值时),
   // 窗口 resize 时重新量一次模拟框的位置/尺寸,保持弹层贴合。生产环境
   // 这个监听器本身没有害处(resize 时调用 updateMobileOverlayRect,
@@ -660,8 +646,6 @@ onMounted(() => {
   window.addEventListener('resize', updateMobileOverlayRect)
 })
 onBeforeUnmount(() => {
-  document.removeEventListener('mousedown', handleTypeGuideOutsideClick)
-  document.removeEventListener('keydown', handleTypeGuideEscapeKey)
   window.removeEventListener('resize', updateMobileOverlayRect)
 })
 const isClosed = computed(() => props.dealState === 'declined' || props.dealState === 'expired')
@@ -1100,109 +1084,12 @@ function handleFooterCommit() {
   color: inherit;
 }
 
-/* 2026-09-02 v2 新增:说明弹层,内容/结构/样式跟 OfferTableHeader.vue 里
-   "Type" 信息图标弹出的那张卡片完全一样(你要求"用dashboard table上的
-   同样的tooltip")——因为 Vue SFC 的 <style scoped> 不会跨组件文件生效,
-   这里必须重复一份同样数值的 CSS,不是重新设计。定位从"贴表头单元格
-   左下方"改成"贴徽标左下方"(top: calc(100% + 10px); left: 0),因为
-   这次的锚点(徽标本身,24px高)比表头那个信息图标(20×20)矮一些、
-   出现的位置也不一样,箭头/间距的绝对数值跟着调整,不是照抄表头那份
-   数值,但卡片本身(背景/圆角/阴影/字号/两个section的结构/Got it按钮)
-   和表头一模一样。 */
-.info-dialog__type-guide {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  z-index: 20;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  background: #F5FBFF;
-  border-radius: 16px;
-  box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14);
-  font-family: 'Roboto', sans-serif;
-  cursor: default;
-}
-
-.info-dialog__type-guide-arrow {
-  position: absolute;
-  top: -8px;
-  left: 12px;
-  width: 16px;
-  height: 8px;
-  background: #F5FBFF;
-  clip-path: polygon(50% 0, 0 100%, 100% 100%);
-}
-
-.info-dialog__type-guide-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.info-dialog__type-guide-title {
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 30px;
-  letter-spacing: 0.15px;
-  color: #0E0E0F;
-}
-
-.info-dialog__type-guide-close {
-  display: inline-flex;
-  width: 24px;
-  height: 24px;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.info-dialog__type-guide-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.info-dialog__type-guide-desc {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.1px;
-  color: #0E0E0F;
-}
-
-.info-dialog__type-guide-desc strong {
-  font-weight: 500;
-}
-
-.info-dialog__type-guide-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.info-dialog__type-guide-btn {
-  border: none;
-  background: #0077D8;
-  color: #FFFFFF;
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-family: 'Roboto', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 14px;
-  letter-spacing: 0.1px;
-  white-space: nowrap;
-  cursor: pointer;
-}
+/* 2026-09-14 这张卡片(标题/关闭按钮/两段OfferTypeBadge+文案/"Got it"
+   按钮/点外部关闭这套逻辑)已经抽成独立的 fragments/TypeGuide/
+   TypeGuide.vue 组件,不再是这里自己的 markup/CSS——之前这份和
+   OfferTableHeader.vue 里几乎一字不差的重复代码合并到了一处,细节和
+   之前踩过的"继承来的 white-space:nowrap 导致文字跑出框外"这个bug
+   见 TypeGuide.vue 文件头 METADATA 和这个文件的 notes.md。 */
 
 .info-dialog__time-remaining {
   display: flex;

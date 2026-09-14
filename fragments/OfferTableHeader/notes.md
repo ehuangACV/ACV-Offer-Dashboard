@@ -1,5 +1,25 @@
 # OfferTableHeader — Notes
 
+## 2026-09-14 "Type" 说明弹层抽成独立的 TypeGuide 组件
+
+"Type"列 info 图标点开的这张说明卡片,之前在这个文件和
+InformationDialog.vue 里各自复制了一份几乎一字不差的
+markup/CSS/交互逻辑——按你的要求给它单独建了 Shared Components 下的
+组件页面,顺手把这两份重复代码合并成一个真正复用的组件
+[fragments/TypeGuide/TypeGuide.vue](../TypeGuide/TypeGuide.vue)。
+
+这个文件这边改动:原来那一整块 markup 换成 `<TypeGuide :viewer-role=
+"viewerRole" :trigger-el="infoBtnRef" arrow-left="20px" style="top:
+calc(100% + 14px); left: -12px;" @close="showTypeGuide = false" />`
+——`arrow-left`/`style` 这两个覆盖值就是这个文件之前已经核实过的定位
+数值(和 InformationDialog 那边不一样,没有被强行统一成同一个数,细节
+见 TypeGuide.vue 文件头 METADATA)。`typeGuideRef`/`handleOutsideClick`/
+`handleEscapeKey` 这几个"点外部/按 Escape 关闭"专用的 ref/函数/监听器
+全部删掉了(逻辑搬进了 TypeGuide 自己内部),`CLOSE_ICON` 这个常量也跟着
+删了(只有这张卡片的关闭按钮用过,现在没有任何地方还需要它)。
+`showTypeGuide`/`infoBtnRef` 这两个"开关状态+触发按钮"还留着,开关的
+决定权还是在这个文件里。
+
 ## 2026-09-02 按你的要求:"ACV Estimate" 列改名 "Reserve Price"
 这一列的表头文案从 "ACV Estimate" 改成 "Reserve Price"——`OfferTableRow`
 那一列显示的数字也跟着从 `acvEstimate` 改成 `reservePrice`,细节和原因

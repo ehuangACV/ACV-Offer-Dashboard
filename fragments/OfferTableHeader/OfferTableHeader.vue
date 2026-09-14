@@ -127,42 +127,14 @@
              之前占位拉丁文版本(7487:65180)——这次描述文字是真实内容,
              不是占位符,不需要再标"待替换"。footer 也从"1/3 步骤指示器
              + 两个按钮"变成只有一个"Got it"按钮,没有步骤指示器了 */
-        <div v-if="showTypeGuide" ref="typeGuideRef" class="offer-table-header__guide">
-          <div class="offer-table-header__guide-arrow" />
-          <div class="offer-table-header__guide-head">
-            <span class="offer-table-header__guide-title">Type</span>
-            <button type="button" class="offer-table-header__guide-close" aria-label="Close" @click="showTypeGuide = false">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6l12 12" stroke="#545454" stroke-width="1.7" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-          <div class="offer-table-header__guide-section">
-            <OfferTypeBadge type="in-negotiation" label="In Negotiation" />
-            <template v-if="viewerRole === 'buyer'">
-              <p class="offer-table-header__guide-desc">(6h limit) You were the high bidder in the auction.</p>
-              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or counter.</p>
-            </template>
-            <template v-else>
-              <p class="offer-table-header__guide-desc">(6h limit) High bidder from the auction.</p>
-              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept, Decline, or Counter.</p>
-            </template>
-          </div>
-          <div class="offer-table-header__guide-section">
-            <OfferTypeBadge type="make-offer" label="Make Offer" />
-            <template v-if="viewerRole === 'buyer'">
-              <p class="offer-table-header__guide-desc">(24h limit) You placed an offer on a vehicle that went unsold in it's previous run.</p>
-              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Chat with dealmakers at 1800-553-4070 Opt. 2</p>
-            </template>
-            <template v-else>
-              <p class="offer-table-header__guide-desc">(24h limit) Post-auction offer from any buyer.</p>
-              <p class="offer-table-header__guide-desc"><strong>Actions:</strong> Accept or Decline only.</p>
-            </template>
-          </div>
-          <div class="offer-table-header__guide-footer">
-            <button type="button" class="offer-table-header__guide-btn offer-table-header__guide-btn--primary" @click="showTypeGuide = false">Got it</button>
-          </div>
-        </div>
+        <TypeGuide
+          v-if="showTypeGuide"
+          :viewer-role="viewerRole"
+          :trigger-el="infoBtnRef"
+          arrow-left="20px"
+          style="top: calc(100% + 14px); left: -12px;"
+          @close="showTypeGuide = false"
+        />
       </div>
     </div>
 
@@ -210,8 +182,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import OfferTypeBadge from '../OfferTypeBadge/OfferTypeBadge.vue'
+import { ref } from 'vue'
+import TypeGuide from '../TypeGuide/TypeGuide.vue'
 
 defineProps({
   // dealer-name | time-remaining | null
@@ -247,27 +219,11 @@ defineEmits(['sort'])
 // 2026-08 按你的要求新增:点击 "Type" 信息图标弹出说明卡片(对照节点
 // 7487:65180 核实),照抄项目里已有弹层组件(DealershipFilterDropdown/
 // Pagination 下拉)的"点外部关闭 + Escape 关闭"惯例
+// 2026-09-14"点外部/按 Escape 关闭"这套逻辑已经搬进 TypeGuide.vue 自己
+// 内部,这里只保留"要不要显示"的开关状态和触发按钮的 ref(传给
+// TypeGuide 的 triggerEl)。
 const showTypeGuide = ref(false)
 const infoBtnRef = ref(null)
-const typeGuideRef = ref(null)
-
-function handleOutsideClick(event) {
-  if (!showTypeGuide.value) return
-  if (infoBtnRef.value?.contains(event.target)) return
-  if (typeGuideRef.value?.contains(event.target)) return
-  showTypeGuide.value = false
-}
-function handleEscapeKey(event) {
-  if (event.key === 'Escape') showTypeGuide.value = false
-}
-onMounted(() => {
-  document.addEventListener('mousedown', handleOutsideClick)
-  document.addEventListener('keydown', handleEscapeKey)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('mousedown', handleOutsideClick)
-  document.removeEventListener('keydown', handleEscapeKey)
-})
 </script>
 
 <style scoped>
@@ -444,113 +400,9 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* 2026-08 新增,对照节点 7487:65180(Guide Component/Announcement/
-   MiddleImage,hidden=false)核实的卡片本身样式(背景/圆角/阴影/内间距/
-   标题字号/描述字号/step文字色号)。两个 "Guide - Button" 按钮的具体
-   padding/圆角在 Figma 里是通过 Code Connect 换成了项目自己的
-   Buttons--Common 组件,没有直接给出像素级样式,这里按项目里其它按钮
-   常见的圆角药丸形状做了合理还原,不是从这个节点直接量出来的,待确认。 */
-.offer-table-header__guide {
-  position: absolute;
-  top: calc(100% + 14px);
-  left: -12px;
-  z-index: 20;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  background: #F5FBFF;
-  border-radius: 16px;
-  box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14);
-  font-family: 'Roboto', sans-serif;
-  cursor: default;
-}
-
-.offer-table-header__guide-arrow {
-  position: absolute;
-  top: -8px;
-  left: 20px;
-  width: 16px;
-  height: 8px;
-  background: #F5FBFF;
-  clip-path: polygon(50% 0, 0 100%, 100% 100%);
-}
-
-.offer-table-header__guide-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.offer-table-header__guide-title {
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 30px;
-  letter-spacing: 0.15px;
-  color: #0E0E0F;
-}
-
-.offer-table-header__guide-close {
-  display: inline-flex;
-  width: 24px;
-  height: 24px;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.offer-table-header__guide-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-/* 2026-08 按你的要求用真实文案节点(7487:65207)替换,颜色从占位版本
-   的 #55575C 改成这个节点标注的 #0E0E0F(每段描述文字自己单独覆盖了
-   父级的 secondary 色 token,不是继承来的) */
-.offer-table-header__guide-desc {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
-  letter-spacing: 0.1px;
-  color: #0E0E0F;
-}
-
-.offer-table-header__guide-desc strong {
-  font-weight: 500;
-}
-
-/* 真实文案版本(7487:65207)footer 只有一个 "Got it" 按钮,没有步骤
-   指示器了,靠右对齐(占位版本的 .offer-table-header__guide-step 已删掉) */
-.offer-table-header__guide-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.offer-table-header__guide-btn {
-  border: none;
-  background: none;
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-family: 'Roboto', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 14px;
-  letter-spacing: 0.1px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.offer-table-header__guide-btn--primary {
-  background: #0077D8;
-  color: #FFFFFF;
-}
+/* 2026-09-14 这张说明卡片(标题/关闭按钮/两段OfferTypeBadge+文案/
+   "Got it"按钮/点外部关闭这套逻辑)已经抽成独立的
+   fragments/TypeGuide/TypeGuide.vue 组件——之前这份和
+   InformationDialog.vue 里几乎一字不差的重复代码合并到了一处,细节见
+   TypeGuide.vue 文件头 METADATA 和这个文件的 notes.md。 */
 </style>

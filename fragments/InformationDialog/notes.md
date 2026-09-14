@@ -1,5 +1,110 @@
 # InformationDialog — Notes
 
+## 2026-09-14(第六次)Type 说明弹层去掉右上角关闭×图标
+
+你要求把这个弹层右上角的关闭×图标也去掉。不影响任何关闭方式——"Got it"
+按钮、点弹层外部、按 Escape 键这三种关闭方式全都还在,只是不再多一个
+冗余的×图标(和上一条去掉标题/徽标是同一类"这条信息/交互已经有别的地方
+提供了,这里不用再重复"的调整)。
+
+新增 `TypeGuide` 的 `hideClose` prop(默认 false,不影响 `OfferTableHeader`
+那边),这个文件传 `hide-close`。标题和关闭按钮都隐藏时(现在这个文件的
+情况),`TypeGuide` 内部会连整个 `.type-guide__head` 容器都不渲染,不会
+在卡片顶部留一条空白——细节见 [TypeGuide.vue](../TypeGuide/TypeGuide.vue)
+文件头 METADATA 的 `hasHead` 说明。
+
+## 2026-09-14(第五次)Type 说明弹层去掉"Type"标题和 OfferTypeBadge 徽标
+
+你要求把这个弹层里的"Type"标题和 OfferTypeBadge 徽标都去掉。配合上一条
+(第四次)已经做的 `offerType` 过滤,这个弹层现在只显示这条offer对应的
+那一段——那一段里再画一次徽标("In Negotiation"/"Make Offer")、上面再
+写一次"Type"标题,都是重复信息(状态行的徽标已经显示过这条offer是什么
+类型了)。
+
+新增 `TypeGuide` 的 `hideTitle`/`hideBadge` 两个 prop(都默认 false,不
+影响 `OfferTableHeader` 那边),这个文件传 `hide-title hide-badge`。标题
+没有直接删掉整个元素,只是文字内容留空——细节(为什么不能直接删,会导致
+关闭按钮布局跳动)见 [TypeGuide.vue](../TypeGuide/TypeGuide.vue) 文件头
+METADATA。
+
+## 2026-09-14(第四次)Type 说明弹层只显示这条offer对应的那一种类型
+
+你反馈截图里这条offer是 In Negotiation,弹开的"Type"说明卡片却把
+In Negotiation 和 Make Offer 两段都列出来,多余——只想看这条offer
+对应的那一段。
+
+这个组件本身已经有 `offerType` prop(这条offer真实的类型),直接透传给
+`TypeGuide`(新增 `:offer-type="offerType"`),不用新增任何 prop。
+`TypeGuide` 那边加了一个同名的可选 prop,传了就只显示对应那一段,不传
+还是两段都显示——因为 `OfferTableHeader` 那边点的是整个表格"Type"列的
+图例,不对应具体某一行,不能只显示一种。接口设计和取舍细节见
+[TypeGuide.vue](../TypeGuide/TypeGuide.vue) 文件头 METADATA。
+
+## 2026-09-14(第三次)"Type" 说明弹层抽成独立的 TypeGuide 组件
+
+你要求给这张"Type"说明卡片单独建一个 Shared Components 下的组件页面。
+这张卡片之前在这个文件和 OfferTableHeader.vue 里各自复制了一份几乎
+一字不差的 markup/CSS/交互逻辑,顺手把这次机会用来把重复代码合并成
+一个真正复用的组件 [fragments/TypeGuide/TypeGuide.vue](../TypeGuide/TypeGuide.vue),
+不是又复制一份出来给 Playground 用。
+
+这个文件这边改动:`<ImageBadge>` 里原来那一整块 markup 换成
+`<TypeGuide :viewer-role="viewerRole" :trigger-el="typeInfoBtnRef"
+@close="showTypeGuide = false" />`;`typeGuideRef`/
+`handleTypeGuideOutsideClick`/`handleTypeGuideEscapeKey` 这几个"点外部/
+按 Escape 关闭"专用的 ref/函数/监听器全部删掉了(逻辑搬进了 TypeGuide
+自己内部),`showTypeGuide`/`typeInfoBtnRef` 这两个"开关状态+触发按钮"
+还留着,因为开关的决定权还是在这个文件里,不是 TypeGuide 自己的事。
+之前踩过的"继承来的 white-space:nowrap 导致文字跑出框外"这个bug(上面
+第二次那条记录)细节和修法都在 TypeGuide.vue 文件头 METADATA 里,这里
+不重复。
+
+## 2026-09-14 "Type" 说明弹层文字跑出白色圆角框外(真实bug,和 mobile 无关)
+
+你截图反馈这个弹层里的文字跑到白色圆角边框外面了。排查确认这**不是
+mobile 才有的问题**——用 JS 直接量过,即使在正常宽度的桌面版里,
+`.info-dialog__type-guide` 这个盒子本身精确是声明的320px宽,但里面
+`<p>` 文字的实际渲染宽度早就到了500~1000px+,一直超出盒子,只是桌面
+宽屏下周围空白够多,超出的部分没有明显撞到别的内容,没人注意到,你
+这次是在 mobile 窄屏幕context 下用截图才把这个早就存在的问题暴露出来。
+
+根因:`.info-dialog__type-guide-section` 设了 `align-items:flex-start`
+(覆盖了外层 flex 默认的 stretch),这会让它内部的 flex 子项(这几个
+`<p>`)在交叉轴上按"内容一行需要多宽就多宽"(fit-content/max-content)
+算尺寸,不会被压到父容器实际可用的宽度——文字因此不会在盒子边界处
+换行,超出去的部分就一直"跑到外面"。
+
+修法:给 `.info-dialog__type-guide-desc` 加 `width:100%`,强制这几个
+`<p>` 撑满 section 的可用宽度(`OfferTypeBadge` 徽标本身没加这条,不
+受影响,还是维持自己的徽标大小,不会被拉成通栏)。浏览器实测:改之前
+量出来文字盒子 right 到 1006px,盒子本身 right 只有 783.5px(超出
+222.5px);改之后四段文字全部精确是 280px 宽(=320px盒子-左右各16px
+padding),right 都是 763.5px,严格落在盒子 783.5px 边界以内;无
+console 报错。
+
+**2026-09-14(第二次)上面这次改完你反馈从 OfferDashboard 打开还是有
+问题,文字还是跑出框了**——排查发现上面那次只解决了一半:盒子宽度
+(width:100%)确实生效了,但文字死活不换行、按"一行放完"的宽度硬渲染,
+超出盒子右边界。用 JS 顺着这个元素的父节点链一层层量
+`getComputedStyle(...).whiteSpace`,精确定位到问题:`<div
+class="info-dialog__type-guide">` 是嵌套在 `<ImageBadge>` 里面渲染的
+(模板结构本来就是这样,徽标内嵌一个 info 图标,点开的说明弹层也在
+徽标标签内部),而 `ImageBadge` 自己的根元素 `.image-badge` 给自己设了
+`white-space:nowrap`(给一个短文字的徽标 pill 这么设很合理,不是
+bug)。但 `white-space` 是会继承的 CSS 属性,这个弹层作为徽标的后代,
+不知不觉也继承到了 `nowrap`,里面的文字段落因此永远按"一行放完"渲染,
+`width:100%` 只是让盒子和段落的宽度都对了,但 nowrap 还在,自然不会
+换行,超出的部分直接溢出盒子(`overflow:visible`,不会被裁切,是
+"跑出来"而不是"被切掉")。
+
+修法:给 `.info-dialog__type-guide` 自己加一条 `white-space: normal`,
+把从 `.image-badge` 继承下来的 `nowrap` 在这一层截断重置,内部所有
+文字(包括 `<p>` 段落)都恢复正常换行。浏览器实测:改之前那段"(24h
+limit)..."文字量出来 `white-space` 计算值精确是 `nowrap`,渲染高度只有
+20px(=一行);改之后 `white-space` 变成 `normal`,渲染高度变成 40px
+(=两行,正常换行了),文字右边界 799px 严格落在盒子右边界以内;从
+OfferDashboard 表格/卡片视图两条路径打开都验证过;无 console 报错。
+
 ## 2026-09-13 新增 mobile 版(对照 Figma node 7780:68649),只做 Negotiation History tab
 
 你给的 Figma 链接(node 7780:68649,mobile "Offers" 详情页)展示了 web 版

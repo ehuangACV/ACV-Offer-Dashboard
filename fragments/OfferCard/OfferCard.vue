@@ -1077,6 +1077,22 @@ function copyVin() {
 .offer-card__copy-btn.is-copied {
   display: inline-flex;
 }
+/* 2026-09-14 按你的要求:mobile 上没有真正的 hover,上面这一整套"默认
+   隐藏,hover 才出现复制图标 + 浅蓝底高亮"的交互在 mobile 上完全没用
+   ——不只是少了 hover 时的提示这么简单,`.offer-card__copy-btn` 默认
+   display:none 只在 hover/is-copied 时才显示,mobile 上 hover 永远
+   不会触发,这个复制按钮实际上是完全点不到的死功能,不是"少个提示"这么
+   轻微。改成 mobile 上复制图标 + 浅蓝底高亮常驻显示(不需要 hover 也
+   一直是"这里可以点"的样子),点击后已有的"Copied"反馈(靠 is-copied
+   这个状态类触发,本来就不依赖 hover)不用改,细节和取舍见 notes.md。 */
+.offer-card--mobile-actions .offer-card__vin {
+  padding: 0 4px 0 0;
+  background: #F5FBFF;
+  color: #00558C;
+}
+.offer-card--mobile-actions .offer-card__copy-btn {
+  display: inline-flex;
+}
 /* tooltip 样式和 OfferTableRow.vue 的 .offer-table-row__vin-tooltip、
    AppHeader.vue 的 .app-header__tooltip 是同一套已核实数值,不重新设计。 */
 .offer-card__vin-tooltip {
@@ -1096,8 +1112,17 @@ function copyVin() {
   transition: opacity .1s ease;
   z-index: 10;
 }
-.offer-card__copy-btn:hover .offer-card__vin-tooltip,
-.offer-card__copy-btn:focus-visible .offer-card__vin-tooltip,
+/* 2026-09-14(第二次)真正问题不是"图标点不到"(上面已经修过),是这个
+   tooltip 弹出的触发方式本身还靠 :hover/:focus-visible——手机浏览器
+   为了兼容"只考虑鼠标、没考虑触屏"的老网站,点击时会顺带模拟触发一次
+   :hover,但触屏没有"移开鼠标"这个动作去结束它,这个模拟出来的 hover
+   状态会卡住不消失,表现就是点一下图标,"Copy full VIN" 这条 tooltip
+   弹出来之后一直悬在那盖住旁边的内容,不会自己收掉。改成 mobile 上
+   (`.offer-card--mobile-actions`)只保留 `.is-copied` 这一条触发路径
+   (本来就有点击后1.5秒自动消失的逻辑),不再让 :hover/:focus-visible
+   这两个鼠标专属的触发方式在 mobile 上生效——桌面版行为完全不变。 */
+.offer-card:not(.offer-card--mobile-actions) .offer-card__copy-btn:hover .offer-card__vin-tooltip,
+.offer-card:not(.offer-card--mobile-actions) .offer-card__copy-btn:focus-visible .offer-card__vin-tooltip,
 .offer-card__copy-btn.is-copied .offer-card__vin-tooltip {
   opacity: 1;
 }
