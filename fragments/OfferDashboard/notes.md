@@ -1,5 +1,19 @@
 # OfferDashboard — Notes
 
+## 2026-09-14 Previous/Next 切到相邻 New 的 deal,也要配合"打开时的快照"改法
+
+跟 [OfferCard](../OfferCard/notes.md)/[OfferTableRow](../OfferTableRow/notes.md)
+同一批修的:你要求已经打开的 dialog 里的 New 徽标不该跟着背后状态立刻
+消失,要关掉重开才消失。这条规则对 Previous/Next 切到的相邻 deal 也一样
+适用——`handleTablePrev`/`handleTableNext`/`handleCardPrev`/
+`handleCardNext` 这四个函数原来是"先 markSeen 再 openDialog()",现在
+改成"先读一次相邻那行/张当时的 statusNew/isNew 存成局部变量`wasNew`,
+再 markSeen,再把 `wasNew` 当参数传给 openDialog(wasNew)"——顺序不能反,
+markSeen 会让 `isRowNew()` 立刻算出 false,如果先 markSeen 再读,读到的
+已经是"已标记已读"之后的值,等于没拍到快照。`rowsWithDealerMode`/
+`rowsAsCards` 这两个 computed 本来就已经算好了 `statusNew`/`isNew`
+字段(`isRowNew(row)`),这里直接读现成的,没有重新算一遍逻辑。
+
 ## 2026-09-13(第三次)Dealership mobile 浮层贴合 Playground 模拟手机框
 
 `updateDealerPopoverPosition()` 的 mobile 分支新增

@@ -1242,25 +1242,35 @@ watch(tableGridColumns, () => nextTick(updateHScrollMeasurements))
 // 2026-09-02 按你的要求,切到相邻这一行/张也算"看过"了,补一句
 // markSeen(用 rowsWithDealerMode/rowsAsCards 里对应下标的 auctionId,
 // 跟点击 hover 按钮打开 dialog 是同一个"看过"概念,不是分开的规则)
+// 2026-09-14 每个函数里先把相邻那行/张当时的 statusNew/isNew 读出来存成
+// 局部变量,再调用 markSeen——顺序不能反,markSeen 会让 isRowNew() 立刻
+// 算出 false,如果先 markSeen 再读,读到的已经是"已标记已读"之后的值,
+// 等于没拍到快照。这个局部变量再传给 openDialog(),OfferCard/
+// OfferTableRow 那边会原样存成这次打开要显示的 New 快照,不随后续背后
+// 状态变化,细节见那两个文件同名注释。
 function handleTablePrev(i) {
   tableRowRefs.value[i]?.closeDialog()
+  const wasNew = rowsWithDealerMode.value[i - 1]?.statusNew
   markSeen(rowsWithDealerMode.value[i - 1]?.auctionId)
-  nextTick(() => tableRowRefs.value[i - 1]?.openDialog())
+  nextTick(() => tableRowRefs.value[i - 1]?.openDialog(wasNew))
 }
 function handleTableNext(i) {
   tableRowRefs.value[i]?.closeDialog()
+  const wasNew = rowsWithDealerMode.value[i + 1]?.statusNew
   markSeen(rowsWithDealerMode.value[i + 1]?.auctionId)
-  nextTick(() => tableRowRefs.value[i + 1]?.openDialog())
+  nextTick(() => tableRowRefs.value[i + 1]?.openDialog(wasNew))
 }
 function handleCardPrev(i) {
   cardRefs.value[i]?.closeDialog()
+  const wasNew = rowsAsCards.value[i - 1]?.isNew
   markSeen(rowsAsCards.value[i - 1]?.auctionId)
-  nextTick(() => cardRefs.value[i - 1]?.openDialog())
+  nextTick(() => cardRefs.value[i - 1]?.openDialog(wasNew))
 }
 function handleCardNext(i) {
   cardRefs.value[i]?.closeDialog()
+  const wasNew = rowsAsCards.value[i + 1]?.isNew
   markSeen(rowsAsCards.value[i + 1]?.auctionId)
-  nextTick(() => cardRefs.value[i + 1]?.openDialog())
+  nextTick(() => cardRefs.value[i + 1]?.openDialog(wasNew))
 }
 
 // Tile 视图卡片:直接复用已核实的表格行数据,字段名能对上的原样映射,

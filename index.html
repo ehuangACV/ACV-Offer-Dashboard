@@ -2211,7 +2211,7 @@
       '</div>' +
       '</div>' +
       '<InformationDialog v-model="dialogOpen" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" ' +
-      ':auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="statusNew" ' +
+      ':auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="dialogIsNewSnapshot" ' +
       ':counterparty-amount="receivedAmount" :own-amount="sentAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" ' +
       ':report-url="reportUrl" :time-left="timeRemaining ? `${timeRemaining} Left` : \'\'" :time-left-urgent="timeLeftUrgent" :history="history" ' +
       ':has-prev="hasPrevDeal" :has-next="hasNextDeal" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
@@ -2219,9 +2219,14 @@
       '</div>',
     setup: function (props, ctx) {
       var removeDialogOpen = ref(false);
+      // 2026-09-14:打开的这个 dialog 显示的 New 徽标不能直接绑活的
+      // statusNew prop(那样会随 emit('viewed') 让父级同步标记已读一起
+      // 立刻消失)——在打开的这一刻拍一张当时 statusNew 值的快照存起来,
+      // 传给 dialog 的是这个快照,细节见 OfferTableRow.vue 文件同名注释。
+      var dialogIsNewSnapshot = ref(false);
       function handleHoverButtonClick(label) {
         if (label === 'Remove From List') { removeDialogOpen.value = true; }
-        else { dialogOpen.value = true; ctx.emit('viewed'); }
+        else { dialogIsNewSnapshot.value = props.statusNew; dialogOpen.value = true; ctx.emit('viewed'); }
       }
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
@@ -2256,8 +2261,15 @@
       });
       // 2026-09-02 同 OfferCard,供 OfferDashboard 跨行控制 dialog,细节见
       // fragments/OfferDashboard/notes.md。
+      // 2026-09-14 openDialog 新增可选参数,理由同 OfferCard.vue——
+      // OfferDashboard 是"先 markSeen 再 openDialog",这里必须接调用方
+      // 算好的快照,不能自己现场读 props.statusNew(那时已经被 markSeen
+      // 改成 false 了)。
       ctx.expose({
-        openDialog: function () { dialogOpen.value = true; },
+        openDialog: function (isNewSnapshot) {
+          dialogIsNewSnapshot.value = isNewSnapshot !== undefined ? isNewSnapshot : props.statusNew;
+          dialogOpen.value = true;
+        },
         closeDialog: function () { dialogOpen.value = false; }
       });
       // 2026-09-03 按 Figma node 7675:28425 新增,2026-09-08 补上点击后
@@ -2273,6 +2285,7 @@
       var refs = toRefs(props);
       return Object.assign({}, refs, {
         offerTypeLabel: offerTypeLabel, dialogOpen: dialogOpen, dealState: dealState,
+        dialogIsNewSnapshot: dialogIsNewSnapshot,
         timeLeftUrgent: timeLeftUrgent, hoverButtons: hoverButtons,
         removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick,
         showNewChip: showNewChip, stateChipLabel: stateChipLabel, copyVin: copyVin, copiedVin: copiedVin
@@ -2355,15 +2368,20 @@
       '<div v-if="hoverButtons.length" class="offer-card__hover-buttons" :class="{ \'offer-card__hover-buttons--mobile\': mobileActions }">' +
       '<button v-for="(btn, i) in hoverButtons" :key="i" type="button" class="offer-card__hover-btn" :class="\'offer-card__hover-btn--\' + btn.style" @click="handleHoverButtonClick(btn.label)">{{ btn.label }}</button>' +
       '</div>' +
-      '<InformationDialog v-model="dialogOpen" :mobile="mobileActions" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="isNew" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
+      '<InformationDialog v-model="dialogOpen" :mobile="mobileActions" :photo-url="photoUrl" :vehicle-title="vehicleTitle" :vin="vin" :mileage="mileage" :auction-id="auctionId" :offer-type="offerType" :viewer-role="viewerRole" :deal-state="dealState" :is-new="dialogIsNewSnapshot" :counterparty-amount="counterpartyAmount" :own-amount="ownAmount" :reserve-price="reservePrice" :acv-estimate="acvEstimate" :report-url="reportUrl" :time-left="timeLeft" :time-left-urgent="timeLeftUrgent" :history="history" :has-prev="hasPrevDeal" :has-next="hasNextDeal" @prev="$emit(\'prev-deal\')" @next="$emit(\'next-deal\')" />' +
       '<RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit(\'remove-from-list\')" />' +
       '</div>',
     setup: function (props, ctx) {
       var dialogOpen = ref(false);
       var removeDialogOpen = ref(false);
+      // 2026-09-14:打开的这个 dialog 显示的 New 徽标不能直接绑活的 isNew
+      // prop(那样会随 emit('viewed') 让父级同步标记已读一起立刻消失)——
+      // 在打开的这一刻拍一张当时 isNew 值的快照存起来,传给 dialog 的是
+      // 这个快照,细节见 OfferCard.vue 文件同名注释。
+      var dialogIsNewSnapshot = ref(false);
       function handleHoverButtonClick(label) {
         if (label === 'Remove From List') { removeDialogOpen.value = true; }
-        else { dialogOpen.value = true; ctx.emit('viewed'); }
+        else { dialogIsNewSnapshot.value = props.isNew; dialogOpen.value = true; ctx.emit('viewed'); }
       }
       var offerTypeLabel = computed(function () {
         return props.offerType === 'make-offer' ? 'Make Offer' : 'In Negotiation';
@@ -2458,13 +2476,20 @@
       // 2026-09-02 让 OfferDashboard 能通过 template ref 跨卡片控制 dialog
       // 状态(Previous/Next 需要关掉当前的再打开相邻的),细节见
       // fragments/OfferDashboard/notes.md。
+      // 2026-09-14 openDialog 新增可选参数,理由同 OfferTableRow.vue——
+      // OfferDashboard 是"先 markSeen 再 openDialog",这里必须接调用方
+      // 算好的快照,不能自己现场读 props.isNew(那时已经被 markSeen 改成
+      // false 了)。
       ctx.expose({
-        openDialog: function () { dialogOpen.value = true; },
+        openDialog: function (isNewSnapshot) {
+          dialogIsNewSnapshot.value = isNewSnapshot !== undefined ? isNewSnapshot : props.isNew;
+          dialogOpen.value = true;
+        },
         closeDialog: function () { dialogOpen.value = false; }
       });
       var refs = toRefs(props);
       return Object.assign({}, refs, {
-        dialogOpen: dialogOpen, removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick,
+        dialogOpen: dialogOpen, dialogIsNewSnapshot: dialogIsNewSnapshot, removeDialogOpen: removeDialogOpen, handleHoverButtonClick: handleHoverButtonClick,
         offerTypeLabel: offerTypeLabel, hasCountdown: hasCountdown, hasStateChip: hasStateChip,
         showNewChip: showNewChip, stateChipLabel: stateChipLabel, messageLine1: messageLine1,
         messageLine1Timestamp: messageLine1Timestamp,
@@ -3354,25 +3379,35 @@
       function setCardRef(el, i) {
         if (el) cardRefs.value[i] = el;
       }
+      // 2026-09-14 每个函数里先把相邻那行/张当时的 statusNew/isNew 读出来
+      // 存成局部变量,再调用 markSeen——顺序不能反,markSeen 会让
+      // isRowNew() 立刻算出 false,如果先 markSeen 再读,读到的已经是
+      // "已标记已读"之后的值,等于没拍到快照。这个局部变量再传给
+      // openDialog(),OfferCard/OfferTableRow 那边会原样存成这次打开要
+      // 显示的 New 快照,细节见那两个组件同名注释。
       function handleTablePrev(i) {
         if (tableRowRefs.value[i]) tableRowRefs.value[i].closeDialog();
+        var wasNew = rowsWithDealerMode.value[i - 1] ? rowsWithDealerMode.value[i - 1].statusNew : false;
         if (rowsWithDealerMode.value[i - 1]) markSeen(rowsWithDealerMode.value[i - 1].auctionId);
-        nextTick(function () { if (tableRowRefs.value[i - 1]) tableRowRefs.value[i - 1].openDialog(); });
+        nextTick(function () { if (tableRowRefs.value[i - 1]) tableRowRefs.value[i - 1].openDialog(wasNew); });
       }
       function handleTableNext(i) {
         if (tableRowRefs.value[i]) tableRowRefs.value[i].closeDialog();
+        var wasNew = rowsWithDealerMode.value[i + 1] ? rowsWithDealerMode.value[i + 1].statusNew : false;
         if (rowsWithDealerMode.value[i + 1]) markSeen(rowsWithDealerMode.value[i + 1].auctionId);
-        nextTick(function () { if (tableRowRefs.value[i + 1]) tableRowRefs.value[i + 1].openDialog(); });
+        nextTick(function () { if (tableRowRefs.value[i + 1]) tableRowRefs.value[i + 1].openDialog(wasNew); });
       }
       function handleCardPrev(i) {
         if (cardRefs.value[i]) cardRefs.value[i].closeDialog();
+        var wasNew = rowsAsCards.value[i - 1] ? rowsAsCards.value[i - 1].isNew : false;
         if (rowsAsCards.value[i - 1]) markSeen(rowsAsCards.value[i - 1].auctionId);
-        nextTick(function () { if (cardRefs.value[i - 1]) cardRefs.value[i - 1].openDialog(); });
+        nextTick(function () { if (cardRefs.value[i - 1]) cardRefs.value[i - 1].openDialog(wasNew); });
       }
       function handleCardNext(i) {
         if (cardRefs.value[i]) cardRefs.value[i].closeDialog();
+        var wasNew = rowsAsCards.value[i + 1] ? rowsAsCards.value[i + 1].isNew : false;
         if (rowsAsCards.value[i + 1]) markSeen(rowsAsCards.value[i + 1].auctionId);
-        nextTick(function () { if (cardRefs.value[i + 1]) cardRefs.value[i + 1].openDialog(); });
+        nextTick(function () { if (cardRefs.value[i + 1]) cardRefs.value[i + 1].openDialog(wasNew); });
       }
       // tile 视图卡片:直接复用已核实的表格行数据,字段名对得上的原样映射。
       // [2026-08 按你的要求(对照节点7485:41392核实每张卡片都有message)

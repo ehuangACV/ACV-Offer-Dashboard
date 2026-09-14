@@ -1,5 +1,12 @@
 # OfferTableRow — Notes
 
+## 2026-09-14 打开的 dialog 里 New 徽标不该跟着背后状态立刻消失
+
+跟 [OfferCard](../OfferCard/notes.md) 同一批修的同一个问题,这个文件是
+完全同一套改法(`dialogIsNewSnapshot` 快照 + `openDialog(isNewSnapshot)`
+可选参数),只是 prop 名是 `statusNew` 不是 `isNew`。细节和根因分析见
+OfferCard/notes.md 同名条目,不重复。
+
 ## 2026-09-08 点击复制后 tooltip 文字临时变成 "Copied"
 你要求"不管哪个 view,点击后显示 copied"——table/card 两边都要有这个
 反馈,逻辑一模一样(细节见 [OfferCard](../OfferCard/notes.md))。

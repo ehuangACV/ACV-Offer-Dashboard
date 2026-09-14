@@ -421,7 +421,7 @@
       :offer-type="offerType"
       :viewer-role="viewerRole"
       :deal-state="dealState"
-      :is-new="isNew"
+      :is-new="dialogIsNewSnapshot"
       :counterparty-amount="counterpartyAmount"
       :own-amount="ownAmount"
       :reserve-price="reservePrice"
@@ -450,6 +450,18 @@ const dialogOpen = ref(false)
 // 2026-09-02 新增,配合 "Remove From List" 按钮的二次确认框,细节见
 // fragments/RemoveFromListDialog/notes.md
 const removeDialogOpen = ref(false)
+// 2026-09-14 新增,你反馈:点开一张 New 的卡片进 dialog 之后,里面的 New
+// 徽标不该立刻消失——应该是"这次打开时它就是 New 的",要等关掉、再重新
+// 打开(第二次)才不显示 New。但背后列表/卡片本身的 New 标记(以及
+// sidebar/tab 上的数字)还是要立刻更新,这两件事不是同一回事:emit
+// 'viewed' 会让 OfferDashboard 立刻标记这条 deal 已读(列表/计数立刻变),
+// 但传给这次已经打开的 dialog 的 isNew 不能直接绑活的 `isNew` prop(那样
+// 会随背后状态一起立刻变成 false)。做法是在打开的这一刻,把当时的
+// `isNew` 值拍一张"快照"存起来,传给 dialog 的是这个快照,不是活的 prop
+// ——快照只在"每一次真正打开"时重新拍一次,dialog 开着的这段时间里,不管
+// 背后 isNew 变成什么,快照都不变,直到下一次重新打开才会拍一张新的
+// (那时 isNew 已经是 false 了,快照也就正确地变成 false)。
+const dialogIsNewSnapshot = ref(false)
 // 2026-09-02 按你的要求:点 VDP 图片链接、或点任何一个会打开
 // InformationDialog 的 hover 按钮,都算"看过这笔 deal"了,emit 一个
 // viewed 事件,让 OfferDashboard 把这一行的 New 标记清掉(细节见
@@ -459,6 +471,9 @@ function handleHoverButtonClick(label) {
   if (label === 'Remove From List') {
     removeDialogOpen.value = true
   } else {
+    // 拍快照必须在 emit('viewed') 之前——emit 会让父级同步把 isNew 改成
+    // false,顺序反了快照就拍到"已经清空"之后的值,等于没拍。
+    dialogIsNewSnapshot.value = props.isNew
     dialogOpen.value = true
     emit('viewed')
   }
@@ -467,8 +482,18 @@ function handleHoverButtonClick(label) {
 // Previous/Next,OfferDashboard 需要能"关掉这张卡的对话框、打开相邻那张
 // 卡的对话框",但 dialogOpen 这个 ref 本身没有对外暴露(只在这个组件内部
 // 用),所以露出这两个方法作为唯一的外部控制入口,不直接暴露 ref 本身。
+// 2026-09-14 openDialog 新增可选参数 isNewSnapshot——切到相邻卡片时,
+// OfferDashboard 那边是"先 markSeen 再 openDialog"(细节见
+// fragments/OfferDashboard/notes.md),如果这里不接一个参数、自己现场读
+// `props.isNew`,读到的已经是 markSeen 生效之后的 false,同样等于没拍到
+// 快照——所以由调用方在 markSeen 之前就把"当时的" isNew 值算好,当参数
+// 传进来。不传时(比如其它测试/调用场景)退回读当前 props.isNew,不强制
+// 要求所有调用方都必须传。
 defineExpose({
-  openDialog: () => { dialogOpen.value = true },
+  openDialog: (isNewSnapshot) => {
+    dialogIsNewSnapshot.value = isNewSnapshot !== undefined ? isNewSnapshot : props.isNew
+    dialogOpen.value = true
+  },
   closeDialog: () => { dialogOpen.value = false }
 })
 

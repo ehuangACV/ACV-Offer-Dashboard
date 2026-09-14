@@ -1,5 +1,33 @@
 # OfferCard 核实记录
 
+## 2026-09-14(第二次)打开的 dialog 里 New 徽标不该跟着背后状态立刻消失
+
+你反馈:点开一张带 New 徽标的卡片进 InformationDialog 之后,里面的 New
+徽标不该立刻消失——应该是"这次打开时它就是 New 的",要关掉、重新打开
+(第二次)才不显示 New。这不是"背后列表/计数该不该立刻更新"这件事的
+反面——那部分(卡片本身的 New 标记、Buying/Selling tab 和 sidebar 的
+数字)按你之前的要求本来就该点开就立刻更新,这次要改的只是"已经打开的
+这个 dialog 自己显示什么",两者不冲突。
+
+根因:`emit('viewed')` 会让 `OfferDashboard` 同步把这条 deal 标记已读
+(`isRowNew()` 立刻算出 false),而 `<InformationDialog :is-new="isNew">`
+直接绑的是这个活的 `isNew` prop——emit 触发的更新和 dialog 打开是同一个
+渲染周期,所以 dialog 一打开,`isNew` 已经变成 false 了。
+
+修法:新增 `dialogIsNewSnapshot` 这个 ref,在 `handleHoverButtonClick`
+里、`emit('viewed')` **之前**,把当时的 `props.isNew` 值拍一张快照存
+进去,`<InformationDialog>` 绑的是这个快照,不是活的 prop——快照只在
+"真正打开"的那一刻重新拍一次(点 hover 按钮,或者被
+`openDialog(isNewSnapshot)` 传参数重新赋值),dialog 开着的这段时间里
+不管背后 `isNew` 变成什么,快照都不变。`openDialog` 因此多了一个可选
+参数——`OfferDashboard` 的 Previous/Next(`handleCardPrev`/
+`handleCardNext`)是"先 markSeen 再 openDialog",如果 `openDialog` 自己
+现场读 `props.isNew`,读到的已经是 markSeen 生效之后的 false,所以改成
+由调用方在 markSeen **之前**算好快照值,当参数传进来,细节见
+[OfferDashboard/notes.md](../OfferDashboard/notes.md) 同名条目。
+`OfferTableRow.vue` 是完全同一套改法(prop 名是 `statusNew` 不是
+`isNew`),细节见该文件同名注释,不重复。
+
 ## 2026-09-14 VIN 复制图标在 mobile 上完全点不到,不是少个提示这么轻微
 
 你反馈"mobile 上 VIN 号码还是 hover on 才出现 tooltip,和 web 一样,但

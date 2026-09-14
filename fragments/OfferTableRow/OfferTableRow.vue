@@ -293,7 +293,7 @@
       :offer-type="offerType"
       :viewer-role="viewerRole"
       :deal-state="dealState"
-      :is-new="statusNew"
+      :is-new="dialogIsNewSnapshot"
       :counterparty-amount="receivedAmount"
       :own-amount="sentAmount"
       :reserve-price="reservePrice"
@@ -391,6 +391,14 @@ const offerTypeLabel = computed(() =>
 
 const dialogOpen = ref(false)
 const removeDialogOpen = ref(false)
+// 2026-09-14 新增,同 OfferCard.vue 的道理(细节见该文件同名注释):打开
+// 的这个 dialog 显示的 New 徽标不能直接绑活的 `statusNew` prop——那样会
+// 随着下面 emit('viewed') 让父级同步标记已读,立刻变成 false,dialog
+// 里的 New 徽标就跟着背后列表一起消失了。你要求这次打开时它还应该显示
+// New,要等关掉、重新打开(第二次)才不显示——所以在打开的这一刻拍一张
+// 当时 statusNew 值的"快照"存起来,传给 dialog 的是这个快照,不随背后
+// 状态变化,直到下一次重新打开才会拍新的快照。
+const dialogIsNewSnapshot = ref(false)
 // 2026-09-02 按你的要求,同 OfferCard.vue 的道理:点 VDP 图片链接、或点
 // 任何一个会打开 InformationDialog 的 hover 按钮都算"看过"了,细节见
 // fragments/OfferDashboard/notes.md
@@ -398,6 +406,8 @@ function handleHoverButtonClick(label) {
   if (label === 'Remove From List') {
     removeDialogOpen.value = true
   } else {
+    // 拍快照必须在 emit('viewed') 之前,理由同 OfferCard.vue。
+    dialogIsNewSnapshot.value = props.statusNew
     dialogOpen.value = true
     emit('viewed')
   }
@@ -405,8 +415,14 @@ function handleHoverButtonClick(label) {
 // 2026-09-02 按 Figma node 7597:112866 新增,同 OfferCard.vue 的道理:
 // OfferDashboard 需要能"关掉这一行的对话框、打开相邻那一行的对话框",
 // 露出这两个方法作为唯一的外部控制入口,不直接暴露 dialogOpen 这个 ref。
+// 2026-09-14 openDialog 新增可选参数 isNewSnapshot,理由同 OfferCard.vue
+// ——OfferDashboard 那边是"先 markSeen 再 openDialog",这里如果自己现场
+// 读 props.statusNew,读到的已经是 markSeen 生效之后的 false。
 defineExpose({
-  openDialog: () => { dialogOpen.value = true },
+  openDialog: (isNewSnapshot) => {
+    dialogIsNewSnapshot.value = isNewSnapshot !== undefined ? isNewSnapshot : props.statusNew
+    dialogOpen.value = true
+  },
   closeDialog: () => { dialogOpen.value = false }
 })
 // 2026-09-03 按 Figma node 7675:28425 新增:table view 的 VIN 一直只是
