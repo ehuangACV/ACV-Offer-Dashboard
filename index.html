@@ -568,7 +568,7 @@
      margin-left,这个保持固定不变)+260(sidebar宽度),后面
      clamp(24px,...,100px)是响应式的那一段,和下面
      .offer-dashboard__content 的 padding-left 用的是同一个表达式。 */
-  .offer-dashboard__breadcrumb-row { padding: 32px 0 14px 0; padding-left: calc(284px + clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px)); margin-right: 100px; }
+  .offer-dashboard__breadcrumb-row { padding: 32px 0 14px 0; padding-left: calc(284px + clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px)); margin-right: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px); }
   .offer-dashboard__body { display: flex; flex: 1; }
   /* 2026-09-08 按你的要求从16px改成24px,这一段(sidebar自己离视口左边
      的距离)你没有要求改成响应式,保持固定24px,细节见
@@ -577,7 +577,7 @@
   /* 2026-09-08(第九次,已撤销固定值)恢复响应式,最小值从48px改成24px,
      最大值100px不变——frame宽度到1422px(cqw)时精确等于24px,之后跟着
      变宽,到约1900px(cqw)封顶在100px */
-  .offer-dashboard__content { flex: 1; min-width: 0; padding: 0 24px 24px 0; padding-left: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px); margin-right: 100px; display: flex; flex-direction: column; gap: 0; }
+  .offer-dashboard__content { flex: 1; min-width: 0; padding: 0 24px 24px 0; padding-left: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px); margin-right: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px); display: flex; flex-direction: column; gap: 0; }
   /* 2026-08 核实自节点 7448:9826:Tabs→搜索框24px,搜索框→筛选chip行16px */
   .offer-dashboard__toolbar { display: flex; flex-direction: column; gap: 16px; padding: 24px 0 0; }
   .offer-dashboard__filters { flex-wrap: wrap; }

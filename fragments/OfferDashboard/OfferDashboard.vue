@@ -1395,7 +1395,14 @@ const cardGridStyle = computed(() =>
 .offer-dashboard__breadcrumb-row {
   padding: 32px 0 14px 0;
   padding-left: calc(284px + clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px));
-  margin-right: 100px;
+  /* 2026-09-14 按你的要求:右边这道 margin 之前是写死的100px,不会跟着
+     屏幕变窄收缩——你反馈屏幕逐渐变窄、快要出现表格横向滚动条之前,应该
+     先把左右这两道留白收窄到24px(线性跟着屏幕宽度变化,不是断点跳变),
+     用这段留白把横向滚动条触发的时机往后推。改成跟左边 padding-left
+     同一条 clamp 公式(container query宽度1422px时精确等于24px,往下
+     不会再缩;往上跟着变宽,到约1900px封顶100px),两边现在完全对称、
+     一起线性联动。 */
+  margin-right: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px);
 }
 
 .offer-dashboard__body {
@@ -1436,7 +1443,10 @@ const cardGridStyle = computed(() =>
   min-width: 0;
   padding: 0 24px 24px 0;
   padding-left: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px);
-  margin-right: 100px;
+  /* 2026-09-14 按你的要求,和上面 .offer-dashboard__breadcrumb-row 同一处
+     改动:右边这道 margin 从写死的100px改成和 padding-left 同一条
+     clamp 公式,跟着屏幕宽度线性联动收缩到24px,不再是固定值。 */
+  margin-right: clamp(24px, calc(24px + (100cqw - 1422px) * 0.159), 100px);
   display: flex;
   flex-direction: column;
   gap: 0;
