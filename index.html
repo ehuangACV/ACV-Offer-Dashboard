@@ -1275,7 +1275,7 @@
       '<button type="button" class="sidebar-nav__item" :class="itemClass(\'active\')">Active <span v-html="EXPAND_ICON"></span></button>' +
       '<button type="button" class="sidebar-nav__item" :class="itemClass(\'pending-proxy\')">Pending Proxy</button>' +
       '<button type="button" class="sidebar-nav__item" :class="itemClass(\'negotiation\')">Negotiation <span v-html="EXPAND_ICON"></span></button>' +
-      '<button type="button" class="sidebar-nav__item sidebar-nav__item--active-row" :class="itemClass(\'offers\')">Offers <span class="sidebar-nav__badge">{{ offersCount }}</span></button>' +
+      '<button type="button" class="sidebar-nav__item sidebar-nav__item--active-row" :class="itemClass(\'offers\')">Offers <span v-if="Number(offersCount) > 0" class="sidebar-nav__badge">{{ offersCount }}</span></button>' +
       '<div class="sidebar-nav__divider"></div>' +
       '<button type="button" class="sidebar-nav__item" :class="itemClass(\'billing\')">Billing <span v-html="EXPAND_ICON"></span></button>' +
       '<button type="button" class="sidebar-nav__item" :class="itemClass(\'won\')">Won</button>' +
@@ -1359,10 +1359,10 @@
     template:
       '<div class="offer-tabs" :class="{ \'offer-tabs--mobile\': mobile }">' +
       '<button type="button" class="offer-tabs__tab" :class="{ \'offer-tabs__tab--selected\': activeTab === \'buying\' }" @click="$emit(\'select\', \'buying\')">' +
-      '<span>Buying</span><span v-if="!mobile" class="offer-tabs__count">{{ buyingCount }}</span>' +
+      '<span>Buying</span><span v-if="!mobile && Number(buyingCount) > 0" class="offer-tabs__count">{{ buyingCount }}</span>' +
       '<span v-if="activeTab === \'buying\'" class="offer-tabs__indicator"></span></button>' +
       '<button type="button" class="offer-tabs__tab" :class="{ \'offer-tabs__tab--selected\': activeTab === \'selling\' }" @click="$emit(\'select\', \'selling\')">' +
-      '<span>Selling</span><span v-if="!mobile" class="offer-tabs__count">{{ sellingCount }}</span>' +
+      '<span>Selling</span><span v-if="!mobile && Number(sellingCount) > 0" class="offer-tabs__count">{{ sellingCount }}</span>' +
       '<span v-if="activeTab === \'selling\'" class="offer-tabs__indicator"></span></button>' +
       '</div>',
     setup: function (props) { return toRefs(props); }

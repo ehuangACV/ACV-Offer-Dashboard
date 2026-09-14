@@ -1,5 +1,12 @@
 # SidebarNav — Notes
 
+## 2026-09-14 offersCount 是0时,不再显示红点
+
+跟 [OfferTabs](../OfferTabs/notes.md) 的 buyingCount/sellingCount 同一批
+改的同一条规则:这个红点代表"Buying+Selling 两边加起来还有几条New没
+处理",0条时没什么要提醒用户的,不该显示一个"0"的红点。加了
+`v-if="Number(offersCount) > 0"`,等于0时整个 `<span>` 都不渲染。
+
 ## 2026-08 更新:去掉了展开/收起交互
 之前版本给 Active / Negotiation / Billing 做了点击展开/收起,展开内容
 来自 4 个 `hidden=true` 的 Figma "Sub menu" 节点,内容互相对不上、

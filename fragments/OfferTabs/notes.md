@@ -1,5 +1,14 @@
 # OfferTabs — Notes
 
+## 2026-09-14 New 数量是0时,不再显示徽标
+
+你反馈 Selling 一条New都没有的时候,tab 旁边还显示一个"0"的灰点,应该
+直接去掉——这个数字代表"这个tab里有几条New没处理",0条时没什么要提醒
+用户的。`buyingCount`/`sellingCount` 徽标各自加了 `Number(count) > 0`
+这个条件,数字大于0才显示,等于0时整个 `<span>` 都不渲染(不是显示成
+空的"0")。[SidebarNav](../SidebarNav/notes.md) 的 "Offers" 红点是
+同一条规则,同一批改的。
+
 ## 已核实(hidden=false,来自节点 6903:23020)
 | 状态 | Figma node id | 数值 |
 |---|---|---|

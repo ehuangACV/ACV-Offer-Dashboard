@@ -60,7 +60,9 @@
       @click="$emit('select', 'buying')"
     >
       <span class="offer-tabs__label">Buying</span>
-      <span v-if="!mobile" class="offer-tabs__count">{{ buyingCount }}</span>
+      <!-- 2026-09-14 按你的要求:这两个数字代表"这个tab里有几条New没处理",
+           0条时没什么要提醒的,不该显示一个"0"的红点/灰点。 -->
+      <span v-if="!mobile && Number(buyingCount) > 0" class="offer-tabs__count">{{ buyingCount }}</span>
       <span v-if="activeTab === 'buying'" class="offer-tabs__indicator" />
     </button>
     <button
@@ -70,7 +72,7 @@
       @click="$emit('select', 'selling')"
     >
       <span class="offer-tabs__label">Selling</span>
-      <span v-if="!mobile" class="offer-tabs__count">{{ sellingCount }}</span>
+      <span v-if="!mobile && Number(sellingCount) > 0" class="offer-tabs__count">{{ sellingCount }}</span>
       <span v-if="activeTab === 'selling'" class="offer-tabs__indicator" />
     </button>
   </div>

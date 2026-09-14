@@ -81,7 +81,10 @@
 
     <button type="button" class="sidebar-nav__item sidebar-nav__item--active-row" :class="itemClass('offers')">
       Offers
-      <span class="sidebar-nav__badge">{{ offersCount }}</span>
+      <!-- 2026-09-14 按你的要求:这个红点代表"有几条 New 没处理",0条时
+           没什么要提醒用户的,不该显示一个"0"的红点。同
+           OfferTabs.vue 的 buyingCount/sellingCount 徽标同一条规则。 -->
+      <span v-if="Number(offersCount) > 0" class="sidebar-nav__badge">{{ offersCount }}</span>
     </button>
 
     <div class="sidebar-nav__divider" />
