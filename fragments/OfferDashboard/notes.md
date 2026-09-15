@@ -1,5 +1,56 @@
 # OfferDashboard — Notes
 
+## 2026-09-15(第三次)mobile 尺寸下 tabs/搜索/筛选chip 滑动收起、往上滑重新出现
+
+你要求:mobile 尺寸(不管是 Mobile view 点出来的还是 Auto 拖窄出来的)下,
+Buying/Selling tabs + 搜索框 + 筛选chip 这一整块往下滑(滚动往下)时收起,
+往上滑(滚动往上)时重新出现,不用滚回最顶部就能随时拿到搜索/筛选。
+
+改法:把这一整块包进新的 `.offer-dashboard__mobile-sticky-controls`
+(`position:sticky; top:56px`,贴在 MobileTopBar 下面,和这个项目里其它
+sticky 元素——MobileTopBar/MobileBottomNav/Pagination 的横向滚动条影子——
+用同一套定位模式),收起/出现靠 `mobileControlsHidden` 这个 ref 切换一个
+`transform:translateY(-100%)` 的修饰 class(用 transform 不用
+display:none,这样有过渡动画,也不影响下面卡片列表的文档流位置)。
+
+方向判断在 `handleMobileControlsScroll` 里:比较当前滚动位置和上一次记录
+的位置,差值超过 4px 的阈值才判定方向(避免一点点滚动抖动就来回切换),
+滚动位置还在 MobileTopBar 高度(56px)以内时强制保持出现(刚打开页面/
+滚回顶部附近不应该因为几像素的滚动就收起来)。这个监听复用了
+`handleRepositionOnScroll`(给 Dealership 浮层重新定位用的)已经在用的
+`window.addEventListener('scroll', ..., {capture:true})` 模式——好处是
+同时兼容"生产环境真实 window 滚动"和"Playground 里 `.pg-main`/`.pg-stage`
+内部滚动"两种场景,不用关心到底是谁在滚。
+
+只在 mobile 尺寸下生效是因为整块代码都在 `effectiveDeviceView === 'mobile'`
+这个 v-if 分支里面,天然不影响桌面版。
+
+【第二次,你反馈滚动往上重新弹出来的时候筛选chip和下面卡片贴得死死的没有
+间隔】给 `.offer-dashboard__mobile-sticky-controls` 加了
+`padding-bottom: 8px`——这块贴顶浮起来的时候,下面卡片是直接滚到贴着它
+底边的(sticky 不脱离文档流,浮起来后底下露出来的是"当前滚动到哪就是哪"
+的内容,跟 `.offer-dashboard__mobile-body` 原来的 `gap:8px` 没关系,那份
+gap 只在没滚动、还在正常文档流位置时看得到),加这个 padding 让白底背景
+自己往下多包 8px,不需要跟着滚动位置精确计算。副作用:没滚动的正常状态下,
+这块和卡片列表之间的间距从 8px 变成了 8(gap)+8(padding)=16px,你没有
+特别要求这个状态不变,判断是可以接受的、比引入额外 JS 只在滚动时才加
+padding 这种复杂度更低的做法更合理。
+
+## 2026-09-15(第二次)Playground Auto 模式下 mobile 尺寸没有居中展示
+
+你反馈全屏 + Mobile view/Auto 模式下,模拟的手机屏幕框贴在舞台左边,
+没有居中——排查发现 `.pg-stage__resize-frame--device` 这个"让模拟框看起来
+像真手机屏幕"的修饰类(居中 + 白底卡片 + 圆角 + 阴影 + 隐藏原生滚动条,
+细节见 PLAYGROUND_NOTES.md)之前只在 `stageFrameHeight` 有值时才生效——
+也就是只认"点了 Mobile view 按钮"这一种情况,Auto 模式拖滑块拖到同一个
+mobile breakpoint 以下时不会触发,框就没有这层居中/卡片样式,贴在舞台
+左边。这半是 Harness(Playground 工具本身)的改动,细节见
+PLAYGROUND_NOTES.md 同名条目——把这个修饰类的判断条件从
+`!!stageFrameHeight` 换成一个新的、覆盖两种场景的 `isMobileFrameActive`
+computed,和 `mobileDeviceFrameEl` 这个 provide 值判断"要不要把模拟框
+DOM 传给 Dealership/InformationDialog 用"复用同一个条件,不是两套独立
+逻辑各判断一次。
+
 ## 2026-09-15 Playground Auto 模式下拖到 mobile breakpoint 以下,Dealership 浮层没跟着变
 
 你在 Playground 里反馈:Auto 模式下把 Screen width 滑块拖到 mobile

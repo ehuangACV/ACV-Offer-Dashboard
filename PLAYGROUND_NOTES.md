@@ -6,6 +6,28 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
+## 2026-09-15(第十四次)`.pg-stage__resize-frame--device` 同一个"只认 Mobile view"问题,这次是居中展示
+
+跟第十三次是同一类根因、影响另一处的表现:你反馈全屏 + Mobile view/Auto
+模式下,模拟手机屏幕框没有居中展示,贴在舞台左边、右边一大片空白。排查
+发现给模拟框加"居中 + 白底卡片 + 圆角 + 阴影 + 隐藏原生滚动条"这套外观的
+`--device` 修饰类(第三次改动加的,细节见该条记录),判断条件一直是
+`!!stageFrameHeight`——同样只认"点了 Mobile view 按钮"这一种情况,Auto
+模式拖滑块拖到同一个 768 断点以下不会触发。
+
+改法:把第十三次已经写好的"Mobile view 或者 Auto 拖到 768 以下"这个判断
+抽成一个单独命名的 computed `isMobileFrameActive`(之前是内联在
+`provide('mobileDeviceFrameEl', ...)` 那个 computed 里面,没有单独命名),
+`--device` 修饰类的绑定从 `!!stageFrameHeight` 换成这个 computed,和
+`mobileDeviceFrameEl` 复用同一份判断,不是两套独立逻辑各自维护一份、容易
+以后改了一个忘了改另一个(这次的 bug 本质上就是"只改了给 Dealership/
+InformationDialog 用的那份判断,忘了给居中/卡片外观那份也一起改"造成的)。
+验证:Auto 模式 410px + 全屏,模拟框左右边距量出来分别是 374.5px/389.5px,
+基本对称居中;`.pg-stage__resize-frame--device` 这个 class 也确认加上了
+(带来白底卡片圆角阴影的完整"手机屏幕"外观,不只是单纯居中,这个副作用
+是刻意保留的,匹配这个修饰类原本"让 Auto/Mobile 模拟框都看起来像真手机
+屏幕"的设计意图)。
+
 ## 2026-09-15(第十三次)mobileDeviceFrameEl 只覆盖了 Mobile view,没覆盖 Auto 模式拖过 breakpoint
 
 你反馈 Auto 模式下把 Screen width 滑块拖到 mobile breakpoint(768)以下

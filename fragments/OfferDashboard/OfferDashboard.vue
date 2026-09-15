@@ -1719,12 +1719,20 @@ const cardGridStyle = computed(() =>
    transform 不是改布局属性,不影响下面卡片列表本身的文档流位置。这块
    只是把 OfferTabs/toolbar 从原来的直接 flex 子项包了一层 div,还在同一个
    有 16px 左右内边距的 .offer-dashboard__mobile-body 里面,水平位置不用
-   额外处理。 */
+   额外处理。底部补一个 8px 的 padding-bottom:这块贴顶浮起来的时候,
+   下面卡片列表是直接滚到它底边贴着的(sticky 不脱离文档流,浮起来之后
+   底下露出来的是"当前滚动到哪就是哪"的卡片内容,跟原来 flex gap:8px
+   那份间距没关系,那份间距只在没滚动、还在正常文档流位置时才看得到)。
+   你反馈滚动往上把这块重新弹出来的时候,筛选chip和它正下方露出来的卡片
+   贴得死死的,没有间隔——加这个 padding-bottom,让白底背景自己往下多
+   包 8px,视觉上筛选chip和下面卡片之间始终留一条白边,不需要跟着滚动
+   位置精确计算。 */
 .offer-dashboard__mobile-sticky-controls {
   position: sticky;
   top: 56px;
   z-index: 15;
   background: #FFFFFF;
+  padding-bottom: 8px;
   transform: translateY(0);
   transition: transform .25s ease;
 }

@@ -48,23 +48,7 @@
      "白白的一片"。改成浅灰画布之后,不管组件自己是不是白底,都能看清
      它的实际渲染范围,参照你截图里那个同事做的 VDP 预览工具的做法
      (灰色画布 + 组件本身在中间,像一张卡片浮在上面)。 */
-  /* 2026-09-15 overflow 拆成 x/y 两条,不再用 overflow:auto 简写:简写
-     会把 overflow-y 也一起设成 auto,而 .pg-stage 非全屏时是 auto 高度
-     (跟着内容撑高,自己永远不会真正需要纵向滚动,滚动一直是外层
-     .pg-main 在处理)——但只要声明了 overflow-y:auto,CSS 的
-     position:sticky 就会认它是"最近的可滚动祖先容器"而不是继续往上找
-     真正在滚动的 .pg-main,导致组件里任何 sticky 元素(MobileTopBar/
-     MobileBottomNav、这次新加的 mobile tabs+搜索+筛选 sticky 区块)在
-     Playground 非全屏/Auto 模式预览时定位错乱、贴不住真实视口——你反馈
-     "control 什么的排列感觉都不太对"那次排查的是别的地方,这次是同一类
-     "sticky 认错滚动容器"问题的另一个新发现的实例。横向滚动(面板挤占
-     空间时的宽度不够 fallback,这条规则本来的目的)只需要 overflow-x,
-     不需要连带把 overflow-y 也搭进去。全屏模式下 .pg-stage 会被下面
-     .pg-shell--fullscreen .pg-stage 这条覆盖规则重新加上 height:100%,
-     那种情况下 .pg-stage 确实会被内容撑爆自己的 100% 高度、需要真的靠
-     自己纵向滚动(不再是 .pg-main 在滚),那条覆盖规则里单独补回了
-     overflow-y:auto,不影响这里的默认值。 */
-  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow-x: auto; overflow-y: clip; }
+  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; }
 
   /* 2026-08 按你的要求新增:整页组件(比如 Offer Dashboard)右上角
      "Expand to full page" 按钮,方便你做 presentation 时全屏看效果。这
@@ -88,7 +72,7 @@
      全屏是为了看"真实产品应该长什么样",Stage 应该贴着 Controls 面板,
      不需要这条给开发工具本身留的舒适间距。 */
   .pg-shell--fullscreen .pg-workspace { height: 100%; align-items: stretch; gap: 0; }
-  .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; overflow-y: auto; }
+  .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; }
   /* 2026-09-15(第二次,按你的要求撤销上一次"专门留一条空白"的做法)
      直接以 overlay 的方式贴在 Controls 面板右上角——不再改
      .pg-workspace 的布局(不再挤出一条 44px 空白让整体往下挪),按钮
@@ -686,7 +670,7 @@
   .offer-dashboard__toolbar--mobile { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 0; }
   /* 2026-09-15 按你的要求新增:tabs+搜索+筛选chip贴在 MobileTopBar(高度
      56px)下面,滚动往下收起、往上重新出现,细节见 fragments/OfferDashboard/notes.md */
-  .offer-dashboard__mobile-sticky-controls { position: sticky; top: 56px; z-index: 15; background: #FFFFFF; transform: translateY(0); transition: transform .25s ease; }
+  .offer-dashboard__mobile-sticky-controls { position: sticky; top: 56px; z-index: 15; background: #FFFFFF; padding-bottom: 8px; transform: translateY(0); transition: transform .25s ease; }
   .offer-dashboard__mobile-sticky-controls--hidden { transform: translateY(-100%); }
   .offer-dashboard__mobile-list { display: flex; flex-direction: column; gap: 16px; }
   /* 2026-09-13 按你的要求新增:容器 >=760px 时 2 列并排,<760px 时保持
@@ -4469,9 +4453,20 @@
       // 来的),就把 resizeFrameRef 传出去;这个 768 跟上面第 4645 行滑块
       // min/max 收紧用的是同一个数字,保持一致。
       var resizeFrameRef = ref(null);
-      provide('mobileDeviceFrameEl', computed(function () {
+      // 2026-09-15(第二次)这个 computed 抽出来单独命名,除了上面
+      // provide('mobileDeviceFrameEl') 要用,下面模板给
+      // .pg-stage__resize-frame 绑 --device 修饰类(居中 + 白底卡片外观)
+      // 也要用同一个判断——之前 --device 只认 stageFrameHeight,只有点
+      // "Mobile view" 按钮才会居中,Auto 模式拖滑块拖到同一个 mobile
+      // breakpoint 以下时框不会居中、贴在舞台左边(你反馈"mobile view的
+      // 时候要居中展示",这里 mobile 指的是"手机尺寸",不是"Mobile view
+      // 这个按钮",两种情况都要居中)。
+      var isMobileFrameActive = computed(function () {
         var isNarrowAuto = selectedKey.value === 'OfferDashboard' && controlValues.screenWidth < 768;
-        return (stageFrameHeight.value || isNarrowAuto) ? resizeFrameRef.value : null;
+        return !!(stageFrameHeight.value || isNarrowAuto);
+      });
+      provide('mobileDeviceFrameEl', computed(function () {
+        return isMobileFrameActive.value ? resizeFrameRef.value : null;
       }));
 
       // ============================================================
@@ -4632,7 +4627,7 @@
         sidebarOpen: sidebarOpen, controlsOpen: controlsOpen, fullscreenOpen: fullscreenOpen,
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
-        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef, resizeFrameRef: resizeFrameRef,
+        componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef, resizeFrameRef: resizeFrameRef, isMobileFrameActive: isMobileFrameActive,
         workspaceRef: workspaceRef, controlsPanelRef: controlsPanelRef, mainRef: mainRef, controlsHandleRight: controlsHandleRight, controlsHandleTop: controlsHandleTop,
         markScreenWidthManual: markScreenWidthManual, handleSegmentedClick: handleSegmentedClick,
         hasResetControl: hasResetControl, otherControls: otherControls,
@@ -4667,7 +4662,7 @@
       '</div>' +
       '<div class="pg-workspace" ref="workspaceRef">' +
       '<div class="pg-stage" ref="stageRef" :class="{ \'pg-stage--spec-mode\': specModeEnabled }">' +
-      '<div class="pg-stage__resize-frame" ref="resizeFrameRef" :class="{ \'pg-stage__resize-frame--device\': !!stageFrameHeight }" :style="stageFrameStyle" ' +
+      '<div class="pg-stage__resize-frame" ref="resizeFrameRef" :class="{ \'pg-stage__resize-frame--device\': isMobileFrameActive }" :style="stageFrameStyle" ' +
       '@click.capture="handleSpecClick" @mousemove="handleSpecMouseMove" @mouseleave="handleSpecMouseLeaveStage">' +
       '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
       '</div></div>' +
