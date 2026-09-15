@@ -6,6 +6,52 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
+## 2026-09-15(第八次)Stage 和 Controls 面板之间补 60px 间距(只针对非全屏)
+
+你反馈非全屏页面下 Controls 面板和左边的 Stage 内容完全贴在一起,零间距,
+要求补一个60px的间距,并明确只要非全屏页面这样,全屏页面不要。
+
+根因:Controls 把手改成 `position:fixed`(第三次)之后,它不再是
+`.pg-workspace` 这一行里的正常 flex 子项——原来 Stage 和 Controls 之间
+那点间距,其实是靠把手自己的宽度(36px)+左右 margin 顺手撑出来的"副产品",
+不是专门设计的间距,把手飞出正常流之后,这个副产品也跟着消失了,两者变成
+零间距贴在一起。
+
+改法:给 `.pg-workspace` 直接加 `gap: 60px`——`gap` 只对还在正常流里的
+flex 子项(Stage、Controls)生效,`position:fixed` 的把手不参与这个
+计算,所以这就是 Stage 和 Controls 面板之间纯粹、专门设计的间距,不会
+被把手"占用"掉一部分。全屏模式(`.pg-shell--fullscreen .pg-workspace`)
+单独覆盖成 `gap: 0`——全屏是为了看"真实产品应该长什么样",不需要这条
+只有非全屏开发工具场景才需要的舒适间距。
+
+## 2026-09-15(第七次)非全屏模式下滚动页面,把手和 Controls 面板"排列不对"
+
+你反馈:full page(全屏)模式下 Controls 什么都没问题,但截图里那个非
+全屏的状态,把手和面板的排列感觉不太对、没有之前好。排查确认是真的
+bug——`.pg-main` 自己 `overflow:auto`,是真正在滚动的容器;非全屏模式
+下 Controls 面板(`.pg-controls`)是跟着 `.pg-main` 一起滚动的普通元素
+(全屏模式下它反而是 `align-items:stretch` 撑满整列高度、不会跟着滚动,
+这就是为什么你说 full page 下没问题——那种布局下这个 bug 根本不会发生)。
+把手用 `position:fixed`(相对真实浏览器视口),只在 resize/开合面板时
+才重新量一次位置,滚动过程中完全不会跟着动——你一滚动页面,面板早就移到
+别的屏幕位置去了,把手还钉在原来那个位置,两者就"看起来不对"了。
+
+改法:垂直方向(`top`)也交给 JS 现场量,量的是 `.pg-controls` 自己当前
+在屏幕上的真实位置(`top`+`height`,取正中间)——这两个值不受面板展开/
+收起那条 `width` 过渡影响,不会重新踩中第六次那次"量的时机/对象选错"的
+坑。同时监听 `.pg-main` 的 `scroll` 事件,滚动的每一刻都跟着重新算一次,
+让把手始终贴在面板垂直方向的正中间,不再固定不动。收起时面板本身是空的、
+没什么可贴的,退回贴视口垂直正中间(浮动按钮的效果,方便随时找到、
+重新展开),这条逻辑没有变。
+
+踩过一个小坑:一开始直接在 template 字符串里给 `<main>` 加了
+`@scroll="updateControlsHandlePosition"`,原生 scroll 事件确实会触发
+(单独验证过),但没有调用到这个函数——没深挖是不是这套
+`defineComponent({ template: '...' })` 的 runtime 编译路径对 `scroll`
+这个事件名有什么特殊处理,直接换成和 `window resize` 完全同一套、已经
+验证过在用的写法(模板上留一个 ref,`onMounted` 里手动
+`addEventListener`),不再依赖模板里的 `@scroll` 语法。
+
 ## 2026-09-15(第六次)Full page 里开合面板,把手的移动动画很 glitchy
 
 你反馈 full page 里点开/关闭 Controls 面板时,把手的移动动画感觉很

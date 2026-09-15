@@ -34,7 +34,14 @@
   .pg-mock-btn { border: 1px solid #DCDFE8; background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: #004E7D; }
   .pg-mock-btn:hover { background: #F0F8FF; }
 
-  .pg-workspace { display: flex; align-items: flex-start; }
+  /* 2026-09-15 按你的要求补 60px 的 gap——Controls 把手改成
+     position:fixed(见下面 .pg-rail-toggle--controls 的注释)之后,它
+     不再是这一行里的正常 flex 子项,原来靠它自己的宽度+margin 顺手撑出来
+     的"Stage 和 Controls 面板之间的间隔"也跟着消失了,两个变成完全贴在
+     一起、零间距。gap 只对还在正常流里的 flex 子项(Stage、Controls)
+     生效,position:fixed 的把手不参与这个计算,所以直接加 gap 就是
+     Stage 和 Controls 面板之间纯粹的间距,不会被把手"占用"掉一部分。 */
+  .pg-workspace { display: flex; align-items: flex-start; gap: 60px; }
   /* 2026-09-12 按你的要求:背景从纯白改成浅灰(#F0F1F3)——之前预览
      舞台和里面渲染出来的组件(比如 Offer Dashboard 自己就是白底)颜色
      完全一样,窄屏(比如 mobile 375px)时完全看不出组件的边界在哪,
@@ -63,7 +70,10 @@
   .pg-shell--fullscreen .pg-mocks,
   .pg-shell--fullscreen .pg-notes { display: none; }
   .pg-shell--fullscreen .pg-main { position: fixed; inset: 0; padding: 0; z-index: 1000; background: #fff; overflow: auto; }
-  .pg-shell--fullscreen .pg-workspace { height: 100%; align-items: stretch; }
+  /* 2026-09-15 按你的要求:60px 的 gap 只针对非全屏页面,全屏时不要——
+     全屏是为了看"真实产品应该长什么样",Stage 应该贴着 Controls 面板,
+     不需要这条给开发工具本身留的舒适间距。 */
+  .pg-shell--fullscreen .pg-workspace { height: 100%; align-items: stretch; gap: 0; }
   .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; }
   /* 2026-09-15(第二次,按你的要求撤销上一次"专门留一条空白"的做法)
      直接以 overlay 的方式贴在 Controls 面板右上角——不再改
@@ -4095,12 +4105,38 @@
       // 哪、把手该贴哪,不用等动画播完再纠正一次,把手和面板会在同一个
       // 0.22s 区间里同步滑动,不会再有那种两段式的抽动感。
       var workspaceRef = ref(null);
+      var controlsPanelRef = ref(null);
+      // 2026-09-15(第七次,续)@scroll 直接写在 template 字符串里的
+      // <main> 标签上没有生效(排查过:原生 scroll 事件确实会触发,但绑
+      // 在这个 defineComponent({ template: '...' }) 编译出来的 <main>
+      // 上没有被调用到,没深挖是不是这套 runtime 编译路径本身对 scroll
+      // 这个事件名有什么特殊处理——换成和下面 window resize 完全同一套、
+      // 已经验证过在用的写法:模板上留一个 ref,在 onMounted 里手动
+      // addEventListener,不依赖模板里的 @scroll 语法。
+      var mainRef = ref(null);
       var controlsHandleRight = ref(10);
+      var controlsHandleTop = ref(null);
+      // 2026-09-15(第七次)你反馈 full page 里滚动之后,把手和 Controls
+      // 面板"排列感觉不对"——排查确认是真的 bug:`.pg-main` 自己
+      // `overflow:auto`,是真正在滚动的容器,面板(`.pg-controls`,一个
+      // 普通的、跟着内容一起滚动的元素)滚动时会跟着上下移动,但把手用的
+      // 是 `position:fixed`(相对真实浏览器视口),只在 resize/开合面板时
+      // 才重新量一次,滚动过程中完全不会跟着动——面板早就滚到别的地方
+      // 去了,把手还钉在原来那个屏幕位置,两者自然就"排列不对"了。
+      // 改法:垂直方向(`top`)也交给 JS 现场量,量的是 `.pg-controls`
+      // 自己当前在屏幕上的真实位置(不是宽度,是垂直方向的 top/height——
+      // 这两个值不受面板展开/收起那条 width 过渡影响,不会重新踩中第六次
+      // 那个"量的时机/对象选错"的坑),再监听 `.pg-main` 的 scroll 事件
+      // (见下面模板 @scroll),滚动的每一刻都跟着重新算一次,让把手始终
+      // 贴在面板垂直方向的正中间。收起时面板本身是空的、没什么可贴的,
+      // 退回贴视口垂直正中间(浮动按钮的效果,方便随时找到、重新展开)。
       function updateControlsHandlePosition() {
-        if (!controlsOpen.value) { controlsHandleRight.value = 10; return; }
-        if (!workspaceRef.value) return;
+        if (!controlsOpen.value) { controlsHandleRight.value = 10; controlsHandleTop.value = null; return; }
+        if (!workspaceRef.value || !controlsPanelRef.value) return;
         var edge = workspaceRef.value.getBoundingClientRect().right;
         controlsHandleRight.value = Math.max(10, window.innerWidth - edge + 300 + 10);
+        var panelRect = controlsPanelRef.value.getBoundingClientRect();
+        controlsHandleTop.value = panelRect.top + panelRect.height / 2;
       }
       // 2026-08 按你的反馈撤掉了上一版的 CSS zoom 整体放大方案——你说得对,
       // 这不是"responsive",只是把固定宽度内容硬放大,不应该这么做,已经
@@ -4159,13 +4195,26 @@
         resetControls(entry);
         screenWidthAuto.value = true;
         syncScreenWidthToStage();
+        // 2026-09-15(第九次)你反馈切到别的组件页面(比如 Breadcrumb,
+        // Controls 面板本身的控件比 OfferDashboard 少得多、面板矮很多)
+        // 之后,把手停在上一个页面算出来的旧位置没动——因为切换页面
+        // (`selectedKey`/`current` 变化)不在任何一个已有的重新测量触发
+        // 点里(不是 controlsOpen 变化、不是 resize、不是 .pg-main 的
+        // scroll),Controls 面板的真实高度/位置已经变了,把手却没有跟着
+        // 重新量。这里补上:nextTick 等新页面的 Controls 面板渲染完,
+        // 再重新量一次。
+        nextTick(updateControlsHandlePosition);
       }, { immediate: true });
       function handleWindowResize() { syncScreenWidthToStage(); updateControlsHandlePosition(); }
       onMounted(function () {
         window.addEventListener('resize', handleWindowResize);
+        if (mainRef.value) mainRef.value.addEventListener('scroll', updateControlsHandlePosition);
         updateControlsHandlePosition();
       });
-      onBeforeUnmount(function () { window.removeEventListener('resize', handleWindowResize); });
+      onBeforeUnmount(function () {
+        window.removeEventListener('resize', handleWindowResize);
+        if (mainRef.value) mainRef.value.removeEventListener('scroll', updateControlsHandlePosition);
+      });
       // controlsOpen 变化(手动点把手切换,或者进/出全屏时代码自动收起/
       // 恢复,见下面 toggleFullscreen)都会让 .pg-controls 的宽度跟着
       // .22s 的 CSS transition 变化,把手要贴的位置也要跟着重新量——
@@ -4523,7 +4572,7 @@
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
         componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef, resizeFrameRef: resizeFrameRef,
-        workspaceRef: workspaceRef, controlsHandleRight: controlsHandleRight,
+        workspaceRef: workspaceRef, controlsPanelRef: controlsPanelRef, mainRef: mainRef, controlsHandleRight: controlsHandleRight, controlsHandleTop: controlsHandleTop,
         markScreenWidthManual: markScreenWidthManual, handleSegmentedClick: handleSegmentedClick,
         hasResetControl: hasResetControl, otherControls: otherControls,
         specModeEnabled: specModeEnabled, specHover: specHover, specPanel: specPanel,
@@ -4545,7 +4594,7 @@
       '</button></div></div></aside>' +
       '<button type="button" class="pg-rail-toggle pg-rail-toggle--sidebar" @click="toggleSidebar" ' +
       ':title="sidebarOpen ? \'Hide nav\' : \'Show nav\'">{{ sidebarOpen ? \'‹\' : \'›\' }}</button>' +
-      '<main class="pg-main">' +
+      '<main class="pg-main" ref="mainRef">' +
       '<button v-if="selectedKey === \'OfferDashboard\'" type="button" class="pg-fullscreen-btn" ' +
       ':class="{ \'pg-fullscreen-btn--icon-only\': fullscreenOpen && !controlsOpen }" ' +
       ':title="fullscreenOpen ? \'Exit full page\' : \'Expand to full page\'" @click="toggleFullscreen">' +
@@ -4562,12 +4611,12 @@
       '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
       '</div></div>' +
       '<button type="button" class="pg-rail-toggle pg-rail-toggle--controls" ' +
-      ':style="{ right: controlsHandleRight + \'px\' }" @click="toggleControls" ' +
+      ':style="{ right: controlsHandleRight + \'px\', top: (controlsHandleTop === null ? \'50%\' : controlsHandleTop + \'px\') }" @click="toggleControls" ' +
       ':title="controlsOpen ? \'Hide controls\' : \'Show controls\'">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="6" r="2.5" fill="#1C1D1F" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="12" r="2.5" fill="#1C1D1F" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="18" r="2.5" fill="#1C1D1F" stroke="currentColor" stroke-width="2"/></svg>' +
       '<span class="pg-rail-toggle--controls__label">CONTROLS</span>' +
       '</button>' +
-      '<aside class="pg-controls" :class="{ \'pg-controls--collapsed\': !controlsOpen }">' +
+      '<aside class="pg-controls" ref="controlsPanelRef" :class="{ \'pg-controls--collapsed\': !controlsOpen }">' +
       '<div class="pg-controls__inner">' +
       '<div class="pg-controls__title">Controls</div>' +
       // 2026-09-11 新增 Spec Mode:Reset(如果这个组件有)排在最前面不动,
