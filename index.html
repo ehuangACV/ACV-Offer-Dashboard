@@ -50,6 +50,12 @@
   .pg-main { position: relative; }
   .pg-fullscreen-btn { position: absolute; top: 24px; right: 32px; z-index: 20; display: flex; align-items: center; gap: 6px; border: 1px solid #DCDFE8; background: #fff; border-radius: 6px; padding: 6px 14px; font-size: 13px; color: #004E7D; cursor: pointer; }
   .pg-fullscreen-btn:hover { background: #F0F8FF; }
+  /* 2026-09-15 按你的要求:全屏模式下,Controls 面板收起时这个按钮只显示
+     ×图标(不带"Exit full page"文字)——面板收起就是想让预览区域尽量
+     干净、更接近真实产品的样子,一个常驻的文字按钮反而显眼。面板展开时
+     还是原来"×  Exit full page"的样子不变,靠 title 属性保留可访问性
+     文本。 */
+  .pg-fullscreen-btn--icon-only { width: 32px; height: 32px; padding: 0; justify-content: center; gap: 0; }
 
   .pg-shell--fullscreen .pg-sidebar,
   .pg-shell--fullscreen .pg-rail-toggle--sidebar,
@@ -59,12 +65,13 @@
   .pg-shell--fullscreen .pg-main { position: fixed; inset: 0; padding: 0; z-index: 1000; background: #fff; overflow: auto; }
   .pg-shell--fullscreen .pg-workspace { height: 100%; align-items: stretch; }
   .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; }
-  /* pg-stage 在全屏时 padding 已经清零(见上面 padding:0 那条),
-     Dashboard 自己的 AppHeader 现在会紧贴到真正的屏幕左上角——如果这个
-     按钮还留在 top:12/right:12,会正好盖住 AppHeader 右侧的铃铛/头像/
-     菜单图标。挪到 AppHeader(58px 高)下方、breadcrumb 那一行右侧的
-     空白区域,不会挡住任何真实内容 */
-  .pg-shell--fullscreen .pg-fullscreen-btn { top: 66px; right: 16px; }
+  /* 2026-09-15(第二次,按你的要求撤销上一次"专门留一条空白"的做法)
+     直接以 overlay 的方式贴在 Controls 面板右上角——不再改
+     .pg-workspace 的布局(不再挤出一条 44px 空白让整体往下挪),按钮
+     还是像之前一样浮在最上层,只是数值改成贴着 Controls 面板自己的
+     右上角(top/right 8px),细节和上一版的取舍记录见
+     PLAYGROUND_NOTES.md 同名条目。 */
+  .pg-shell--fullscreen .pg-fullscreen-btn { top: 8px; right: 8px; }
   /* 2026-08 新增 screenWidth 滑块控件(只在选中 Offer Dashboard 时出现)
      之后,把"全屏时铺满可用宽度"和"用滑块模拟任意屏幕宽度"统一成同一套
      机制,细节(container-type、cqw 换算公式)见下面 .offer-dashboard
@@ -125,6 +132,14 @@
   .pg-spec-panel { position: fixed; z-index: 61; width: 300px; max-height: 420px; overflow-y: auto; background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.18); font-family: 'Roboto', sans-serif; }
   .pg-spec-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #E8E9EB; }
   .pg-spec-panel__title { font-size: 12px; font-family: 'Menlo', 'Consolas', monospace; color: #0E0E0F; word-break: break-all; }
+  .pg-spec-panel__head-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  /* 2026-09-15 按你的要求:关闭按钮左边加一个复制CSS的图标按钮,方便
+     dev 不用滚到面板最下面找 Copy CSS——去掉了原来底部的
+     .pg-spec-panel__foot/__copy。图标（复制icon）+ hover/点击后的
+     "Copied" tooltip 都是照抄 OfferCard.vue 的 VIN 复制按钮那套已核实
+     样式(.offer-card__copy-btn/__vin-tooltip),不重新设计一套。 */
+  .pg-spec-panel__copy-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: none; background: none; padding: 0; cursor: pointer; color: #757575; flex-shrink: 0; }
+  .pg-spec-panel__copy-btn:hover { color: #0E0E0F; }
   .pg-spec-panel__close { border: none; background: none; font-size: 18px; line-height: 1; color: #757575; cursor: pointer; padding: 0 2px; }
   .pg-spec-panel__close:hover { color: #0E0E0F; }
   .pg-spec-panel__body { padding: 8px 12px; }
@@ -133,8 +148,11 @@
   .pg-spec-panel__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 12px; }
   .pg-spec-panel__row-label { color: #55575C; flex-shrink: 0; }
   .pg-spec-panel__row-value { color: #0E0E0F; text-align: right; word-break: break-word; }
-  .pg-spec-panel__foot { padding: 10px 12px; border-top: 1px solid #E8E9EB; }
-  .pg-spec-panel__copy { padding: 8px 12px; font-size: 13px; }
+  /* 同 .offer-card__vin-tooltip 的已核实样式,细节见该组件文件同名注释。 */
+  .pg-spec-panel__copy-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 4px; background: #1C1D1F; color: #F7F7F8; font: 400 12px/18px 'Roboto', sans-serif; letter-spacing: 0.4px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .1s ease; z-index: 10; }
+  .pg-spec-panel__copy-btn:hover .pg-spec-panel__copy-tooltip,
+  .pg-spec-panel__copy-btn:focus-visible .pg-spec-panel__copy-tooltip,
+  .pg-spec-panel__copy-btn.is-copied .pg-spec-panel__copy-tooltip { opacity: 1; }
   .pg-spec-panel__copy::before { content: none; }
   .pg-no-controls--inline { width: auto; margin: 8px 0 0; }
   /* 2026-08 按你的要求:全屏时右边不应该有空白,Buying/Selling下面那条
@@ -145,7 +163,29 @@
      和AppHeader一样贴到真正的屏幕右边缘,不再单独处理"这条线"一个元素,
      这样和它同一行/同一右边界的其它内容也会一起对齐,不会顾此失彼。 */
   .pg-shell--fullscreen .offer-dashboard__content { padding-right: 0; }
-  .pg-rail-toggle--controls { margin: 0 8px; border-radius: 4px; height: 32px; align-self: center; }
+  /* 2026-09-15 按你的要求:打开/收起 Controls 面板的把手改成一个深色圆角
+     竖条(图标+竖排文字),不再是原来那个细窄的 ‹/› 箭头条。图标/文案
+     由我来选:sliders(可调节的三条横杠+旋钮圆点)是"这里有一组可调整的
+     控制项"最直接对应的图标,文案沿用面板自己标题栏上已经在用的
+     "CONTROLS" 这个词,不额外造一个新词。 */
+  /* 2026-09-15(第二次)按你的要求改成 position:fixed 浮在页面最上层,
+     不再是 .pg-workspace flex 行里占位的一个普通子项——原来那样会:
+     1) 挤占 Stage 的可用宽度,Stage 永远不可能真正撑满整屏(你说的
+     "想让 full page 更真实"这条就是指这个);2) 垂直位置靠
+     align-self:center 相对"整个可滚动内容的高度"算,内容一多把手就被
+     顶到很远、卡进原生滚动条里,看起来很乱。改成 fixed 之后把手完全
+     脱离布局,垂直方向固定贴着视口正中间(不再跟着内容高度走)。水平方向
+     (`right`)不是靠 CSS 修饰类写死的,是 JS 现场量出来再用内联 style
+     绑的(见 setup() 里 updateControlsHandlePosition,原因和取舍写在
+     那边的注释里,这里的 right:10px 只是 JS 算出真实值之前的占位默认值,
+     实际渲染会被内联 style 覆盖掉)。 */
+  .pg-rail-toggle--controls { position: fixed; top: 50%; right: 10px; transform: translateY(-50%); z-index: 25; width: 36px; height: 92px; margin: 0; border-radius: 14px; background: #1C1D1F; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px 0; box-shadow: 0 4px 10px rgba(0, 0, 0, .18); font-size: 11px; transition: right .22s ease; }
+  /* hover 时不改背景色(不用 background 这个属性变化)——图标里几个
+     "旋钮圆点"的 fill 写死成 #1C1D1F 来遮住穿过它们的横杠(仿滑块旋钮的
+     常见画法),如果 hover 时背景色变了,这几个圆点会露出原来那个颜色
+     变成不匹配的深色斑点。改成阴影变深来表达 hover,不动背景色。 */
+  .pg-rail-toggle--controls:hover { color: #FFFFFF; box-shadow: 0 6px 14px rgba(0, 0, 0, .3); }
+  .pg-rail-toggle--controls__label { writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 1.5px; font-weight: 700; font-family: 'Roboto', sans-serif; }
   .pg-controls { width: 300px; flex-shrink: 0; background: #fff; border: 1px solid #E8E9EB; border-radius: 8px; padding: 16px; overflow: hidden; box-sizing: border-box; transition: width .22s ease, padding .22s ease, border-color .22s ease; }
   .pg-controls__inner { width: 268px; }
   .pg-controls--collapsed { width: 0; padding-left: 0; padding-right: 0; border-color: transparent; }
@@ -507,7 +547,10 @@
   .pagination__dropdown-btn:focus-visible, .pagination__dropdown-btn--open { outline: none; box-shadow: 0 0 0 3px #CFE3F5; }
   .pagination__dropdown-btn svg { display: block; flex-shrink: 0; }
   .pagination__dropdown-value { line-height: 20px; }
-  .pagination__menu { position: absolute; top: calc(100% + 1px); left: 0; min-width: 100%; background: #FFFFFF; border: 1px solid #DCDFE8; border-radius: 0 0 4px 4px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12); padding: 0; margin: 0; list-style: none; z-index: 5; }
+  /* 2026-09-15 改成往上弹(bottom 代替 top),避免在表格/列表底部的分页行
+     里被页面底部裁掉,细节见真实文件 fragments/Pagination/Pagination.vue
+     同名注释。 */
+  .pagination__menu { position: absolute; bottom: calc(100% + 1px); left: 0; min-width: 100%; background: #FFFFFF; border: 1px solid #DCDFE8; border-radius: 4px 4px 0 0; box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.12); padding: 0; margin: 0; list-style: none; z-index: 5; }
   .pagination__menu li { padding: 8px 12px; font-size: 14px; line-height: 20px; color: #55575C; cursor: pointer; white-space: nowrap; }
   .pagination__menu li:hover { background: #F0F1F4; }
   .pagination__menu li[aria-selected='true'] { background: #1A73E8; color: #FFFFFF; }
@@ -3982,6 +4025,37 @@
       var sidebarOpen = ref(true);
       var controlsOpen = ref(true);
       var fullscreenOpen = ref(false);
+      // 2026-09-15(第三次)Controls 把手改成 position:fixed 之后,水平
+      // 位置不能再写死一个像素常量——非全屏模式 .pg-main 自己有
+      // padding:24px 32px(还可能带一条纵向滚动条),全屏模式 padding
+      // 直接是0,两种模式下"面板左边缘到视口右边缘"的距离完全不一样。
+      // 【2026-09-15(第五次)】收起时改成直接写死 `right:10px`
+      // (position:fixed 本来就是相对真实浏览器视口,不是相对 .pg-main
+      // 那圈 padding),贴视口字面意义上的最右边。
+      // 【2026-09-15(第六次)你反馈 full page 里开合面板时把手的移动动画
+      // 很 glitchy】——根因是"展开"这个分支原来量的是 `.pg-controls`
+      // 自己的 getBoundingClientRect().left,但这个元素的宽度正好是
+      // CSS transition(width .22s ease)在动画的对象,而这个函数第一次
+      // 调用发生在 Vue 的 watch 回调里,常常抢在 DOM 真的应用新 class
+      // 之前(量到的还是收起前的旧宽度)——于是把手先跳到一个错误的中间
+      // 位置,0.22s 动画播完之后,260ms 那次补量才把它正确的目标位置纠
+      // 正过来,变成"先动一下、停顿、再滑一段"这种肉眼看得出来的两段式
+      // 抽动,不是真的哪里坏了,是量的时机、量的对象都选错了。
+      // 改法:展开时不再量会动的 `.pg-controls`,改成量 `.pg-workspace`
+      // 自己的右边缘——这个容器的宽度只由 `.pg-main` 的可用空间决定,
+      // 跟 Controls 面板自己是300px还是0px无关(Stage 会用 flex:1 去吸收
+      // 差值),所以不管面板处于动画的哪一帧,workspace 右边缘都是同一个
+      // 稳定值,可以在动画开始的第一时间就算出面板"展开完成后"最终会落在
+      // 哪、把手该贴哪,不用等动画播完再纠正一次,把手和面板会在同一个
+      // 0.22s 区间里同步滑动,不会再有那种两段式的抽动感。
+      var workspaceRef = ref(null);
+      var controlsHandleRight = ref(10);
+      function updateControlsHandlePosition() {
+        if (!controlsOpen.value) { controlsHandleRight.value = 10; return; }
+        if (!workspaceRef.value) return;
+        var edge = workspaceRef.value.getBoundingClientRect().right;
+        controlsHandleRight.value = Math.max(10, window.innerWidth - edge + 300 + 10);
+      }
       // 2026-08 按你的反馈撤掉了上一版的 CSS zoom 整体放大方案——你说得对,
       // 这不是"responsive",只是把固定宽度内容硬放大,不应该这么做,已经
       // 删掉。
@@ -4040,9 +4114,22 @@
         screenWidthAuto.value = true;
         syncScreenWidthToStage();
       }, { immediate: true });
-      function handleWindowResize() { syncScreenWidthToStage(); }
-      onMounted(function () { window.addEventListener('resize', handleWindowResize); });
+      function handleWindowResize() { syncScreenWidthToStage(); updateControlsHandlePosition(); }
+      onMounted(function () {
+        window.addEventListener('resize', handleWindowResize);
+        updateControlsHandlePosition();
+      });
       onBeforeUnmount(function () { window.removeEventListener('resize', handleWindowResize); });
+      // controlsOpen 变化(手动点把手切换,或者进/出全屏时代码自动收起/
+      // 恢复,见下面 toggleFullscreen)都会让 .pg-controls 的宽度跟着
+      // .22s 的 CSS transition 变化,把手要贴的位置也要跟着重新量——
+      // 立即量一次(应付非过渡场景,比如直接切 selectedKey 时面板宽度
+      // 瞬间变化)+ 260ms 后再量一次(等 transition 播完,量到最终宽度,
+      // 和 syncScreenWidthToStage 用的是同一个 260ms 惯例)。
+      watch(controlsOpen, function () {
+        updateControlsHandlePosition();
+        setTimeout(updateControlsHandlePosition, 260);
+      });
 
       function applyMock(mockObj) { Object.assign(controlValues, mockObj); }
       function selectComponent(key) { selectedKey.value = key; }
@@ -4097,6 +4184,12 @@
       var screenWidthBeforeFullscreen = null;
       function toggleFullscreen() {
         fullscreenOpen.value = !fullscreenOpen.value;
+        // 进出全屏时 .pg-main 的 padding 本身就变了(24px 32px ↔ 0),
+        // 就算下面 controlsOpen 的值恰好没变(比如进全屏前面板本来就是
+        // 收起的),把手贴的位置也得跟着重新量——不能只依赖下面
+        // watch(controlsOpen) 那条(它只在值真的变化时才触发)。
+        updateControlsHandlePosition();
+        setTimeout(updateControlsHandlePosition, 260);
         if (fullscreenOpen.value) {
           // 2026-08 按你的要求:进全屏时 controls 默认收起(隐藏),用
           // 右边那条 rail-toggle 箭头可以随时点开("slide out"),退出全屏
@@ -4365,8 +4458,15 @@
         specHover.visible = false;
       }
       function closeSpecPanel() { specPanel.visible = false; }
+      // 2026-09-15 按你的要求:点击后的"Copied"反馈照抄 OfferCard.vue
+      // 的 copyVin() 那套(1.5秒后自动变回去),不重新设计一套。
+      var specCssCopied = ref(false);
+      var specCssCopiedTimer = null;
       function copySpecCss() {
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(specPanel.cssText);
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(specPanel.cssText).catch(function () {});
+        specCssCopied.value = true;
+        clearTimeout(specCssCopiedTimer);
+        specCssCopiedTimer = setTimeout(function () { specCssCopied.value = false; }, 1500);
       }
       watch(specModeEnabled, function (v) { if (!v) { specPanel.visible = false; specHover.visible = false; } });
 
@@ -4377,11 +4477,13 @@
         toggleSidebar: toggleSidebar, toggleControls: toggleControls, toggleFullscreen: toggleFullscreen,
         stageKey: stageKey, handleControlButton: handleControlButton,
         componentProps: componentProps, stageFrameStyle: stageFrameStyle, stageFrameHeight: stageFrameHeight, stageRef: stageRef, resizeFrameRef: resizeFrameRef,
+        workspaceRef: workspaceRef, controlsHandleRight: controlsHandleRight,
         markScreenWidthManual: markScreenWidthManual, handleSegmentedClick: handleSegmentedClick,
         hasResetControl: hasResetControl, otherControls: otherControls,
         specModeEnabled: specModeEnabled, specHover: specHover, specPanel: specPanel,
         handleSpecMouseMove: handleSpecMouseMove, handleSpecMouseLeaveStage: handleSpecMouseLeaveStage,
-        handleSpecClick: handleSpecClick, closeSpecPanel: closeSpecPanel, copySpecCss: copySpecCss
+        handleSpecClick: handleSpecClick, closeSpecPanel: closeSpecPanel, copySpecCss: copySpecCss,
+        specCssCopied: specCssCopied
       };
     },
     template:
@@ -4398,21 +4500,27 @@
       '<button type="button" class="pg-rail-toggle pg-rail-toggle--sidebar" @click="toggleSidebar" ' +
       ':title="sidebarOpen ? \'Hide nav\' : \'Show nav\'">{{ sidebarOpen ? \'‹\' : \'›\' }}</button>' +
       '<main class="pg-main">' +
-      '<button v-if="selectedKey === \'OfferDashboard\'" type="button" class="pg-fullscreen-btn" @click="toggleFullscreen">' +
-      '{{ fullscreenOpen ? \'✕ Exit full page\' : \'⛶ Expand to full page\' }}</button>' +
+      '<button v-if="selectedKey === \'OfferDashboard\'" type="button" class="pg-fullscreen-btn" ' +
+      ':class="{ \'pg-fullscreen-btn--icon-only\': fullscreenOpen && !controlsOpen }" ' +
+      ':title="fullscreenOpen ? \'Exit full page\' : \'Expand to full page\'" @click="toggleFullscreen">' +
+      '{{ fullscreenOpen ? (controlsOpen ? \'✕ Exit full page\' : \'✕\') : \'⛶ Expand to full page\' }}</button>' +
       '<div class="pg-header"><h1>{{ current.name }}</h1><span class="pg-header__meta">{{ current.group }} · order {{ current.order }}</span></div>' +
       '<div class="pg-mocks" v-if="Object.keys(current.mocks || {}).length">' +
       '<span class="pg-mocks__label">Mock examples:</span>' +
       '<button v-for="(mockObj, mockKey) in current.mocks" :key="mockKey" type="button" class="pg-mock-btn" @click="applyMock(mockObj)">{{ mockKey }}</button>' +
       '</div>' +
-      '<div class="pg-workspace">' +
+      '<div class="pg-workspace" ref="workspaceRef">' +
       '<div class="pg-stage" ref="stageRef" :class="{ \'pg-stage--spec-mode\': specModeEnabled }">' +
       '<div class="pg-stage__resize-frame" ref="resizeFrameRef" :class="{ \'pg-stage__resize-frame--device\': !!stageFrameHeight }" :style="stageFrameStyle" ' +
       '@click.capture="handleSpecClick" @mousemove="handleSpecMouseMove" @mouseleave="handleSpecMouseLeaveStage">' +
       '<component :is="current.def" :key="stageKey" v-bind="componentProps"></component>' +
       '</div></div>' +
-      '<button type="button" class="pg-rail-toggle pg-rail-toggle--controls" @click="toggleControls" ' +
-      ':title="controlsOpen ? \'Hide controls\' : \'Show controls\'">{{ controlsOpen ? \'›\' : \'‹\' }}</button>' +
+      '<button type="button" class="pg-rail-toggle pg-rail-toggle--controls" ' +
+      ':style="{ right: controlsHandleRight + \'px\' }" @click="toggleControls" ' +
+      ':title="controlsOpen ? \'Hide controls\' : \'Show controls\'">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="6" r="2.5" fill="#1C1D1F" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="12" r="2.5" fill="#1C1D1F" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="18" r="2.5" fill="#1C1D1F" stroke="currentColor" stroke-width="2"/></svg>' +
+      '<span class="pg-rail-toggle--controls__label">CONTROLS</span>' +
+      '</button>' +
       '<aside class="pg-controls" :class="{ \'pg-controls--collapsed\': !controlsOpen }">' +
       '<div class="pg-controls__inner">' +
       '<div class="pg-controls__title">Controls</div>' +
@@ -4462,7 +4570,13 @@
       '<div v-if="specPanel.visible" class="pg-spec-panel" :style="{ top: specPanel.top + \'px\', left: specPanel.left + \'px\' }">' +
       '<div class="pg-spec-panel__head">' +
       '<span class="pg-spec-panel__title">{{ specPanel.title }}</span>' +
+      '<div class="pg-spec-panel__head-actions">' +
+      '<button type="button" class="pg-spec-panel__copy-btn" :class="{ \'is-copied\': specCssCopied }" aria-label="Copy CSS" @click="copySpecCss">' +
+      '<svg width="12" height="14" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.52941 9.6C3.20588 9.6 2.92902 9.4826 2.69882 9.2478C2.46824 9.0126 2.35294 8.73 2.35294 8.4V1.2C2.35294 0.87 2.46824 0.5874 2.69882 0.3522C2.92902 0.1174 3.20588 0 3.52941 0H8.82353C9.14706 0 9.42412 0.1174 9.65471 0.3522C9.8849 0.5874 10 0.87 10 1.2V8.4C10 8.73 9.8849 9.0126 9.65471 9.2478C9.42412 9.4826 9.14706 9.6 8.82353 9.6H3.52941ZM1.17647 12C0.852941 12 0.575882 11.8826 0.345294 11.6478C0.115098 11.4126 0 11.13 0 10.8V3C0 2.83 0.0564707 2.6874 0.169412 2.5722C0.281961 2.4574 0.421569 2.4 0.588235 2.4C0.754902 2.4 0.894706 2.4574 1.00765 2.5722C1.1202 2.6874 1.17647 2.83 1.17647 3V10.8H7.05882C7.22549 10.8 7.36529 10.8576 7.47824 10.9728C7.59078 11.0876 7.64706 11.23 7.64706 11.4C7.64706 11.57 7.59078 11.7124 7.47824 11.8272C7.36529 11.9424 7.22549 12 7.05882 12H1.17647Z" fill="currentColor"/></svg>' +
+      '<span class="pg-spec-panel__copy-tooltip">{{ specCssCopied ? \'Copied\' : \'Copy CSS\' }}</span>' +
+      '</button>' +
       '<button type="button" class="pg-spec-panel__close" aria-label="Close" @click="closeSpecPanel">×</button>' +
+      '</div>' +
       '</div>' +
       '<div class="pg-spec-panel__body">' +
       '<template v-for="(row, i) in specPanel.rows" :key="i">' +
@@ -4470,7 +4584,6 @@
       '<div v-if="row.label" class="pg-spec-panel__row"><span class="pg-spec-panel__row-label">{{ row.label }}</span><span class="pg-spec-panel__row-value">{{ row.value }}</span></div>' +
       '</template>' +
       '</div>' +
-      '<div class="pg-spec-panel__foot"><button type="button" class="pg-control-button pg-spec-panel__copy" @click="copySpecCss">Copy CSS</button></div>' +
       '</div>' +
       '</main></div>'
   });

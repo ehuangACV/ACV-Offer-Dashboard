@@ -225,15 +225,18 @@ onBeforeUnmount(() => {
   line-height: 20px;
 }
 
+/* 2026-09-15 按你的要求:这个下拉菜单常见的使用位置是表格/列表底部的
+   分页行,往下弹很容易被页面底部裁掉一部分——改成往上弹(bottom 代替
+   top),圆角跟着从"上直下圆"翻成"下直上圆",贴着按钮上边缘展开。 */
 .pagination__menu {
   position: absolute;
-  top: calc(100% + 1px);
+  bottom: calc(100% + 1px);
   left: 0;
   min-width: 100%;
   background: #FFFFFF;
   border: 1px solid #DCDFE8;
-  border-radius: 0 0 4px 4px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.12);
   padding: 0;
   margin: 0;
   list-style: none;

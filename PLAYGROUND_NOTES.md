@@ -6,7 +6,125 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
-## 2026-09-11 新增 Spec Mode（点击元素看 CSS 规格，方便交付给 dev）
+## 2026-09-15(第六次)Full page 里开合面板,把手的移动动画很 glitchy
+
+你反馈 full page 里点开/关闭 Controls 面板时,把手的移动动画感觉很
+glitchy/buggy。排查确认是真的 bug,不是错觉——根因是"展开"这个分支
+(第五次那版)量的是 `.pg-controls` 自己的 `getBoundingClientRect().left`,
+但这个元素的宽度正好是 CSS transition(`width .22s ease`)在动画的对象,
+而这段测量代码跑在 Vue 的 `watch` 回调里,常常抢在 DOM 真的应用新 class
+之前执行(量到的还是收起前的旧宽度)——于是把手先跳到一个错误的中间
+位置,等 0.22s 动画播完、260ms 那次补量才把它纠正到真正的目标位置,肉眼
+看就是"先抽一下、停顿、再滑一段"这种两段式的动画,不是哪里写错了逻辑,
+是测量的对象和时机都选错了。
+
+改法:展开时不再量会动的 `.pg-controls`,改成量 `.pg-workspace` 自己的
+右边缘——这个容器的宽度只由 `.pg-main` 的可用空间决定,跟 Controls 面板
+自己是300px还是0px无关(Stage 用 `flex:1` 吸收差值),所以不管面板处于
+动画的哪一帧,workspace 右边缘都是同一个稳定值。这意味着可以在动画开始
+的第一时间就算出面板"展开完成后"最终会落在哪、把手该贴哪,不用等动画
+播完再纠正一次——把手和面板会在同一个 0.22s 区间里同步开始、同步结束,
+不会再有那种两段式的抽动感。收起时的逻辑(直接写死 `right:10px`,不测量)
+没有变,那部分本来就不依赖任何会动的元素。
+
+## 2026-09-15(第五次)Controls 面板收起时,把手没有真正贴在视口最右边
+
+你截图反馈:面板收起状态下,把手离视口最右边还空了一截,不是贴边的。
+根因是第四次那套"现场量 `.pg-controls` 真实位置"的算法——面板收起时它
+本身是空的(width:0),测量到的位置只是被 `.pg-main` 那圈 `24px 32px`
+装饰性 padding 顶出来的,不代表"视口最右边"字面上在哪。
+
+改法:收起时不测量,直接写死 `right:10px`——`position:fixed` 本来就是
+相对真实浏览器视口定位,不是相对 `.pg-main` 的 padding,直接写 `10px`
+贴的就是视口字面意义上的最右边。只有展开时才继续用第四次那套"现场量面板
+真实边缘"的逻辑(这个场景下面板是真的有内容占着地方,不测量会盖住面板
+里的东西,这部分逻辑没有变,浏览器验证过 gap 依然精确是10px)。
+
+## 2026-09-15(第四次)Controls 把手改成真正的 position:fixed 浮层 + Exit full page 收起时只留图标
+
+你反馈第二次改完的把手(深色圆角竖条)还是很乱——因为那次改完它其实还是
+`.pg-workspace` flex 行里的一个普通子项,只是外观换了样子,原有的两个
+问题都没解决:1) 仍然挤占 Stage 的可用宽度,Stage 不可能真正撑满整屏;
+2) 垂直位置仍然靠 `align-self:center` 相对"整个可滚动内容的高度"算,
+内容一多把手照样被顶到很远、卡进原生滚动条里。你要求把手真的"浮在正常
+页面上",这样 full page 预览才能更接近真实产品的样子。
+
+**真正的修法**:把手改成 `position:fixed`,完全脱离 `.pg-workspace` 的
+flex 布局——不再挤占 Stage 宽度,垂直方向也改成固定贴视口正中间
+(`top:50%`),不再跟着内容高度走。
+
+水平方向(`right`)不能写死一个像素常量——非全屏模式下 `.pg-main` 自己有
+`padding:24px 32px`(还可能带一条纵向滚动条),全屏模式 padding 直接是0,
+两种模式下"Controls 面板左边缘到视口右边缘"的距离完全不一样。改成用
+`controlsPanelRef`(绑在 `.pg-controls` 上)现场量
+`getBoundingClientRect().left`,拿视口宽度减掉它、再加10px间距,算出把手
+真实该贴的位置——不管哪种模式、面板开着还是收起缩到多窄,都是照真实量出
+来的位置贴,不是猜一个常量。触发重新量的时机:`controlsOpen` 变化时(手动
+点把手,或者进/出全屏时代码自动收起/恢复面板)、`toggleFullscreen` 本身
+(padding 变化,即使 controlsOpen 的值刚好没变也要重新量)、窗口 resize
+时(复用了原来就有的 `handleWindowResize`,没有再加一个新的 resize
+监听器)。每次都是"立即量一次 + 260ms 后再量一次"(等 `.pg-controls`
+那条 `width .22s ease` 的 CSS transition 播完,量到最终宽度,和
+`syncScreenWidthToStage` 用的是同一个260ms 惯例,不是我新定的数字)。
+
+**"Exit full page" 收起时只显示图标**:全屏模式下,Controls 面板收起时
+这个按钮只显示 `✕` 图标(不带"Exit full page"文字),面板展开时还是原来
+"✕ Exit full page"的样子——用 `:title` 属性保留可访问性文本。非全屏模式
+(按钮显示"⛶ Expand to full page")不受影响,这条只影响已经在全屏、且
+面板收起的那一种状态。
+
+浏览器实测过:非全屏模式面板开/收起、进全屏(面板自动收起,按钮变
+纯图标)、全屏内手动展开面板(按钮变回文字,把手跟着挪到面板左边缘)、
+退出全屏——每一步把手和面板左边缘之间的间距都精确是10px,没有重叠/穿模,
+无 console 报错。
+
+## 2026-09-15 "Exit full page" 按钮挪到真正的最右上角
+
+你反馈全屏模式下这个按钮(原来 `top:66px; right:16px`,专门躲开
+AppHeader 右侧的铃铛/头像/菜单图标)会被 Controls 面板盖住/压在
+"Reset dashboard"这类按钮上面——Controls 面板展开时会占满屏幕最右边
+从 y:0 开始的一整条,跟按钮所在的 x 范围重叠。
+
+单纯改按钮自己的 top/right 数值治不好这个问题:不管挪到哪个像素,只要
+Controls 面板还是从 y:0 开始占满整条,按钮就必然落在面板的某个内容上面
+(标题文字/Reset按钮/其它控件)。真正的修法是给 `.pg-workspace`(Stage+
+Controls 两栏)整体让出一条 44px 高的空白(`margin-top:44px` +
+`height:calc(100% - 44px)`),按钮摆在这条空白区域的最右上角
+(`top:8px; right:12px`)——这样不管 Controls 面板开不开、AppHeader
+自己长什么样,这条空白都是专门留给按钮的,不会跟任何真实内容重叠。
+
+## 2026-09-15(第二次)打开/收起 Controls 面板的把手改成深色圆角竖条
+
+你给了张参考截图(深色圆角矩形,图标+竖排文字"DEV"),要求打开 Controls
+面板的方式改成这样的 handle,图标和文案交给我判断合适的——原来这里只是
+一条 14px 宽、`‹`/`›` 两个字符的细窄条(`.pg-rail-toggle--controls`)。
+
+改成 36×92 的深色圆角竖条(`background:#1C1D1F`,`border-radius:14px`),
+里面是图标(sliders,三条横杠+旋钮圆点,对应"这里是一组可调整的控制项"
+这个语义,比参考截图里的代码图标更贴合"Controls 面板"本身,不是抄参考
+截图字面上的图标)+ 竖排文字(`writing-mode:vertical-rl`),文案沿用
+面板自己标题栏已经在用的"CONTROLS"这个词,没有另造一个新词。点击行为/
+`toggleControls`/`controlsOpen` 状态完全没变,只是外观从细条换成了这个
+把手。
+
+hover 状态特意没有改背景色——图标那几个"旋钮圆点"用 `fill:#1C1D1F`
+写死去遮住穿过它们的横杠(仿滑块旋钮的常见画法),背景色一变这几个圆点
+就会露出不匹配的深色斑点,改成用阴影变深表达 hover。
+
+## 2026-09-15 Spec 面板:关闭按钮左边加复制CSS图标,去掉底部的 Copy CSS 按钮
+
+你要求 dev 不用滚到面板最下面找"Copy CSS"按钮——改成在关闭按钮左边加一个
+复制图标按钮,原来 `.pg-spec-panel__foot` 那整块(底部单独一行的 "Copy
+CSS" 按钮)删掉。图标本身、以及 hover 时的提示("Copy CSS")/点击后的
+"Copied" 反馈(1.5秒后自动消失),都是照抄 `fragments/OfferCard/OfferCard.vue`
+里 VIN 复制按钮那套已核实样式(`.offer-card__copy-btn`/
+`.offer-card__vin-tooltip`),没有重新设计一套新的视觉/交互。新增
+`specCssCopied` 这个 ref,`copySpecCss()` 点击时除了原来就有的
+`navigator.clipboard.writeText`,现在还会把它设成 true、1.5秒后自动
+setTimeout 变回 false——这部分逻辑也是照抄 OfferCard.vue 的
+`copyVin()`,不是重新写的。
+
+## 2026-09-11 新增 Spec Mode(点击元素看 CSS 规格，方便交付给 dev）
 
 你给我看了一个参考的 devtool（点击元素后弹出 Size/Padding/Margin/Spacing/
 Font/Color/Background/Border + Copy CSS 按钮），要求做一个类似功能：在

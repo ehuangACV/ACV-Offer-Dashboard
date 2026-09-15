@@ -1,5 +1,14 @@
 # Pagination — Notes
 
+## 2026-09-15 "Rows per page" 下拉菜单改成往上弹
+
+你反馈这个下拉菜单从下方弹出——常见的使用场景(表格/列表底部的分页行)
+往下弹很容易被页面底部裁掉一部分。`.pagination__menu` 的定位从
+`top: calc(100% + 1px)` 改成 `bottom: calc(100% + 1px)`,贴着按钮上边缘
+往上展开;圆角跟着从"上直下圆"(`0 0 4px 4px`)翻成"下直上圆"
+(`4px 4px 0 0`),阴影方向也跟着翻成朝上(`0 -4px 10px`)。按钮本身/
+选项列表的内容、点击选中逻辑都没有变。
+
 ## 2026-08 重大更新:改用 Claude Design 项目里的 ACV Pagination 组件
 按你的要求,通过 DesignSync(claude_design MCP)读取了 Claude Design
 项目 "ACV Auctions Design System" 里的
