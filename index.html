@@ -2158,7 +2158,7 @@
     emits: ['update:modelValue', 'close', 'keep', 'remove'],
     template:
       '<teleport to="body" :disabled="inline">' +
-      '<div v-if="modelValue" :class="inline ? \'remove-list-dialog-inline-shell\' : [\'remove-list-dialog-overlay\', { \'remove-list-dialog-overlay--mobile\': mobile }]" @click.self="handleOverlayClick">' +
+      '<div v-if="modelValue" :class="inline ? \'remove-list-dialog-inline-shell\' : [\'remove-list-dialog-overlay\', { \'remove-list-dialog-overlay--mobile\': mobile }]" :style="inline ? null : mobileOverlayStyle" @click.self="handleOverlayClick">' +
       '<div class="remove-list-dialog" :class="{ \'remove-list-dialog--mobile\': mobile }" role="dialog" aria-label="Remove From List">' +
       '<div v-if="mobile" class="remove-list-dialog__drag-handle"></div>' +
       '<div class="remove-list-dialog__header"><span class="remove-list-dialog__title">Remove From List?</span>' +
@@ -2175,11 +2175,43 @@
       '</teleport>',
     setup: function (props, ctx) {
       var emit = ctx.emit;
+      // 2026-09-15(第二次)照抄 InformationDialog 已经验证过的同一套
+      // 机制,让背板贴合 Playground Mobile view 模拟框的真实屏幕位置,
+      // 不是铺满整个真实浏览器视口——细节见真实文件
+      // fragments/RemoveFromListDialog/RemoveFromListDialog.vue 文件头
+      // METADATA。
+      var mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null);
+      var mobileOverlayRect = ref(null);
+      function updateMobileOverlayRect() {
+        var el = mobileDeviceFrameEl && mobileDeviceFrameEl.value;
+        if (!props.mobile || props.inline || !el) {
+          mobileOverlayRect.value = null;
+          return;
+        }
+        var r = el.getBoundingClientRect();
+        mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height };
+      }
+      var mobileOverlayStyle = computed(function () {
+        if (mobileOverlayRect.value) {
+          var r = mobileOverlayRect.value;
+          return { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' };
+        }
+        return { position: 'fixed', top: '0', left: '0', right: '0', bottom: '0' };
+      });
+      onMounted(function () {
+        window.addEventListener('resize', updateMobileOverlayRect);
+      });
+      onBeforeUnmount(function () {
+        window.removeEventListener('resize', updateMobileOverlayRect);
+      });
+      watch(function () { return props.modelValue; }, function (open) {
+        if (open) nextTick(updateMobileOverlayRect);
+      });
       function handleClose() { emit('update:modelValue', false); emit('close'); }
       function handleOverlayClick() { if (!props.inline) handleClose(); }
       function handleKeep() { emit('update:modelValue', false); emit('keep'); }
       function handleRemove() { emit('update:modelValue', false); emit('remove'); }
-      return { handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleKeep: handleKeep, handleRemove: handleRemove };
+      return { handleClose: handleClose, handleOverlayClick: handleOverlayClick, handleKeep: handleKeep, handleRemove: handleRemove, mobileOverlayStyle: mobileOverlayStyle };
     }
   });
 

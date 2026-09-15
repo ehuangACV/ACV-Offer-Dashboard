@@ -70,6 +70,24 @@
     合理设计)。DOM 顺序没有变(还是先 keep-btn 后 remove-btn,和桌面版
     共用同一段 markup),视觉顺序靠 `flex-direction: column-reverse`
     翻转,不是复制一份倒序的 markup。
+
+    2026-09-15(第二次)你反馈 Playground 里 Mobile view 模拟框内打开时,
+    这个面板宽度不对——铺满的是真实浏览器窗口的宽度,不是模拟框(比如
+    390px)那个窄宽度,背板也盖住了整个真实页面(包括右边的 Controls
+    面板)。根因和 InformationDialog 之前踩过的一模一样:背板是
+    `position:fixed`+Teleport 到 body,天然是相对"真实浏览器视口"铺满
+    的,不知道 Playground 只是在页面中间画了一个盒子模拟"这是个手机屏幕"
+    ——`inset:0` 只会铺满真正的浏览器窗口,不会自动收缩进模拟框里。
+
+    修法完全照抄 `InformationDialog.vue` 已经验证过的同一套机制,不是
+    重新发明:`inject('mobileDeviceFrameEl', null)` 拿到 Harness 在渲染
+    Mobile view 模拟框时才会 provide 的真实 DOM 节点(生产环境/这个组件
+    自己的 Playground 页面拿到的都是 null,不受影响),用
+    `getBoundingClientRect()` 量出模拟框在屏幕上的真实位置,换算成
+    `top/left/width/height` 四个具体数值(不是 `inset:0`)当 inline style
+    绑给背板——弹层因此贴合的是模拟框的真实屏幕位置,不是整个浏览器
+    视口。窗口 resize、每次重新打开(`modelValue` 变成 true)都会重新
+    量一次,同 InformationDialog 一样。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
@@ -77,6 +95,7 @@
     <div
       v-if="modelValue"
       :class="inline ? 'remove-list-dialog-inline-shell' : ['remove-list-dialog-overlay', { 'remove-list-dialog-overlay--mobile': mobile }]"
+      :style="inline ? null : mobileOverlayStyle"
       @click.self="handleOverlayClick"
     >
       <div class="remove-list-dialog" :class="{ 'remove-list-dialog--mobile': mobile }" role="dialog" aria-label="Remove From List">
@@ -100,6 +119,8 @@
 </template>
 
 <script setup>
+import { inject, ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   // 2026-09 Playground 专用:同 InformationDialog 的 inline,原地渲染不用
@@ -112,6 +133,39 @@ const props = defineProps({
   mobile: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue', 'close', 'keep', 'remove'])
+
+// 2026-09-15(第二次)照抄 InformationDialog.vue 已经验证过的同一套机制,
+// 让背板贴合 Playground Mobile view 模拟框的真实屏幕位置,不是铺满整个
+// 真实浏览器视口——细节见文件头 METADATA。inject 到的默认值是 null(生产
+// 环境、这个组件自己的 Playground 页面都是这样),那种情况下走
+// mobileOverlayStyle 下面"铺满真实视口"这条分支,行为和没做这次改动一样。
+const mobileDeviceFrameEl = inject('mobileDeviceFrameEl', null)
+const mobileOverlayRect = ref(null)
+function updateMobileOverlayRect() {
+  var el = mobileDeviceFrameEl && mobileDeviceFrameEl.value
+  if (!props.mobile || props.inline || !el) {
+    mobileOverlayRect.value = null
+    return
+  }
+  var r = el.getBoundingClientRect()
+  mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height }
+}
+const mobileOverlayStyle = computed(() => {
+  if (mobileOverlayRect.value) {
+    var r = mobileOverlayRect.value
+    return { position: 'fixed', top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' }
+  }
+  return { position: 'fixed', top: '0', left: '0', right: '0', bottom: '0' }
+})
+onMounted(() => {
+  window.addEventListener('resize', updateMobileOverlayRect)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateMobileOverlayRect)
+})
+watch(() => props.modelValue, (open) => {
+  if (open) nextTick(updateMobileOverlayRect)
+})
 
 function handleClose() {
   emit('update:modelValue', false)
