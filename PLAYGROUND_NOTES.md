@@ -6,6 +6,44 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
+## 2026-09-15(第十五次)手机模拟框只做到了左右居中,上下没居中
+
+第十四次把居中展示扩大到 Auto 模式之后,你确认左右方向没问题,但指出
+"我说的居中是上下,左右没问题"——排查发现之前 `--device` 用的是
+`margin: 0 auto`,这只能让水平方向居中:普通 block 布局下,子元素的
+垂直方向 auto margin 浏览器会直接算成 0,不会生效,所以垂直方向一直是
+"贴顶对齐,多余空间全堆在下面"(全屏模式下最明显——`.pg-stage` 被
+`.pg-shell--fullscreen .pg-stage` 那条规则设成 `height:100%` 填满整个
+`.pg-main`,但 Mobile view 的模拟框固定高度 844px,比 100% 矮很多,多出
+来的垂直空间之前全部堆在框的下方)。
+
+改法:
+1. `.pg-stage` 加 `display:flex; align-items:flex-start;`——垂直方向的
+   auto margin 只在 flex/grid 容器里才会生效,所以先让 `.pg-stage` 变成
+   一个 flex 容器;`align-items:flex-start` 是显式覆盖 flex 默认的
+   `stretch`,让没有居中需求的其它组件(没有 `--device` 这个修饰类的,
+   比如桌面表格类页面)维持原来"自己多高就多高、贴顶对齐"的样子,不会
+   因为改成 flex 就意外被拉伸铺满整个 `.pg-stage` 高度。
+2. `.pg-stage__resize-frame--device` 的 `margin` 从 `0 auto` 改成
+   `auto`(四边都 auto)——在 flex 容器里,四边 auto margin 会同时处理
+   水平和垂直两个方向的居中。
+
+**为什么不直接在 `.pg-stage` 上写 `justify-content:center;
+align-items:center;`,而是把居中逻辑放在子元素自己的 `margin:auto`
+上**:如果内容比 `.pg-stage` 还宽/高(桌面宽表格需要横向滚动 fallback、
+Auto 模式撑得很高的 mobile 内容需要纵向滚动),用容器上的
+`justify-content`/`align-items:center` 有个 flexbox 的已知老问题——居中
+的溢出内容会被两边对称裁掉一部分,滚动条永远滚不到最开头看到完整内容。
+写在子元素自己的 `margin:auto` 上没有这个问题:内容比容器小时正常居中,
+内容比容器大时 auto margin 自动退化成 0,滚动行为跟原来 block 布局下
+一样,不会裁内容——验证过 Auto 模式 410px 撑出 7268px 高内容时,
+`scrollTop=0` 时框的 `top` 精确是 0,从头开始都能看到,没有被裁掉。
+
+验证:全屏 + Mobile view,模拟框量出来 `top:44px`,`.pg-stage` 高度
+932px、框高度 844px,底部空隙 `932-888=44px`,跟顶部的 44px 对上,上下
+均分。桌面组件页面(App Header)确认没有意外被拉伸或移位,和之前一样
+贴左上角显示。
+
 ## 2026-09-15(第十四次)`.pg-stage__resize-frame--device` 同一个"只认 Mobile view"问题,这次是居中展示
 
 跟第十三次是同一类根因、影响另一处的表现:你反馈全屏 + Mobile view/Auto

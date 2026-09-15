@@ -48,7 +48,23 @@
      "白白的一片"。改成浅灰画布之后,不管组件自己是不是白底,都能看清
      它的实际渲染范围,参照你截图里那个同事做的 VDP 预览工具的做法
      (灰色画布 + 组件本身在中间,像一张卡片浮在上面)。 */
-  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; }
+  /* 2026-09-15 加 display:flex + align-items:flex-start:配合下面
+     .pg-stage__resize-frame--device 那条把 margin 从 "0 auto"(只居中
+     水平方向)换成 "auto"(水平垂直都居中)——纯 block 布局下,子元素的
+     垂直 auto margin 不会生效(浏览器直接算成0),必须让 .pg-stage 自己
+     变成 flex 容器,子元素的 margin:auto 才能在垂直方向也居中。
+     align-items:flex-start 是显式覆盖 flex 默认的 stretch,保持"没设
+     margin:auto 的普通子元素维持原来自己多高就多高、贴顶对齐"这个跟
+     之前 block 布局一样的行为,不会因为改成 flex 就让其它组件(没有
+     --device 这个修饰类的桌面表格等)意外被拉伸铺满 .pg-stage 的高度。
+     没用 justify-content/align-items:center 直接写在 .pg-stage 上,是
+     因为那样当内容比 .pg-stage 还宽/高时(桌面表格、Auto 模式撑得很高的
+     mobile 内容),浏览器有个已知的 flexbox 老问题——居中的溢出内容会被
+     两边对称裁掉一部分、滚动条永远滚不到最开头看到完整内容。写在子元素
+     自己的 margin:auto 上没有这个问题——内容比容器小时正常居中,内容比
+     容器大时 auto margin 自动退化成 0,滚动行为跟原来 block 布局下一样,
+     不会裁内容。 */
+  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; display: flex; align-items: flex-start; }
 
   /* 2026-08 按你的要求新增:整页组件(比如 Offer Dashboard)右上角
      "Expand to full page" 按钮,方便你做 presentation 时全屏看效果。这
@@ -103,7 +119,15 @@
      白底+阴影是加在所有组件通用的 .pg-stage__card 上,这次改动范围
      收紧到只有 Mobile view 这一个场景,两者不是同一件事。 */
   .pg-stage__resize-frame--device {
-    margin: 0 auto;
+    /* 2026-09-15(第二次)你反馈"左右居中没问题,上下没居中"——之前这里
+       是 "margin: 0 auto"(左右auto,上下写死0),现在配合上面 .pg-stage
+       新加的 display:flex,改成四边都 auto,水平垂直都能居中,细节见
+       .pg-stage 旁边的注释。全屏模式下 .pg-stage 有 height:100%(填满
+       整个 .pg-main),Mobile view 的模拟框固定高度844px,比100%矮的时候
+       之前一直贴着顶部对齐,多出来的垂直空间全堆在下面;现在会上下各留
+       一半。非全屏模式下 .pg-stage 本身是内容撑多高就多高,几乎没有多余
+       垂直空间,这条改动在那种场景下基本看不出区别(之前已经验证过)。 */
+    margin: auto;
     background: #FFFFFF;
     border-radius: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,.12), 0 16px 40px rgba(0,0,0,.14);
