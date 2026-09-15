@@ -557,7 +557,17 @@ function updateMobileOverlayRect() {
     return
   }
   var r = el.getBoundingClientRect()
-  mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height }
+  // 2026-09-15 新发现的 bug,同 RemoveFromListDialog.vue 这次一起修的
+  // 那个问题:Playground Auto 模式下把 Screen width 拖到 breakpoint 以下
+  // 时,模拟框不像 Mobile view 那样锁固定高度(844px),是跟着 dashboard
+  // 内容撑高的,可以撑到几千 px、大半截在真实视口下面。直接拿模拟框的
+  // top/height 铺给这个 position:fixed 弹层,会把弹层拉到几千 px 高、
+  // 滚出屏幕看不见。改法:把模拟框的垂直范围和真实视口(window.innerHeight)
+  // 做交集裁剪,不超出屏幕可见范围——模拟框没有固定高度时,交集出来正好
+  // 是当前视口可见的那一段,效果跟真实手机浏览器"弹层贴着当前这一屏"一致。
+  var visTop = Math.max(r.top, 0)
+  var visBottom = Math.min(r.bottom, window.innerHeight)
+  mobileOverlayRect.value = { top: visTop, left: r.left, width: r.width, height: Math.max(visBottom - visTop, 0) }
 }
 const mobileOverlayStyle = computed(() => {
   if (props.inline) return null

@@ -6,6 +6,39 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
+## 2026-09-15(第十三次)mobileDeviceFrameEl 只覆盖了 Mobile view,没覆盖 Auto 模式拖过 breakpoint
+
+你反馈 Auto 模式下把 Screen width 滑块拖到 mobile breakpoint(768)以下
+时,DealershipFilterDropdown/InformationDialog/RemoveFromListDialog 这几个
+`position:fixed` 浮层的尺寸都没跟着变——具体的两层根因(宽度 fallback
+到真实视口 + 垂直位置被撑到屏幕外)见各自 fragment 的 notes.md
+([OfferDashboard](fragments/OfferDashboard/notes.md)、
+[InformationDialog](fragments/InformationDialog/notes.md)、
+[RemoveFromListDialog](fragments/RemoveFromListDialog/notes.md)),这里
+只记 Harness 这一侧的改动。
+
+`provide('mobileDeviceFrameEl', ...)` 之前的条件是
+`stageFrameHeight.value ? resizeFrameRef.value : null`——`stageFrameHeight`
+只在你显式点"Mobile view"按钮时才有值(见第三次改动的注释),Auto 模式
+靠拖 Screen width 滑块过 breakpoint 完全不会碰这个值,于是这几个组件一直
+拿到 null,只能走"生产环境铺满真实视口"这条 fallback 分支。
+
+改法:把条件放宽成"Mobile view 点出来的,或者当前是 OfferDashboard 页面
+且 Screen width 滑块的值本身已经拖到 768 以下"两种情况都算:
+```js
+provide('mobileDeviceFrameEl', computed(function () {
+  var isNarrowAuto = selectedKey.value === 'OfferDashboard' && controlValues.screenWidth < 768;
+  return (stageFrameHeight.value || isNarrowAuto) ? resizeFrameRef.value : null;
+}));
+```
+这个 768 跟滑块 min/max 收紧、`OfferDashboard.vue` 里
+`MOBILE_BREAKPOINT` 用的是同一个数字。用 `selectedKey === 'OfferDashboard'`
+限定,是因为 `controlValues.screenWidth` 只有这个组件的 Controls 面板
+才有(其它页面切换过去时这个值可能是上一个页面留下的旧数字,不加这个
+限定会在不相关的页面上误判)。`resizeFrameRef` 本身这个 DOM ref 一直都
+绑在 `.pg-stage__resize-frame` 上、不是条件渲染出来的,所以这里只是放宽
+"要不要把它传出去"的判断,不涉及模板结构变化。
+
 ## 2026-09-15(第十二次)全屏下打开 Controls 面板后,Exit full page 按钮又压住了面板内容
 
 第十一次把全屏态按钮固定在 `top:70px`(App Header 下方),是为了不挡住

@@ -1,5 +1,38 @@
 # OfferDashboard — Notes
 
+## 2026-09-15 Playground Auto 模式下拖到 mobile breakpoint 以下,Dealership 浮层没跟着变
+
+你在 Playground 里反馈:Auto 模式下把 Screen width 滑块拖到 mobile
+breakpoint(768)以下(比如410px)时,好几个弹窗尺寸都没跟着变——这个
+组件里的 Dealership 浮层(见 `updateDealerPopoverPosition`)就是其中
+一个,同一批一起修的还有 [InformationDialog](../InformationDialog/notes.md)
+和 [RemoveFromListDialog](../RemoveFromListDialog/notes.md)。
+
+排查发现这其实是两层 bug 叠在一起:
+1. **宽度**:`mobileDeviceFrameEl` 这个 inject 值,Harness 那边（见
+   `PLAYGROUND_NOTES.md`)之前只在你显式点了"Mobile view"按钮
+   (`stageFrameHeight` 有值)时才会传出去,Auto 模式靠拖滑块拖过
+   breakpoint 不会触发——于是这个浮层拿到的一直是 null,走的是"铺满
+   真实浏览器视口宽度"这条 fallback 分支,宽度看起来完全没变。这一半
+   的改法在 Harness 那边(把 provide 的条件从"只认 Mobile view"放宽到
+   "screenWidth 滑块当前值 < 768 就算,不管是 Mobile view 点出来的还是
+   Auto 拖出来的")。
+2. **垂直位置**:光修好上面这条之后,浮层宽度确实对了,但整个浮层却
+   跑到屏幕外面看不见了——因为 Auto 模式下模拟框(`.pg-stage__resize-frame`)
+   不像 Mobile view 那样锁固定高度(844px),是跟着 dashboard 内容本身
+   撑高的,可以撑到几千 px(内容一直往下长,靠 `.pg-main` 滚动,不是
+   靠模拟框内部滚动)。这个浮层原来的算法是"贴着模拟框底边往上 56px"
+   (`bottom: window.innerHeight - frameRect.bottom + 56`),如果模拟框
+   的 `bottom` 本身就在真实视口下面几千 px 的地方,算出来的 `bottom`
+   会是一个很大的负数,直接把浮层推到屏幕外。
+
+   改法:把模拟框的下边界和真实视口(`window.innerHeight`)做
+   `Math.min` 裁剪,不让它超出真实可见范围——模拟框没有固定高度时,
+   裁出来正好等于当前视口底部,效果跟真实手机浏览器"浮层贴着当前这一屏
+   底部"是一致的。验证:Auto 模式 410px + 全屏 + 打开 Controls 面板后,
+   点 Selling 页的 "Dealership" chip,浮层量出来是
+   `width:410px; left:0; bottom:56px`,和模拟框严格对齐,没有跑出屏幕。
+
 ## 2026-09-14(第二次)清掉一条跟着 OfferCard 420px上限一起撤销的覆盖规则
 
 [OfferCard.vue](../OfferCard/notes.md) 那边撤销了"卡片最宽420px"这条

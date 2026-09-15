@@ -148,7 +148,19 @@ function updateMobileOverlayRect() {
     return
   }
   var r = el.getBoundingClientRect()
-  mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height }
+  // 2026-09-15 新发现的 bug:Playground Auto 模式下把 Screen width 拖到
+  // breakpoint 以下时,模拟框没有像 Mobile view 那样锁固定高度(844px),
+  // 是跟着 dashboard 内容本身撑高的,可以撑到几千 px、大半截在真实视口
+  // 下面(要滚动才能看到)。这里如果直接拿模拟框的 top/height 原样铺给
+  // 这个 position:fixed 弹层,弹层会跟着被拉到几千 px 高、整个滚出屏幕
+  // 下方看不见——弹层本来只是想贴合"手机屏幕看起来多宽/多高",不是真的
+  // 要跟内容一样高。改法:把模拟框的垂直范围和真实视口(window.innerHeight,
+  // 代表"手机屏幕"实际能看到的那一屏)做交集裁剪,永远不超出屏幕可见范围
+  // ——模拟框本身没有固定高度(Auto 模式)时,交集出来就正好等于当前视口
+  // 可见的那一段,效果上跟真实手机浏览器"弹层贴着当前这一屏"是一致的。
+  var visTop = Math.max(r.top, 0)
+  var visBottom = Math.min(r.bottom, window.innerHeight)
+  mobileOverlayRect.value = { top: visTop, left: r.left, width: r.width, height: Math.max(visBottom - visTop, 0) }
 }
 const mobileOverlayStyle = computed(() => {
   if (mobileOverlayRect.value) {

@@ -1,5 +1,26 @@
 # InformationDialog — Notes
 
+## 2026-09-15 Playground Auto 模式下拖到 mobile breakpoint 以下,mobile 弹层没跟着变
+
+同一批一起修的 bug,详细排查过程见 [OfferDashboard](../OfferDashboard/notes.md)。
+简述:`updateMobileOverlayRect` 直接拿 `mobileDeviceFrameEl` 量出来的
+`top/left/width/height` 铺给这个弹层——Auto 模式下模拟框没有固定高度,
+跟着 dashboard 内容撑到几千 px 高(靠 `.pg-main` 滚动,不是模拟框内部
+滚动),直接铺给弹层会把它拉到几千 px 高、滚出屏幕看不见。改法:把
+模拟框的垂直范围（`top`~`bottom`)和真实视口(`window.innerHeight`)
+做交集裁剪:
+```
+var visTop = Math.max(r.top, 0);
+var visBottom = Math.min(r.bottom, window.innerHeight);
+mobileOverlayRect.value = { top: visTop, left: r.left, width: r.width, height: Math.max(visBottom - visTop, 0) };
+```
+模拟框没有固定高度时,裁出来正好等于当前视口可见范围,效果跟真实手机
+浏览器"弹层贴着当前这一屏"一致;模拟框本来就在视口内(Mobile view 那种
+固定 844px 高度的情况)时,`Math.min`/`Math.max` 不生效,行为不变。
+验证:Auto 410px + 全屏下点 "Manage Offer" 打开这个弹层,量出来是
+`top:0; left:0; width:410px; height:932px`(等于当前真实视口高度),
+没有被撑到几千 px 高。
+
 ## 2026-09-14(第七次)业务规则更正:Make Offer 买家 Sent 后不能再抬价
 
 你反馈:买家在拍卖结束后 Make Offer 提交一次offer之后,应该只能等卖家

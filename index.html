@@ -48,7 +48,23 @@
      "白白的一片"。改成浅灰画布之后,不管组件自己是不是白底,都能看清
      它的实际渲染范围,参照你截图里那个同事做的 VDP 预览工具的做法
      (灰色画布 + 组件本身在中间,像一张卡片浮在上面)。 */
-  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow: auto; }
+  /* 2026-09-15 overflow 拆成 x/y 两条,不再用 overflow:auto 简写:简写
+     会把 overflow-y 也一起设成 auto,而 .pg-stage 非全屏时是 auto 高度
+     (跟着内容撑高,自己永远不会真正需要纵向滚动,滚动一直是外层
+     .pg-main 在处理)——但只要声明了 overflow-y:auto,CSS 的
+     position:sticky 就会认它是"最近的可滚动祖先容器"而不是继续往上找
+     真正在滚动的 .pg-main,导致组件里任何 sticky 元素(MobileTopBar/
+     MobileBottomNav、这次新加的 mobile tabs+搜索+筛选 sticky 区块)在
+     Playground 非全屏/Auto 模式预览时定位错乱、贴不住真实视口——你反馈
+     "control 什么的排列感觉都不太对"那次排查的是别的地方,这次是同一类
+     "sticky 认错滚动容器"问题的另一个新发现的实例。横向滚动(面板挤占
+     空间时的宽度不够 fallback,这条规则本来的目的)只需要 overflow-x,
+     不需要连带把 overflow-y 也搭进去。全屏模式下 .pg-stage 会被下面
+     .pg-shell--fullscreen .pg-stage 这条覆盖规则重新加上 height:100%,
+     那种情况下 .pg-stage 确实会被内容撑爆自己的 100% 高度、需要真的靠
+     自己纵向滚动(不再是 .pg-main 在滚),那条覆盖规则里单独补回了
+     overflow-y:auto,不影响这里的默认值。 */
+  .pg-stage { flex: 1; min-width: 0; background: #F0F1F3; border: 1px solid #E8E9EB; border-radius: 8px; padding: 24px; overflow-x: auto; overflow-y: clip; }
 
   /* 2026-08 按你的要求新增:整页组件(比如 Offer Dashboard)右上角
      "Expand to full page" 按钮,方便你做 presentation 时全屏看效果。这
@@ -72,7 +88,7 @@
      全屏是为了看"真实产品应该长什么样",Stage 应该贴着 Controls 面板,
      不需要这条给开发工具本身留的舒适间距。 */
   .pg-shell--fullscreen .pg-workspace { height: 100%; align-items: stretch; gap: 0; }
-  .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; }
+  .pg-shell--fullscreen .pg-stage { height: 100%; border: none; border-radius: 0; padding: 0; overflow-y: auto; }
   /* 2026-09-15(第二次,按你的要求撤销上一次"专门留一条空白"的做法)
      直接以 overlay 的方式贴在 Controls 面板右上角——不再改
      .pg-workspace 的布局(不再挤出一条 44px 空白让整体往下挪),按钮
@@ -668,6 +684,10 @@
   /* -- OfferDashboard mobile layout (2026-09-11) -- */
   .offer-dashboard__mobile-body { display: flex; flex-direction: column; gap: 8px; flex: 1; padding: 0 16px 16px; box-sizing: border-box; }
   .offer-dashboard__toolbar--mobile { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 0; }
+  /* 2026-09-15 按你的要求新增:tabs+搜索+筛选chip贴在 MobileTopBar(高度
+     56px)下面,滚动往下收起、往上重新出现,细节见 fragments/OfferDashboard/notes.md */
+  .offer-dashboard__mobile-sticky-controls { position: sticky; top: 56px; z-index: 15; background: #FFFFFF; transform: translateY(0); transition: transform .25s ease; }
+  .offer-dashboard__mobile-sticky-controls--hidden { transform: translateY(-100%); }
   .offer-dashboard__mobile-list { display: flex; flex-direction: column; gap: 16px; }
   /* 2026-09-13 按你的要求新增:容器 >=760px 时 2 列并排,<760px 时保持
      单列。【2026-09-14】这里原来还有一条抵消 OfferCard 桌面
@@ -2014,7 +2034,9 @@
           return;
         }
         var r = el.getBoundingClientRect();
-        mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height };
+        var visTop = Math.max(r.top, 0);
+        var visBottom = Math.min(r.bottom, window.innerHeight);
+        mobileOverlayRect.value = { top: visTop, left: r.left, width: r.width, height: Math.max(visBottom - visTop, 0) };
       }
       var mobileOverlayStyle = computed(function () {
         if (props.inline) return null;
@@ -2199,7 +2221,9 @@
           return;
         }
         var r = el.getBoundingClientRect();
-        mobileOverlayRect.value = { top: r.top, left: r.left, width: r.width, height: r.height };
+        var visTop = Math.max(r.top, 0);
+        var visBottom = Math.min(r.bottom, window.innerHeight);
+        mobileOverlayRect.value = { top: visTop, left: r.left, width: r.width, height: Math.max(visBottom - visTop, 0) };
       }
       var mobileOverlayStyle = computed(function () {
         if (mobileOverlayRect.value) {
@@ -3057,12 +3081,14 @@
       '<template v-if="effectiveDeviceView === \'mobile\'">' +
       '<MobileTopBar />' +
       '<div class="offer-dashboard__mobile-body">' +
+      '<div class="offer-dashboard__mobile-sticky-controls" :class="{ \'offer-dashboard__mobile-sticky-controls--hidden\': mobileControlsHidden }">' +
       '<OfferTabs v-bind="tabs" mobile @select="handleTabSelect" />' +
       '<div class="offer-dashboard__toolbar offer-dashboard__toolbar--mobile">' +
       '<SearchInput v-model="searchInputValue" @search="searchValue = $event" />' +
       '<FilterChipGroup ref="filterChipGroupRef" v-bind="filters" mobile :is-multi-dealer="effectiveMultiDealer" ' +
       ':dealership-open="dealershipDropdownOpen" :dealer-chip-label="dealerFilter.length ? dealerChipText : \'\'" :show-declined="activeMainTab !== \'selling\'" ' +
       '@toggle-dealership="toggleDealershipDropdown" @clear="handleClearFilters" @filter-change="chipFilter = $event; currentTablePage = 1" @clear-dealer="dealerFilter = []; currentTablePage = 1" />' +
+      '</div>' +
       '</div>' +
       '<div v-if="dealershipDropdownOpen" ref="dealerPopoverWrapRef" class="offer-dashboard__dealer-popover-anchor" :style="dealerPopoverStyle">' +
       '<DealershipFilterDropdown mobile :is-multi-dealer="effectiveMultiDealer" :pre-selected="dealerFilter.join(\',\')" @apply="handleApplyDealerFilter" />' +
@@ -3157,11 +3183,12 @@
           var frameEl = mobileDeviceFrameEl && mobileDeviceFrameEl.value;
           if (frameEl) {
             var frameRect = frameEl.getBoundingClientRect();
+            var visibleBottom = Math.min(frameRect.bottom, window.innerHeight);
             dealerPopoverStyle.value = {
               position: 'fixed',
               left: frameRect.left + 'px',
               width: frameRect.width + 'px',
-              bottom: (window.innerHeight - frameRect.bottom + 56) + 'px',
+              bottom: (window.innerHeight - visibleBottom + 56) + 'px',
               zIndex: 10000
             };
             return;
@@ -3201,6 +3228,25 @@
       }
       function handleRepositionOnScroll() {
         if (dealershipDropdownOpen.value) updateDealerPopoverPosition();
+      }
+      // 2026-09-15 mobile 下 tabs/搜索/筛选那块滑动收起/出现,细节见
+      // fragments/OfferDashboard/notes.md 同名条目,这里只做逐字镜像。
+      var mobileControlsHidden = ref(false);
+      var mobileControlsLastScrollPos = 0;
+      var MOBILE_TOP_BAR_HEIGHT = 56;
+      function handleMobileControlsScroll(event) {
+        if (effectiveDeviceView.value !== 'mobile') return;
+        var target = event.target;
+        var pos = (target instanceof Element) ? target.scrollTop : (window.pageYOffset || document.documentElement.scrollTop || 0);
+        var delta = pos - mobileControlsLastScrollPos;
+        if (pos <= MOBILE_TOP_BAR_HEIGHT) {
+          mobileControlsHidden.value = false;
+        } else if (delta > 4) {
+          mobileControlsHidden.value = true;
+        } else if (delta < -4) {
+          mobileControlsHidden.value = false;
+        }
+        mobileControlsLastScrollPos = pos;
       }
       // 2026-09-10 影子横向滚动条,细节见 fragments/OfferDashboard/notes.md
       // 同名条目,这里只做逐字镜像。
@@ -3246,6 +3292,7 @@
         document.addEventListener('mousedown', handleOutsideClick);
         document.addEventListener('keydown', handleEscapeKey);
         window.addEventListener('scroll', handleRepositionOnScroll, { passive: true, capture: true });
+        window.addEventListener('scroll', handleMobileControlsScroll, { passive: true, capture: true });
         window.addEventListener('resize', handleRepositionOnScroll);
 
         window.addEventListener('resize', updateHScrollMeasurements);
@@ -3263,6 +3310,7 @@
         document.removeEventListener('keydown', handleEscapeKey);
         window.removeEventListener('scroll', handleRepositionOnScroll, { capture: true });
         window.removeEventListener('resize', handleRepositionOnScroll);
+        window.removeEventListener('scroll', handleMobileControlsScroll, { capture: true });
         window.removeEventListener('resize', updateHScrollMeasurements);
         if (hScrollResizeObserver) hScrollResizeObserver.disconnect();
         if (deviceViewResizeObserver) deviceViewResizeObserver.disconnect();
@@ -3602,7 +3650,7 @@
         dealerFilter: dealerFilter, chipFilter: chipFilter, dealerChipText: dealerChipText,
         handleApplyDealerFilter: handleApplyDealerFilter, handleClearFilters: handleClearFilters,
         filterChipGroupRef: filterChipGroupRef, dealerPopoverWrapRef: dealerPopoverWrapRef,
-        dealerPopoverStyle: dealerPopoverStyle, toggleDealershipDropdown: toggleDealershipDropdown,
+        dealerPopoverStyle: dealerPopoverStyle, toggleDealershipDropdown: toggleDealershipDropdown, mobileControlsHidden: mobileControlsHidden,
         hasAnyNewDeal: hasAnyNewDeal,
         setTableRowRef: setTableRowRef, setCardRef: setCardRef,
         tableScrollRef: tableScrollRef, hScrollShadowRef: hScrollShadowRef, tableBottomRef: tableBottomRef,
@@ -4408,9 +4456,22 @@
       // 模拟框的其它页面(比如 OfferCard 自己的 Playground 页)都拿到
       // null,InformationDialog 那边会走"生产环境铺满真实视口"这条分支,
       // 不会指向一个不存在/不相关的节点。
+      // 2026-09-15 你发现的 bug:上面这条只覆盖了"点了 Mobile view 按钮"
+      // 这一种情况——Auto 模式下把 Screen width 滑块拖到 breakpoint(768)
+      // 以下时,OfferDashboard 自己的 effectiveDeviceView 确实会跟着切成
+      // mobile 布局(见 OfferDashboard.vue 的 MOBILE_BREAKPOINT),但
+      // stageFrameHeight 仍然是 null(Auto 不强制高度),导致
+      // DealershipFilterDropdown/InformationDialog 这些 position:fixed
+      // 浮层拿到的还是 null,只能走"铺满真实浏览器视口"那条 fallback 分支
+      // ——于是浮层宽度是真实窗口宽度,而不是 Auto 模式下缩小出来的那个
+      // 模拟手机宽度(比如 410px)。改法:只要 Screen width 滑块的当前值
+      // 低于同一个 768 断点(不管是 Mobile view 点出来的,还是 Auto 拖出
+      // 来的),就把 resizeFrameRef 传出去;这个 768 跟上面第 4645 行滑块
+      // min/max 收紧用的是同一个数字,保持一致。
       var resizeFrameRef = ref(null);
       provide('mobileDeviceFrameEl', computed(function () {
-        return stageFrameHeight.value ? resizeFrameRef.value : null;
+        var isNarrowAuto = selectedKey.value === 'OfferDashboard' && controlValues.screenWidth < 768;
+        return (stageFrameHeight.value || isNarrowAuto) ? resizeFrameRef.value : null;
       }));
 
       // ============================================================

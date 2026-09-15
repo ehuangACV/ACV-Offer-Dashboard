@@ -1,5 +1,14 @@
 # RemoveFromListDialog — Notes
 
+## 2026-09-15(第二次)Playground Auto 模式下拖到 mobile breakpoint 以下,mobile 弹层没跟着变
+
+同一批一起修的 bug,跟上面刚新增的 mobile 版是同一套 `updateMobileOverlayRect`
+机制,详细排查过程见 [OfferDashboard](../OfferDashboard/notes.md)、
+具体改法见 [InformationDialog](../InformationDialog/notes.md)(两边代码
+是照抄的同一套,这次的修法也一样):把模拟框的垂直范围和真实视口
+(`window.innerHeight`)做交集裁剪,不让 Auto 模式下"跟着内容撑到几千
+px 高"的模拟框把这个弹层也拉到屏幕外面看不见。
+
 ## 2026-09-15 新增 mobile 版(底部弹出面板)
 
 你截图反馈手机上这个弹窗还是桌面那张560px宽的居中卡片硬套在窄屏里,

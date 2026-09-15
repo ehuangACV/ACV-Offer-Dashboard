@@ -248,23 +248,28 @@
     <MobileTopBar />
 
     <div class="offer-dashboard__mobile-body">
-      <OfferTabs v-bind="tabs" mobile @select="handleTabSelect" />
+      <div
+        class="offer-dashboard__mobile-sticky-controls"
+        :class="{ 'offer-dashboard__mobile-sticky-controls--hidden': mobileControlsHidden }"
+      >
+        <OfferTabs v-bind="tabs" mobile @select="handleTabSelect" />
 
-      <div class="offer-dashboard__toolbar offer-dashboard__toolbar--mobile">
-        <SearchInput v-model="searchInputValue" @search="searchValue = $event" />
-        <FilterChipGroup
-          ref="filterChipGroupRef"
-          v-bind="filters"
-          mobile
-          :is-multi-dealer="effectiveMultiDealer"
-          :dealership-open="dealershipDropdownOpen"
-          :dealer-chip-label="dealerFilter.length ? dealerChipText : ''"
-          :show-declined="activeMainTab !== 'selling'"
-          @toggle-dealership="toggleDealershipDropdown"
-          @clear="handleClearFilters"
-          @filter-change="chipFilter = $event; currentTablePage = 1"
-          @clear-dealer="dealerFilter = []; currentTablePage = 1"
-        />
+        <div class="offer-dashboard__toolbar offer-dashboard__toolbar--mobile">
+          <SearchInput v-model="searchInputValue" @search="searchValue = $event" />
+          <FilterChipGroup
+            ref="filterChipGroupRef"
+            v-bind="filters"
+            mobile
+            :is-multi-dealer="effectiveMultiDealer"
+            :dealership-open="dealershipDropdownOpen"
+            :dealer-chip-label="dealerFilter.length ? dealerChipText : ''"
+            :show-declined="activeMainTab !== 'selling'"
+            @toggle-dealership="toggleDealershipDropdown"
+            @clear="handleClearFilters"
+            @filter-change="chipFilter = $event; currentTablePage = 1"
+            @clear-dealer="dealerFilter = []; currentTablePage = 1"
+          />
+        </div>
       </div>
 
       <div
@@ -559,11 +564,21 @@ function updateDealerPopoverPosition() {
     const frameEl = mobileDeviceFrameEl?.value
     if (frameEl) {
       const rect = frameEl.getBoundingClientRect()
+      // 2026-09-15 新发现的 bug,同 InformationDialog/RemoveFromListDialog
+      // 这次一起修的问题:Playground Auto 模式下把 Screen width 拖到
+      // breakpoint 以下时,模拟框不像 Mobile view 那样锁固定高度,是跟着
+      // dashboard 内容撑高的,可以撑到几千 px、大半截在真实视口下面(要
+      // 滚动才能看到)。直接拿 rect.bottom 算"贴底部 56px",算出来的
+      // bottom 值会是一个很大的负数,把这个浮层直接推到屏幕外面看不见。
+      // 改法:用 Math.min(rect.bottom, window.innerHeight) 把模拟框的下边
+      // 界裁到真实视口以内——模拟框没有固定高度时,裁出来正好是当前视口
+      // 底部,效果跟真实手机浏览器"浮层贴着当前这一屏底部"一致。
+      const visibleBottom = Math.min(rect.bottom, window.innerHeight)
       dealerPopoverStyle.value = {
         position: 'fixed',
         left: `${rect.left}px`,
         width: `${rect.width}px`,
-        bottom: `${window.innerHeight - rect.bottom + 56}px`,
+        bottom: `${window.innerHeight - visibleBottom + 56}px`,
         zIndex: 10000
       }
       return
@@ -622,11 +637,46 @@ function handleRepositionOnScroll() {
   }
 }
 
+// 2026-09-15 按你的要求新增:mobile 尺寸下(effectiveDeviceView==='mobile',
+// 不管是 Mobile view 点出来的还是 Auto 拖窄出来的),Buying/Selling tabs +
+// 搜索框 + 筛选 chip 这一整块(见上面新包的 `.offer-dashboard__mobile-sticky-controls`)
+// 往下滑(滚动往下)时收起,往上滑(滚动往上)时重新出现——不是"滚动就消失
+// 不回来",是让用户随时一个反向小动作就能拿到搜索/筛选,不用滚回最顶部。
+// 这块本身是 position:sticky(贴在 MobileTopBar 下面,细节见旁边 CSS
+// 注释),收起/出现只是叠加一个 translateY 的 transform,不影响它贴顶的
+// 定位本身,也不影响下面卡片列表的正常文档流布局。
+// 判断"往上/往下"复用了上面 handleRepositionOnScroll 已经在用的
+// window+capture 监听模式(细节见下面 onMounted 旁边的注释,这个模式的
+// 意义是同时兼容"生产环境真实 window 滚动"和"Playground 里 .pg-main 内部
+// 滚动"两种场景,不用关心到底是谁在滚)——从 event.target 上量当前滚动
+// 位置,跟上一次记录的位置比较差值,差值小于阈值(4px)时不动作,避免
+// 一点点滚动抖动就来回切换看起来很闪。滚动位置本身还在 MobileTopBar 高度
+// (56px)以内时强制保持出现,不看方向——刚打开页面/滚回顶部附近这一小段
+// 距离不应该因为"稍微往下滚了几像素"就收起来。
+const mobileControlsHidden = ref(false)
+let mobileControlsLastScrollPos = 0
+const MOBILE_TOP_BAR_HEIGHT = 56
+function handleMobileControlsScroll(event) {
+  if (effectiveDeviceView.value !== 'mobile') return
+  const target = event.target
+  const pos = (target instanceof Element) ? target.scrollTop : (window.pageYOffset || document.documentElement.scrollTop || 0)
+  const delta = pos - mobileControlsLastScrollPos
+  if (pos <= MOBILE_TOP_BAR_HEIGHT) {
+    mobileControlsHidden.value = false
+  } else if (delta > 4) {
+    mobileControlsHidden.value = true
+  } else if (delta < -4) {
+    mobileControlsHidden.value = false
+  }
+  mobileControlsLastScrollPos = pos
+}
+
 onMounted(() => {
   document.addEventListener('mousedown', handleOutsideClick)
   document.addEventListener('keydown', handleEscapeKey)
   window.addEventListener('scroll', handleRepositionOnScroll, { passive: true, capture: true })
   window.addEventListener('resize', handleRepositionOnScroll)
+  window.addEventListener('scroll', handleMobileControlsScroll, { passive: true, capture: true })
 
   // 影子横向滚动条要用到的尺寸(表格实际内容宽度/是否溢出/Pagination
   // 高度)都会随窗口尺寸、列宽变化,用 ResizeObserver 统一盯着这两个
@@ -649,6 +699,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleEscapeKey)
   window.removeEventListener('scroll', handleRepositionOnScroll, { capture: true })
   window.removeEventListener('resize', handleRepositionOnScroll)
+  window.removeEventListener('scroll', handleMobileControlsScroll, { capture: true })
   window.removeEventListener('resize', updateHScrollMeasurements)
   if (hScrollResizeObserver) hScrollResizeObserver.disconnect()
   if (deviceViewResizeObserver) deviceViewResizeObserver.disconnect()
@@ -1656,6 +1707,30 @@ const cardGridStyle = computed(() =>
   flex-direction: column;
   gap: 8px;
   padding: 8px 0 0;
+}
+
+/* 2026-09-15 按你的要求新增:tabs+搜索+筛选chip这一整块贴在 MobileTopBar
+   (高度56px,见该组件自己的 CSS)下面,滚动往下时收起、往上时重新出现,
+   细节和取舍见 handleMobileControlsScroll 旁边的注释。position:sticky
+   (不是 fixed)是为了跟这个项目里其它 sticky 元素——MobileTopBar/
+   MobileBottomNav/Pagination 的"影子"横向滚动条——用同一套模式,不用
+   额外算 sidebar/padding 偏移量。收起用 transform(不是 display:none 或
+   height:0),这样有 transition 过渡动画,不会突然消失/出现;因为是
+   transform 不是改布局属性,不影响下面卡片列表本身的文档流位置。这块
+   只是把 OfferTabs/toolbar 从原来的直接 flex 子项包了一层 div,还在同一个
+   有 16px 左右内边距的 .offer-dashboard__mobile-body 里面,水平位置不用
+   额外处理。 */
+.offer-dashboard__mobile-sticky-controls {
+  position: sticky;
+  top: 56px;
+  z-index: 15;
+  background: #FFFFFF;
+  transform: translateY(0);
+  transition: transform .25s ease;
+}
+
+.offer-dashboard__mobile-sticky-controls--hidden {
+  transform: translateY(-100%);
 }
 
 .offer-dashboard__mobile-list {
