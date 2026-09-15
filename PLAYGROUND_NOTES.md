@@ -6,6 +6,74 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
+## 2026-09-15(第十二次)全屏下打开 Controls 面板后,Exit full page 按钮又压住了面板内容
+
+第十一次把全屏态按钮固定在 `top:70px`(App Header 下方),是为了不挡住
+App Header。但你打开 Controls 面板后发现新问题:面板本身是贴着视口顶部
+(`y:0`)展开的,`top:70px` 正好落在面板顶部的"Controls"标题和"Reset
+dashboard"按钮上,把内容压住了——本质上还是"按钮的固定位置 vs. 会变化
+的旁边内容"这同一类问题,只是这次挡住的是面板而不是 App Header。
+
+改法:让按钮的位置跟着 Controls 面板的开合状态动态切换,而不是用一个
+写死的 `top` 值应付两种状态:
+1. 面板收起时:保持第十一次的 `top:70px`(App Header 下方),不变。
+2. 面板展开时(新增 `pg-fullscreen-btn--panel-open` class,由
+   `fullscreenOpen && controlsOpen` 驱动):把按钮提到 `top:8px`,贴在
+   面板的最上沿右上角。同时给面板自己的标题加一条只在"全屏 + 展开"时
+   生效的样式——`.pg-controls__title { margin-top: 36px }`——把
+   "Controls"标题和后面的"Reset dashboard"往下推 36px,给顶上的按钮
+   让出空间(验证过:按钮 bottom=39px,标题 top=53px,留了 14px 空隙,
+   不挡"Reset dashboard")。
+   这跟之前被否掉的"给 Exit full page 单独留一整行,把 Stage 往下挤"
+   不是一回事——这里只挪动 Controls 面板自己内部的标题,不影响 Stage
+   宽度或整体 workspace 布局,影响范围小得多。
+
+## 2026-09-15(第十一次)全屏下 Exit full page 按钮遮住了 App Header 里的内容
+
+你截图反馈全屏模式下,"Exit full page" 按钮(`top:8px; right:8px`)正好
+压在业务组件自己的 App Header(`.app-header`,高 58px,里面有 Dealer
+Rewards Program 徽章、通知铃、头像和用户名)右上角的通知铃/头像上,内容被
+挡住了。
+
+改法:把全屏态下 `.pg-fullscreen-btn` 的 `top` 从 `8px` 改成 `70px`
+(App Header 高度 58px + 12px 间距),让按钮落在 App Header 下方的空白区
+域,不再遮挡任何有内容的地方;`right:8px` 不变。验证:全屏进入 Offers 页
+面截图确认按钮完全在 Header 下方,和铃/头像/徽章都没有重叠。
+
+## 2026-09-15(第十次)撤销"面板收起时按钮显示为纯图标",改回始终显示完整文案
+
+第七次改动里加了"Controls 面板收起时,Exit full page 按钮收缩成只显示
+×图标"的行为。你后来要求撤销这个行为——全屏时无论 Controls 面板是展开
+还是收起,按钮都应该始终显示完整的"✕ Exit full page" / "⛶ Expand to
+full page"文案,同时要求这个按钮始终浮在最上层,不被任何东西盖住。
+
+改法:
+1. 模板去掉 `:class="{ 'pg-fullscreen-btn--icon-only': fullscreenOpen && !controlsOpen }"` 绑定和依赖 `controlsOpen` 的三元文案,固定回
+   `{{ fullscreenOpen ? '✕ Exit full page' : '⛶ Expand to full page' }}`。
+2. 整条删除 `.pg-fullscreen-btn--icon-only` 这条 CSS 规则(grep 确认全文
+   件没有其它引用了)。
+3. 把 `.pg-fullscreen-btn` 的 `z-index` 从 `20` 提到 `30`——比 Controls
+   把手的 `z-index:25` 更高,保证它始终是浮在最上层的 overlay,不会被
+   把手或其它东西盖住。
+
+## 2026-09-15(第九次)切换 Playground 页面之后,把手停在上一个页面的旧位置
+
+你截图反馈 Breadcrumb 这个页面(Controls 面板本身的控件比 OfferDashboard
+少得多、面板矮很多)上,把手停在很靠下的位置,和这个矮面板本身完全对不
+上——排查确认是真的 bug:切换 Playground 侧边栏页面(`selectedKey`/
+`current` 变化)不在任何一个已有的重新测量触发点里(不是 controlsOpen
+变化、不是 resize、不是 `.pg-main` 的 scroll),但 Controls 面板的真实
+高度/垂直位置会随着换了组件而变(每个组件的 controls 数量不一样,面板
+自然有高有矮),把手却拿着上一个页面算出来的旧数字不动,看起来就是"定位
+在很奇怪的地方"。
+
+改法:在已有的 `watch(current, ...)`(切页面时用来重置 Controls 面板
+状态的那个 watcher)里,补一句 `nextTick(updateControlsHandlePosition)`
+——等新页面的 Controls 面板真的渲染完,重新量一次它的真实位置。验证过:
+从 OfferDashboard(面板高501px)切到 Breadcrumb(面板高183px),把手的
+`top` 从 359.5px 正确变成 200.5px,精确对上 Breadcrumb 面板自己的垂直
+正中间。
+
 ## 2026-09-15(第八次)Stage 和 Controls 面板之间补 60px 间距(只针对非全屏)
 
 你反馈非全屏页面下 Controls 面板和左边的 Stage 内容完全贴在一起,零间距,

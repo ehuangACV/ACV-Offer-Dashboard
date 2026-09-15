@@ -55,14 +55,12 @@
      一整块都是 Playground 自己的外壳 UI,不属于任何 fragment 组件,不会
      改到 OfferDashboard.vue 等真实组件文件。 */
   .pg-main { position: relative; }
-  .pg-fullscreen-btn { position: absolute; top: 24px; right: 32px; z-index: 20; display: flex; align-items: center; gap: 6px; border: 1px solid #DCDFE8; background: #fff; border-radius: 6px; padding: 6px 14px; font-size: 13px; color: #004E7D; cursor: pointer; }
+  /* 2026-09-15 按你的要求撤销"面板收起时只显示×图标"那次改动,改回始终
+     显示完整的"Exit full page"文案——同时把 z-index 从 20 提到 30,
+     确保它始终是浮在最上层的 overlay(比 Controls 把手的 z-index:25
+     还高),不会被把手或其它任何东西盖住。 */
+  .pg-fullscreen-btn { position: absolute; top: 24px; right: 32px; z-index: 30; display: flex; align-items: center; gap: 6px; border: 1px solid #DCDFE8; background: #fff; border-radius: 6px; padding: 6px 14px; font-size: 13px; color: #004E7D; cursor: pointer; }
   .pg-fullscreen-btn:hover { background: #F0F8FF; }
-  /* 2026-09-15 按你的要求:全屏模式下,Controls 面板收起时这个按钮只显示
-     ×图标(不带"Exit full page"文字)——面板收起就是想让预览区域尽量
-     干净、更接近真实产品的样子,一个常驻的文字按钮反而显眼。面板展开时
-     还是原来"×  Exit full page"的样子不变,靠 title 属性保留可访问性
-     文本。 */
-  .pg-fullscreen-btn--icon-only { width: 32px; height: 32px; padding: 0; justify-content: center; gap: 0; }
 
   .pg-shell--fullscreen .pg-sidebar,
   .pg-shell--fullscreen .pg-rail-toggle--sidebar,
@@ -81,7 +79,9 @@
      还是像之前一样浮在最上层,只是数值改成贴着 Controls 面板自己的
      右上角(top/right 8px),细节和上一版的取舍记录见
      PLAYGROUND_NOTES.md 同名条目。 */
-  .pg-shell--fullscreen .pg-fullscreen-btn { top: 8px; right: 8px; }
+  .pg-shell--fullscreen .pg-fullscreen-btn { top: 70px; right: 8px; }
+  .pg-shell--fullscreen .pg-fullscreen-btn--panel-open { top: 8px; }
+  .pg-shell--fullscreen .pg-controls:not(.pg-controls--collapsed) .pg-controls__title { margin-top: 36px; }
   /* 2026-08 新增 screenWidth 滑块控件(只在选中 Offer Dashboard 时出现)
      之后,把"全屏时铺满可用宽度"和"用滑块模拟任意屏幕宽度"统一成同一套
      机制,细节(container-type、cqw 换算公式)见下面 .offer-dashboard
@@ -4596,9 +4596,9 @@
       ':title="sidebarOpen ? \'Hide nav\' : \'Show nav\'">{{ sidebarOpen ? \'‹\' : \'›\' }}</button>' +
       '<main class="pg-main" ref="mainRef">' +
       '<button v-if="selectedKey === \'OfferDashboard\'" type="button" class="pg-fullscreen-btn" ' +
-      ':class="{ \'pg-fullscreen-btn--icon-only\': fullscreenOpen && !controlsOpen }" ' +
+      ':class="{ \'pg-fullscreen-btn--panel-open\': fullscreenOpen && controlsOpen }" ' +
       ':title="fullscreenOpen ? \'Exit full page\' : \'Expand to full page\'" @click="toggleFullscreen">' +
-      '{{ fullscreenOpen ? (controlsOpen ? \'✕ Exit full page\' : \'✕\') : \'⛶ Expand to full page\' }}</button>' +
+      '{{ fullscreenOpen ? \'✕ Exit full page\' : \'⛶ Expand to full page\' }}</button>' +
       '<div class="pg-header"><h1>{{ current.name }}</h1><span class="pg-header__meta">{{ current.group }} · order {{ current.order }}</span></div>' +
       '<div class="pg-mocks" v-if="Object.keys(current.mocks || {}).length">' +
       '<span class="pg-mocks__label">Mock examples:</span>' +
