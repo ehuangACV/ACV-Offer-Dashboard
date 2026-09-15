@@ -1,5 +1,23 @@
 # RemoveFromListDialog — Notes
 
+## 2026-09-15 新增 mobile 版(底部弹出面板)
+
+你截图反馈手机上这个弹窗还是桌面那张560px宽的居中卡片硬套在窄屏里,
+文字换行、"Yes, Remove" 按钮被顶出卡片右边界——排查确认这个组件之前
+完全没做过 mobile 适配(`OfferCard.vue` 调用时也没传任何 mobile 相关的
+prop),不是"适配错了",是压根没适配过。
+
+新增 `mobile` prop(默认 false),同 `InformationDialog` 已经在用的同一个
+约定,`OfferCard.vue` 跟着传 `:mobile="mobileActions"`(和它传给
+`InformationDialog` 的是同一个变量)。`mobile=true` 时换成"底部弹出
+面板"(bottom sheet):背板不变,卡片贴底、撑满屏幕宽度、只留顶部两个角
+的圆角,顶部加了一条纯装饰的拖拽提示条;两个按钮从"并排靠右"改成
+"上下堆叠、撑满宽度"("Yes, Remove" 在上,"No, Keep It" 在下,靠
+`flex-direction: column-reverse` 翻转视觉顺序,DOM 顺序没变)。这个
+组件本身没有对应的 mobile Figma 节点,这套设计是讨论后确认的方向,不是
+照抄哪个节点。详细取舍记在 `RemoveFromListDialog.vue` 文件头 METADATA,
+这里不重复。
+
 ## 2026-09-02 新增
 按你的要求,把 Figma 节点 1:31040("Dialog","Remove From List?")做成独立
 组件,点 OfferCard/OfferTableRow 上的 "Remove From List" 按钮(只在

@@ -435,7 +435,7 @@
       @prev="$emit('prev-deal')"
       @next="$emit('next-deal')"
     />
-    <RemoveFromListDialog v-model="removeDialogOpen" @remove="$emit('remove-from-list')" />
+    <RemoveFromListDialog v-model="removeDialogOpen" :mobile="mobileActions" @remove="$emit('remove-from-list')" />
   </div>
 </template>
 

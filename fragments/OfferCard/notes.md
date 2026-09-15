@@ -1,5 +1,13 @@
 # OfferCard 核实记录
 
+## 2026-09-15 传 mobile 给 RemoveFromListDialog
+
+跟 [RemoveFromListDialog](../RemoveFromListDialog/notes.md) 同一批修的:
+这个文件新增了 `:mobile="mobileActions"` 这一条绑定(和已经传给
+`InformationDialog` 的是同一个变量),手机卡片列表点"Remove From List"
+才会走新的底部弹出面板样式,不再是硬套桌面560px居中卡片。这个文件本身
+没有新增任何 prop/逻辑,只是多传了一条已有的变量。
+
 ## 2026-09-14(第四次)撤销 2026-09-09 的卡片420px宽度上限
 
 你反馈 tile 视图卡片之间的间距变大了,不该这样,卡片应该填满、间距应该

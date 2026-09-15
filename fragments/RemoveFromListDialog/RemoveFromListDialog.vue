@@ -48,12 +48,39 @@
     黑色 50% 透明背板(`rgba(0,0,0,0.5)`)+ 居中 + `overflow-y:auto` 的
     同一套机制,保持全站弹窗背板视觉一致,不是分别核实出两套不同的背板
     数值。
+
+    2026-09-15 新增 mobile 版:你截图反馈手机上这个弹窗还是桌面那张
+    560px 宽的居中卡片硬套在窄屏里,文字换行、"Yes, Remove" 按钮被顶出
+    卡片右边界。这个组件之前完全没做过 mobile 适配(`OfferCard.vue` 调用
+    时也没传任何 mobile 相关的 prop),不是"适配错了",是压根没适配过。
+
+    新增 `mobile` prop(默认 false,不传就是原来桌面的样子),同
+    `InformationDialog` 已经在用的同一个约定——`OfferCard.vue` 跟着传
+    `:mobile="mobileActions"`(和它传给 `InformationDialog` 的是同一个
+    变量)。`mobile=true` 时不是简单把桌面卡片等比缩小,是换成手机上更
+    常见的"底部弹出面板"(bottom sheet):背板不变(同一个黑色50%透明
+    背板),卡片本身贴在屏幕底部(不再居中),撑满屏幕宽度(不再是固定
+    560px),只有顶部两个角保留圆角,顶部加了一条常见的拖拽提示条
+    (纯装饰,不是真的可以拖拽关闭,只是视觉上提示"这是个可以从底部滑出
+    的面板")。两个按钮从桌面"次要文字按钮+主要实心按钮并排靠右"改成
+    上下堆叠、撑满宽度——手机上并排放两个按钮容易点错,堆叠撑满更符合
+    大拇指操作习惯;顺序是"Yes, Remove"(红色实心,强调操作)在上,
+    "No, Keep It"(文字按钮)在下,这是我的判断,不是照抄哪个 Figma
+    节点(这个组件本身没有对应的 mobile Figma 节点,按你确认过的方向做的
+    合理设计)。DOM 顺序没有变(还是先 keep-btn 后 remove-btn,和桌面版
+    共用同一段 markup),视觉顺序靠 `flex-direction: column-reverse`
+    翻转,不是复制一份倒序的 markup。
   ═══════════════════════════════════════════════════════════
 -->
 <template>
   <Teleport to="body" :disabled="inline">
-    <div v-if="modelValue" :class="inline ? 'remove-list-dialog-inline-shell' : 'remove-list-dialog-overlay'" @click.self="handleOverlayClick">
-      <div class="remove-list-dialog" role="dialog" aria-label="Remove From List">
+    <div
+      v-if="modelValue"
+      :class="inline ? 'remove-list-dialog-inline-shell' : ['remove-list-dialog-overlay', { 'remove-list-dialog-overlay--mobile': mobile }]"
+      @click.self="handleOverlayClick"
+    >
+      <div class="remove-list-dialog" :class="{ 'remove-list-dialog--mobile': mobile }" role="dialog" aria-label="Remove From List">
+        <div v-if="mobile" class="remove-list-dialog__drag-handle" />
         <div class="remove-list-dialog__header">
           <span class="remove-list-dialog__title">Remove From List?</span>
           <button type="button" class="remove-list-dialog__close" aria-label="Close" @click="handleClose">
@@ -63,7 +90,7 @@
         <div class="remove-list-dialog__body">
           <p class="remove-list-dialog__desc">You will no longer see this auction in your list.</p>
         </div>
-        <div class="remove-list-dialog__footer">
+        <div class="remove-list-dialog__footer" :class="{ 'remove-list-dialog__footer--mobile': mobile }">
           <button type="button" class="remove-list-dialog__keep-btn" @click="handleKeep">No, Keep It</button>
           <button type="button" class="remove-list-dialog__remove-btn" @click="handleRemove">Yes, Remove</button>
         </div>
@@ -78,7 +105,11 @@ const props = defineProps({
   // 2026-09 Playground 专用:同 InformationDialog 的 inline,原地渲染不用
   // 黑背板,方便这个组件自己的 Playground 页面能点到 Controls 面板。真实
   // 用法(OfferCard/OfferTableRow 点 Remove From List 打开)不传这个 prop。
-  inline: { type: Boolean, default: false }
+  inline: { type: Boolean, default: false },
+  // 2026-09-15 新增,同 InformationDialog 已有的同一个约定:默认 false,
+  // 不传就是原来桌面居中卡片的样子。true 时换成底部弹出面板(bottom
+  // sheet),细节和取舍见文件头 METADATA。
+  mobile: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue', 'close', 'keep', 'remove'])
 
@@ -113,6 +144,13 @@ function handleRemove() {
   z-index: 1000;
 }
 
+/* mobile 时背板不再把卡片居中,改成贴底(align-items:flex-end),
+   padding 也清零——卡片自己撑满屏幕宽度、贴屏幕底边,不需要背板留白。 */
+.remove-list-dialog-overlay--mobile {
+  align-items: flex-end;
+  padding: 0;
+}
+
 .remove-list-dialog-inline-shell {
   display: flex;
   justify-content: center;
@@ -129,6 +167,23 @@ function handleRemove() {
   box-shadow: 0 11px 15px rgba(132, 132, 132, 0.2), 0 9px 46px rgba(132, 132, 132, 0.12), 0 24px 38px rgba(132, 132, 132, 0.14);
   font-family: 'Roboto', sans-serif;
   box-sizing: border-box;
+}
+
+/* mobile:不再是固定560px的居中卡片,改成撑满宽度、贴底的面板,只有
+   顶部两个角保留圆角(常见的 bottom sheet 样式)。 */
+.remove-list-dialog--mobile {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 16px 16px 0 0;
+}
+
+.remove-list-dialog__drag-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #DCDFE8;
+  margin: 10px auto 0;
+  flex-shrink: 0;
 }
 
 .remove-list-dialog__header {
@@ -215,5 +270,25 @@ function handleRemove() {
   color: #FFFFFF;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/* mobile:两个按钮从"并排靠右"改成"上下堆叠、撑满宽度"——手机上并排放
+   两个按钮容易点错,堆叠撑满更符合大拇指操作习惯。DOM 顺序没有变(还是
+   先 keep-btn 后 remove-btn),用 column-reverse 把 remove-btn 翻到视觉
+   上的第一个(上面),keep-btn 翻到第二个(下面),不用复制一份倒序的
+   markup。 */
+.remove-list-dialog__footer--mobile {
+  flex-direction: column-reverse;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px 20px 24px;
+}
+.remove-list-dialog__footer--mobile .remove-list-dialog__keep-btn {
+  width: 100%;
+  height: 44px;
+}
+.remove-list-dialog__footer--mobile .remove-list-dialog__remove-btn {
+  width: 100%;
+  height: 48px;
 }
 </style>
