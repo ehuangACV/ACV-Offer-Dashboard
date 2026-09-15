@@ -106,7 +106,21 @@
      +居中+白底+阴影("卡片浮在灰色画布上"的效果),想解决"贴边的方框"
      的问题,但你反馈这样看着反而更乱——已经撤销,恢复成改动前只有
      container-type、不管外观的样子,细节和撤销原因见 notes.md。 */
-  .pg-stage__resize-frame { container-type: inline-size; }
+  /* 2026-09-15(第三次)上一次给 .pg-stage 加 display:flex 之后引入的
+     真实 bug:普通 block 布局下,块级子元素默认宽度是父容器的 100%;
+     换成 flex 布局后,flex 子项在主轴(默认 flex-direction:row,主轴就是
+     水平方向)上默认不会撑满容器,是按自己内容的大小("shrink-to-fit")
+     走的,除非显式给 flex-grow 或者 width。之前只有 OfferDashboard 会
+     通过 stageFrameStyle 给这个元素塞一个具体的 inline width(为了模拟
+     手机宽度),其它绝大多数组件(App Header/Mobile Bottom Nav 等)根本
+     没设宽度,靠的就是"块级元素默认铺满"这条隐性规则——改成 flex 之后
+     这条隐性规则不再生效,这些组件的预览框缩成自己内容那么窄,右边一大
+     片留白,看起来像所有东西都"挤"在左上角。改法:显式补一条
+     width:100%,把"默认铺满容器"这个行为找回来——OfferDashboard 需要
+     的窄宽度是通过 inline style(stageFrameStyle)设的,inline style 的
+     优先级本来就高于这条 class 规则,不会被这里的 100% 覆盖掉,两边互不
+     冲突。 */
+  .pg-stage__resize-frame { container-type: inline-size; width: 100%; }
   /* 2026-09-13(第三次)你反馈 Mobile view 的高度"没有手机的感觉"——
      实测过 stageFrameHeight/stageFrameStyle 本身没有 bug,真实渲染出来
      的 .pg-stage__resize-frame 高度确实精确是 844px(内部 overflow-y:

@@ -6,6 +6,30 @@
 （侧边栏导航 / Controls 面板 / 预览舞台），没有对应的 `fragments/*.vue`
 源文件，所以不适合写进任何一个组件的 notes.md，单独放在这里。
 
+## 2026-09-15(第十六次)第十五次引入的真实 bug:所有组件的预览框都缩到左上角挤成一团
+
+你反馈"component全部挤在一起了",截图是 App Header、Mobile Bottom Nav
+这些页面——预览框缩成自己内容那么窄的一小块,贴在舞台左上角,右边一大片
+空白,不是你要求的改动,是第十五次(上面这条)的副作用,我漏想了。
+
+根因:第十五次给 `.pg-stage` 加了 `display:flex`,为的是让
+`.pg-stage__resize-frame--device` 的 `margin:auto` 能在垂直方向也生效
+(纯 block 布局下垂直 auto margin 不生效,必须要 flex/grid 容器)。但
+block 布局和 flex 布局对"没写明宽度的子元素"默认行为不一样——block 布局
+下块级子元素默认宽度是父容器的 100%(铺满);flex 布局下,子项在主轴
+(默认 flex-direction:row,主轴=水平)上默认不铺满,是按自己内容大小
+"shrink-to-fit"。`.pg-stage__resize-frame` 之前一直靠"块级元素默认铺满"
+这条隐性规则撑满 `.pg-stage` 的宽度,只有 OfferDashboard 会额外用
+inline style 塞一个具体宽度做手机模拟——绝大多数其它组件(App Header/
+Mobile Bottom Nav 等)完全没设宽度,改成 flex 之后这些组件的框全部缩成
+自己内容的宽度,右边空出一大片。
+
+改法:给 `.pg-stage__resize-frame` 补一条显式 `width:100%`,把"默认铺满
+容器"这个行为找回来。OfferDashboard 需要的窄宽度通过 inline style
+(`stageFrameStyle`)设置,inline style 优先级本来就高于这条 class 规则,
+两边不冲突——验证过:App Header 恢复铺满整个舞台宽度;OfferDashboard
+的 Mobile view 左右边距量出来还是对称的 185.5px,居中没有受影响。
+
 ## 2026-09-15(第十五次)手机模拟框只做到了左右居中,上下没居中
 
 第十四次把居中展示扩大到 Auto 模式之后,你确认左右方向没问题,但指出
