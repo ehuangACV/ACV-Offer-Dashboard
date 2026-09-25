@@ -991,7 +991,7 @@
 <div id="pg-lock-screen" class="pg-lock-screen">
   <div class="pg-lock-card">
     <div class="pg-lock-card__title">ACV Offer Dashboard</div>
-    <div class="pg-lock-card__subtitle">Component Playground — 请输入访问密码</div>
+    <div class="pg-lock-card__subtitle">Component Playground — Enter password to continue</div>
     <form id="pg-lock-form">
       <input id="pg-lock-input" class="pg-lock-card__input" type="password" placeholder="Password" autocomplete="off" autofocus>
       <button type="submit" class="pg-lock-card__btn">Enter</button>
@@ -1023,7 +1023,7 @@
         localStorage.setItem(STORAGE_KEY, 'yes');
         unlock();
       } else {
-        document.getElementById('pg-lock-error').textContent = '密码不对，再试一次';
+        document.getElementById('pg-lock-error').textContent = 'Incorrect password, please try again';
         input.value = '';
         input.focus();
       }
