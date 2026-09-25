@@ -962,10 +962,75 @@
   .offer-card-gallery__item { display: flex; flex-direction: column; gap: 8px; }
   /* 截图上"小灰字标签贴在示例上方"的样式,照截图目测的,不是核实数值 */
   .offer-card-gallery__label { min-height: 32px; display: flex; align-items: flex-end; font-size: 12px; line-height: 16px; color: #757575; }
+
+  /* 2026-09-25 按你的要求新增:这个 Playground 也发到 GitHub Pages 上了,
+     加一道"软性"密码门槛,拦一下随手点进来的人——这不是真正的安全防护,
+     密码校验只能写在这段纯前端 JS 里,任何人打开开发者工具看源码都能
+     直接看到密码 ACVux2026!,或者跳过检查强行看到 #app,这一点已经跟你
+     说明过、你确认接受(这里没有真实敏感数据,只是 mock 数据搭的 UI
+     Playground)。你选的是"记住"这台设备/浏览器——验证通过后写一条
+     localStorage 标记,下次打开这个页面不会再要求输入,除非清了浏览器
+     数据或换了别的设备/浏览器。#app 默认 display:none,验证通过之前
+     Vue 应用即使在背后 mount 完成也看不到,不会有"密码遮罩还没盖上就先
+     露了一下内容"的闪烁。 */
+  #app { display: none; }
+  .pg-lock-screen { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; background: #F5F5F5; font-family: 'Roboto', -apple-system, sans-serif; }
+  .pg-lock-card { width: 340px; max-width: calc(100vw - 48px); background: #FFFFFF; border: 1px solid #E8E9EB; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.08); padding: 32px 28px; box-sizing: border-box; text-align: center; }
+  .pg-lock-card__title { font-size: 16px; font-weight: 700; color: #1C1D1F; margin-bottom: 6px; }
+  .pg-lock-card__subtitle { font-size: 13px; color: #757575; margin-bottom: 20px; line-height: 1.4; }
+  .pg-lock-card__input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid #D1D3D6; border-radius: 8px; font-size: 14px; box-sizing: border-box; margin-bottom: 12px; font-family: inherit; }
+  .pg-lock-card__input:focus { outline: none; border-color: #F26522; }
+  .pg-lock-card__btn { width: 100%; height: 40px; border: none; border-radius: 8px; background: #F26522; color: #FFFFFF; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .pg-lock-card__btn:hover { background: #D4550F; }
+  .pg-lock-card__error { color: #BA1A1A; font-size: 13px; margin-top: 10px; min-height: 16px; }
 </style>
 </head>
 <body>
 <div id="app"></div>
+
+<div id="pg-lock-screen" class="pg-lock-screen">
+  <div class="pg-lock-card">
+    <div class="pg-lock-card__title">ACV Offer Dashboard</div>
+    <div class="pg-lock-card__subtitle">Component Playground — 请输入访问密码</div>
+    <form id="pg-lock-form">
+      <input id="pg-lock-input" class="pg-lock-card__input" type="password" placeholder="Password" autocomplete="off" autofocus>
+      <button type="submit" class="pg-lock-card__btn">Enter</button>
+      <div id="pg-lock-error" class="pg-lock-card__error"></div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  // 2026-09-25 见上面 #app/.pg-lock-screen 旁边的注释,这里只是密码校验
+  // 逻辑本身。故意放在 Vue 的 <script src> 之前,不等 Vue 加载/mount 完成
+  // 才判断——即使 Vue CDN 加载得很慢,密码遮罩也是页面一打开就立刻显示
+  // (或者立刻判断出已经解锁过、直接放行),不会有空白等待。
+  var STORAGE_KEY = 'pg_unlocked_v1';
+  var PASSWORD = 'ACVux2026!';
+  var lockScreen = document.getElementById('pg-lock-screen');
+  var app = document.getElementById('app');
+  function unlock() {
+    lockScreen.style.display = 'none';
+    app.style.display = 'block';
+  }
+  if (localStorage.getItem(STORAGE_KEY) === 'yes') {
+    unlock();
+  } else {
+    document.getElementById('pg-lock-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('pg-lock-input');
+      if (input.value === PASSWORD) {
+        localStorage.setItem(STORAGE_KEY, 'yes');
+        unlock();
+      } else {
+        document.getElementById('pg-lock-error').textContent = '密码不对，再试一次';
+        input.value = '';
+        input.focus();
+      }
+    });
+  }
+})();
+</script>
 
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
