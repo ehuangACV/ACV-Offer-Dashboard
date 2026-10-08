@@ -1,5 +1,48 @@
 # OfferTableRow — Notes
 
+## 2026-10-08 Auction ID/Type 列第二行(Type 徽标)跟 Vehicle 列对不齐
+
+你反馈 Auction ID 这一列(`.offer-table-row__cell--dealer`)看起来不像
+Vehicle 列那样居中对齐——量出来是真的 bug,不是视觉误差:两列第一行
+(Auction ID 文字 / Vehicle 标题)顶部精确对齐,但第二行(Type 徽标 /
+里程・VIN 文字)垂直中心差了 6px,徽标那一行肉眼看起来往下坠了一截。
+
+根因是两个因素叠加:`.offer-table-row__dealer-sub` 的 `margin-top`
+一直是 `4px`,而 `.offer-table-row__vehicle-sub` 是 `margin-top:0`——
+这两个本该对齐的"第二行"起点本身就不一致;再加上 OfferTypeBadge 自己
+有 padding,渲染出来比纯文字行(18px 行高)还高(22px),两个因素叠加
+放大了"往下坠"的视觉效果。
+
+改法:把 `margin-top` 从 `4px` 改成 `0`,跟 `vehicle-sub` 统一起点。
+验证过:改完之后两列第二行的 `getBoundingClientRect().top` 都是同一个
+数值,截图看徽标和"32,450 miles · 884523"这一行视觉上对齐了。
+
+**【2026-10-08(第二次)你反馈不喜欢这个改法,撤销,换成另一种思路】**
+你看了多经销商模式(`DriveTime Denver` / `348852` + 徽标)的截图,要求
+"这个部分整体居中"——不是去对齐 Vehicle 列的第二行起点,而是让 Auction
+ID/Type 这一整块(名字/ID 那一行 + 徽标那一行,当成一个整体)在 80px
+高的行里自己居中。
+
+撤销了上一条:`.offer-table-row__dealer-sub` 的 `margin-top` 改回 `4px`。
+改法换成 `.offer-table-row__cell--dealer` 本身:去掉继承自
+`.offer-table-row__cell` 的固定 `padding-top:21px`(那是假设内容从顶部
+开始、用一个写死的数值"凑"视觉居中,不是真的居中,这也是为什么第一次
+的根因分析会发现"跟 Vehicle 列对不上"——这两列的内容高度本来就可能不
+一样,硬凑的 padding 数值只在特定内容高度下才碰巧对得上),改成
+`display:flex; flex-direction:column; justify-content:center`,交给
+flex 布局真正居中,不用再猜 padding 数值,也不用关心跟 Vehicle 列是否
+对齐。验证过:多经销商模式下,量出来内容块(名字行顶部到徽标行底部)的
+垂直中心是 496.5px,单元格自己的垂直中心是 497px,基本精确重合。
+
+**【2026-10-08(第三次)你反馈这个改法还是不满意,彻底撤销,回到最早的
+样子】**两次改动(对齐 Vehicle 列第二行 / 整块 flex 居中)都不是你想要
+的效果,`.offer-table-row__cell--dealer` 和 `.offer-table-row__dealer-sub`
+都还原成这次改动之前的原始 CSS——这一列不再单独做任何对齐处理,跟其它
+列一样继承 `.offer-table-row__cell` 的固定 `padding-top:21px`。验证过:
+还原后 `dealer-name`/`dealer-sub` 的 `getBoundingClientRect()` 跟最初
+(改动前)的数值完全一致。这一条留着是为了记录"这两种思路都试过、都被
+否掉了",避免以后又从同样的角度重新尝试。
+
 ## 2026-09-14(第二次)业务规则更正:Make Offer 买家 Sent 后 CTA 改成 View Details
 
 跟 [OfferCard](../OfferCard/notes.md) 同一批修的同一条业务规则(买家

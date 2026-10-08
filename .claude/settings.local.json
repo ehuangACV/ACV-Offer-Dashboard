@@ -116,7 +116,14 @@
       "Bash(awk -F: '$1 > 3540 && $1 < 3700')",
       "Bash(curl -sL -o \"/c/Users/Einphix/AppData/Local/Temp/claude/mobile_filter_active.png\" \"https://www.figma.com/api/mcp/asset/910b790d-6275-4b2f-a54d-7c93b0aa2533.png\")",
       "Bash(mkdir -p /tmp/figma_screens)",
-      "Bash(curl -sL -o \"C:\\\\Users\\\\Einphix\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Einphix-ACV-Offer-Dashboard\\\\134ff27a-a4dd-4522-9cd1-5a6e77fd496d\\\\scratchpad\\\\mobile_info_dialog.png\" \"https://www.figma.com/api/mcp/asset/a5307f63-7911-4cf9-9ec0-e33904ded493.png\")"
+      "Bash(curl -sL -o \"C:\\\\Users\\\\Einphix\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Einphix-ACV-Offer-Dashboard\\\\134ff27a-a4dd-4522-9cd1-5a6e77fd496d\\\\scratchpad\\\\mobile_info_dialog.png\" \"https://www.figma.com/api/mcp/asset/a5307f63-7911-4cf9-9ec0-e33904ded493.png\")",
+      "Bash(sed -n '6,964p' index.html)",
+      "Bash(sed -n '1038,3753p' index.html)",
+      "Bash(cat offer-dashboard-pattern-header.txt _style.tmp offer-dashboard-pattern-middle.txt _script.tmp offer-dashboard-pattern-footer.txt)",
+      "Bash(rm offer-dashboard-pattern-header.txt offer-dashboard-pattern-middle.txt offer-dashboard-pattern-footer.txt _style.tmp _script.tmp)",
+      "Bash(mv \"design-system-pattern/offer-dashboard-pattern.html\" \"design-system-pattern/offer-dashboard-pattern.html.bak\")",
+      "Bash(sed 's#assets/#../assets/#g' \"design-system-pattern/offer-dashboard-pattern.html.bak\")",
+      "Bash(rm \"design-system-pattern/offer-dashboard-pattern.html.bak\")"
     ]
   }
 }

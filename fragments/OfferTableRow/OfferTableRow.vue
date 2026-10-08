@@ -609,6 +609,9 @@ const hoverButtons = computed(() => {
    padding 各减少12px(16px→4px),内容区宽度不变,列宽跟着各减少24px,
    细节和为什么不直接砍列宽(会裁切内容)见
    fragments/OfferDashboard/notes.md 同名条目。 */
+/* 2026-10-08(第三次)你反馈整体居中这个改法也不满意,撤销,恢复成
+   最早的样子——这一列不单独做任何居中处理,跟其它列一样继承
+   .offer-table-row__cell 的固定 padding-top:21px。 */
 .offer-table-row__cell--dealer { flex: 0 0 116px; padding-left: 4px; padding-right: 4px; }
 .offer-table-row__cell--dealer--wide { flex: 0 0 176px; }
 .offer-table-row__dealer-name {
@@ -624,7 +627,7 @@ const hoverButtons = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .offer-table-row__dealer-id {
   font-size: 12px;
